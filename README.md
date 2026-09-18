@@ -96,3 +96,5 @@ mvn clean verify
 | `ARM112_ALLOWED_ORIGINS` | origins фронтенда через запятую | `http://localhost:3000,http://localhost:5173` |
 
 API-контракт и правила независимой разработки фронтенда и бэкенда находятся в [`docs/contracts/README.md`](docs/contracts/README.md).
+
+Подробная пошаговая инструкция по запуску Swagger, авторизации и прохождению полного учебного сценария: [`docs/frontend/SWAGGER_GUIDE.md`](docs/frontend/SWAGGER_GUIDE.md).
