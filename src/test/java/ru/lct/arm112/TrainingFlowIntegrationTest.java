@@ -28,10 +28,24 @@ class TrainingFlowIntegrationTest {
 
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
     @Test
     void completesFullTraineeFlowAndReplaysEvents() throws Exception {
+        HttpResponse<String> swagger = rawGet("/swagger-ui.html");
+        assertThat(swagger.statusCode()).isEqualTo(200);
+        assertThat(swagger.headers().firstValue("content-type").orElse(""))
+                .contains("text/html");
+
+        HttpResponse<String> contract = rawGet("/openapi.yaml");
+        assertThat(contract.statusCode()).isEqualTo(200);
+        assertThat(contract.body()).contains("title: ARM-112 DDS Trainee API", "X-Contract-Version");
+
+        HttpResponse<String> swaggerConfig = rawGet("/v3/api-docs/swagger-config");
+        assertThat(swaggerConfig.statusCode()).isEqualTo(200);
+        assertThat(swaggerConfig.body()).contains("/openapi.yaml");
+
         HttpResponse<String> login = post("/api/v1/auth/login",
                 "{\"username\":\"trainee\",\"password\":\"trainee\"}", null, null);
         assertThat(login.statusCode()).isEqualTo(200);
@@ -99,6 +113,11 @@ class TrainingFlowIntegrationTest {
                 .header("X-Contract-Version", "0.2")
                 .GET().build();
         return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> rawGet(String path) throws Exception {
+        return client.send(HttpRequest.newBuilder(uri(path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
     }
 
     private HttpResponse<String> post(String path, String body, String token,

@@ -24,6 +24,17 @@ mvn spring-boot:run
 curl http://localhost:8080/actuator/health
 ```
 
+Интерактивная документация Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+Swagger использует зафиксированный контракт [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml). Перед запросами нажмите **Authorize** и заполните:
+
+- `contractVersion`: `0.2`;
+- `bearerAuth`: JWT из ответа `POST /auth/login` без префикса `Bearer` — для защищённых запросов.
+
 Тестовая учётная запись:
 
 - логин: `trainee`;
@@ -56,6 +67,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 - realtime-события и REST replay по `sequence`;
 - итоговая оценка занятия;
 - единый формат ошибок.
+- Swagger UI, работающий непосредственно с версионированным OpenAPI-контрактом.
 
 При запуске создаётся демонстрационная сессия с одной карточкой. Данные хранятся в памяти и сбрасываются после перезапуска — это сознательное ограничение первой интеграционной версии. Следующий инфраструктурный шаг — подключение PostgreSQL и миграций, не меняющее DTO фронтенда.
 

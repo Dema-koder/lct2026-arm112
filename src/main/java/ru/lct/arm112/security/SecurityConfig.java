@@ -35,7 +35,9 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/actuator/health", "/ws/v1/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/actuator/health", "/ws/v1/**",
+                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/openapi.yaml", "/webjars/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))
                 .build();

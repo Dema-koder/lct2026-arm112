@@ -7,6 +7,7 @@ servers:
   - url: /api/v1
 security:
   - bearerAuth: []
+    contractVersion: []
 tags:
   - name: Auth
   - name: Trainee
@@ -20,7 +21,8 @@ paths:
     post:
       tags: [Auth]
       operationId: login
-      security: []
+      security:
+        - contractVersion: []
       requestBody:
         required: true
         content:
@@ -308,6 +310,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    contractVersion:
+      type: apiKey
+      in: header
+      name: X-Contract-Version
+      description: Версия контракта клиента. Для текущего API укажите 0.2.
   parameters:
     SessionId:
       in: path

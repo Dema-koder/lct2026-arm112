@@ -21,3 +21,12 @@ arm112:
 logging:
   level:
     ru.lct.arm112: INFO
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi.yaml
+    disable-swagger-default-url: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    persist-authorization: true
