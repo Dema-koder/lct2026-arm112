@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: arm112-backend
+  jackson:
+    default-property-inclusion: always
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+arm112:
+  jwt-secret: ${ARM112_JWT_SECRET:local-training-secret-key-change-me-2026}
+  token-ttl: PT8H
+  allowed-origins: ${ARM112_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+logging:
+  level:
+    ru.lct.arm112: INFO

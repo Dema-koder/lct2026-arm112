@@ -50,7 +50,7 @@
 
 - REST JSON по HTTPS: `/api/v1`.
 - WebSocket: `/ws/v1`.
-- Авторизация: Bearer JWT; refresh token — `HttpOnly` cookie.
+- Авторизация MVP: Bearer JWT со сроком действия 8 часов. Обновление токена будет добавлено вместе с постоянным хранилищем пользователей.
 - Даты: ISO 8601 UTC.
 - Идентификаторы: UUID v4.
 - Локаль: `ru-RU`.
