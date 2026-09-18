@@ -1,0 +1,661 @@
+openapi: 3.1.0
+info:
+  title: ARM-112 DDS Trainee API
+  version: 0.2.0-draft
+  description: Контракт интерфейса обучающегося ДДС и бэкенда тренажёра.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Trainee
+  - name: References
+  - name: Training
+  - name: Cards
+  - name: Calls
+  - name: Assessment
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200':
+          description: Вход выполнен
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '401': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Текущий пользователь
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/ws-ticket:
+    post:
+      tags: [Auth]
+      operationId: createWebSocketTicket
+      responses:
+        '201':
+          description: Одноразовый билет WebSocket
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [ticket, expiresAt]
+                properties:
+                  ticket: {type: string}
+                  expiresAt: {type: string, format: date-time}
+  /trainee/context:
+    get:
+      tags: [Trainee]
+      operationId: getTraineeContext
+      responses:
+        '200':
+          description: Контекст рабочего места
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TraineeContext'}
+  /references:
+    get:
+      tags: [References]
+      operationId: getReferences
+      parameters:
+        - in: query
+          name: version
+          schema: {type: string}
+      responses:
+        '200':
+          description: Версионированные справочники
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ReferenceBundle'}
+  /training-sessions/active:
+    get:
+      tags: [Training]
+      operationId: getActiveTrainingSession
+      responses:
+        '200':
+          description: Назначенная активная сессия
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /training-sessions/{sessionId}:
+    get:
+      tags: [Training]
+      operationId: getTrainingSession
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+      responses:
+        '200':
+          description: Состояние занятия
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TrainingSession'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /training-sessions/{sessionId}/submit:
+    post:
+      tags: [Training]
+      operationId: submitTrainingSession
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '202':
+          description: Оценка запущена
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [assessmentId, state]
+                properties:
+                  assessmentId: {type: string, format: uuid}
+                  state: {const: CALCULATING}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /training-sessions/{sessionId}/events:
+    get:
+      tags: [Training]
+      operationId: getTrainingEvents
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+        - in: query
+          name: afterSequence
+          required: true
+          schema: {type: integer, minimum: 0}
+      responses:
+        '200':
+          description: Пропущенные события
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/RealtimeEvent'}
+  /cards:
+    get:
+      tags: [Cards]
+      operationId: listCards
+      parameters:
+        - in: query
+          name: sessionId
+          required: true
+          schema: {type: string, format: uuid}
+        - in: query
+          name: status
+          schema: {$ref: '#/components/schemas/CardStatus'}
+        - in: query
+          name: cursor
+          schema: {type: string}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+      responses:
+        '200':
+          description: Очередь карточек
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardPage'}
+  /cards/{cardId}:
+    get:
+      tags: [Cards]
+      operationId: getCard
+      parameters:
+        - {$ref: '#/components/parameters/CardId'}
+      responses:
+        '200':
+          description: Готовая карточка ДДС
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IncidentCard'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /cards/{cardId}/acceptance:
+    post:
+      tags: [Cards]
+      operationId: decideCardAcceptance
+      parameters:
+        - {$ref: '#/components/parameters/CardId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AcceptanceCommand'}
+      responses:
+        '200':
+          description: Решение зафиксировано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IncidentCard'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /cards/{cardId}/reaction-events:
+    post:
+      tags: [Cards]
+      operationId: addReactionEvent
+      parameters:
+        - {$ref: '#/components/parameters/CardId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReactionCommand'}
+      responses:
+        '200':
+          description: Действие зафиксировано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IncidentCard'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /cards/{cardId}/outbound-calls:
+    post:
+      tags: [Calls]
+      operationId: startOutboundCall
+      parameters:
+        - {$ref: '#/components/parameters/CardId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [shortNumber]
+              properties:
+                shortNumber:
+                  type: string
+                  pattern: '^[0-9]{3,4}$'
+      responses:
+        '201':
+          description: Исходящий звонок начат
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboundCall'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /outbound-calls/{callId}:
+    get:
+      tags: [Calls]
+      operationId: getOutboundCall
+      parameters:
+        - {$ref: '#/components/parameters/CallId'}
+      responses:
+        '200':
+          description: Состояние звонка
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboundCall'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /outbound-calls/{callId}/end:
+    post:
+      tags: [Calls]
+      operationId: endOutboundCall
+      parameters:
+        - {$ref: '#/components/parameters/CallId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: Звонок завершён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OutboundCall'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /assessments/{assessmentId}:
+    get:
+      tags: [Assessment]
+      operationId: getAssessment
+      parameters:
+        - in: path
+          name: assessmentId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Результат занятия
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Assessment'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    SessionId:
+      in: path
+      name: sessionId
+      required: true
+      schema: {type: string, format: uuid}
+    CardId:
+      in: path
+      name: cardId
+      required: true
+      schema: {type: string, format: uuid}
+    CallId:
+      in: path
+      name: callId
+      required: true
+      schema: {type: string, format: uuid}
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    ErrorResponse:
+      description: Ошибка
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+  schemas:
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username: {type: string, minLength: 1, maxLength: 100}
+        password: {type: string, minLength: 1, maxLength: 200}
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, expiresAt, user]
+      properties:
+        accessToken: {type: string}
+        expiresAt: {type: string, format: date-time}
+        user: {$ref: '#/components/schemas/User'}
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, role]
+      properties:
+        id: {type: string, format: uuid}
+        displayName: {type: string}
+        role: {const: TRAINEE}
+    Workstation:
+      type: object
+      additionalProperties: false
+      required: [id, number, label]
+      properties:
+        id: {type: string, format: uuid}
+        number: {type: string}
+        label: {type: string}
+    TraineeContext:
+      type: object
+      additionalProperties: false
+      required: [user, workstation, serverTime, activeSession]
+      properties:
+        user: {$ref: '#/components/schemas/User'}
+        workstation: {$ref: '#/components/schemas/Workstation'}
+        serverTime: {type: string, format: date-time}
+        activeSession:
+          anyOf:
+            - {$ref: '#/components/schemas/TrainingSession'}
+            - {type: 'null'}
+    TrainingSession:
+      type: object
+      additionalProperties: false
+      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds]
+      properties:
+        id: {type: string, format: uuid}
+        mode: {const: CARD_ACTIONS}
+        state:
+          type: string
+          enum: [ASSIGNED, ACTIVE, SUBMITTED, ASSESSING, COMPLETED, CANCELLED, EXPIRED]
+        title: {type: string}
+        difficulty: {type: integer, minimum: 1, maximum: 10}
+        referenceVersion: {type: string}
+        serverTime: {type: string, format: date-time}
+        startedAt: {type: [string, 'null'], format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        cardIds:
+          type: array
+          items: {type: string, format: uuid}
+    CardPage:
+      type: object
+      additionalProperties: false
+      required: [serverTime, items, nextCursor]
+      properties:
+        serverTime: {type: string, format: date-time}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/CardListItem'}
+        nextCursor: {type: [string, 'null']}
+    CardListItem:
+      type: object
+      additionalProperties: false
+      required: [id, number, receivedAt, incidentTypeLabel, addressLabel, status, allowedActions, sla]
+      properties:
+        id: {type: string, format: uuid}
+        number: {type: string}
+        receivedAt: {type: string, format: date-time}
+        incidentTypeLabel: {type: string}
+        addressLabel: {type: string}
+        status: {$ref: '#/components/schemas/CardStatus'}
+        allowedActions:
+          type: array
+          items: {$ref: '#/components/schemas/CardAction'}
+        sla: {$ref: '#/components/schemas/CardSla'}
+    IncidentCard:
+      type: object
+      additionalProperties: false
+      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls]
+      properties:
+        id: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        number: {type: string}
+        receivedAt: {type: string, format: date-time}
+        source: {type: string}
+        senderLabel: {type: string}
+        status: {$ref: '#/components/schemas/CardStatus'}
+        allowedActions:
+          type: array
+          items: {$ref: '#/components/schemas/CardAction'}
+        sla: {$ref: '#/components/schemas/CardSla'}
+        caller: {$ref: '#/components/schemas/Caller'}
+        address: {$ref: '#/components/schemas/IncidentAddress'}
+        description: {type: string, maxLength: 10000}
+        incidentType: {$ref: '#/components/schemas/DictionaryItem'}
+        features:
+          type: array
+          items: {type: string}
+        assignedServices:
+          type: array
+          items: {$ref: '#/components/schemas/DictionaryItem'}
+        scenarioRequirements: {$ref: '#/components/schemas/ScenarioRequirements'}
+        callTargets:
+          type: array
+          items: {$ref: '#/components/schemas/CallTarget'}
+        timeline:
+          type: array
+          items: {$ref: '#/components/schemas/CardTimelineEntry'}
+        outboundCalls:
+          type: array
+          items: {$ref: '#/components/schemas/OutboundCall'}
+    CardStatus:
+      type: string
+      enum: [RECEIVED, ACCEPTED, NOT_ACCEPTED, RESPONSE_STARTED, WORK_REFUSED, COMPLETED]
+    CardAction:
+      type: string
+      enum: [ACCEPT, DECLINE, START_RESPONSE, REFUSE_WORK, COMPLETE]
+    CardSla:
+      type: object
+      additionalProperties: false
+      required: [acceptanceDeadlineAt, processingDeadlineAt, acceptanceOverdue, processingOverdue]
+      properties:
+        acceptanceDeadlineAt: {type: string, format: date-time}
+        processingDeadlineAt: {type: [string, 'null'], format: date-time}
+        acceptanceOverdue: {type: boolean}
+        processingOverdue: {type: boolean}
+    AcceptanceCommand:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: {type: string, enum: [ACCEPT, DECLINE]}
+        reasonCode: {type: [string, 'null']}
+        comment: {type: [string, 'null'], maxLength: 2000}
+        clientOccurredAt: {type: [string, 'null'], format: date-time}
+    ReactionCommand:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: {type: string, enum: [START_RESPONSE, REFUSE_WORK, COMPLETE]}
+        reasonCode: {type: [string, 'null']}
+        comment: {type: [string, 'null'], maxLength: 2000}
+        clientOccurredAt: {type: [string, 'null'], format: date-time}
+    Caller:
+      type: object
+      additionalProperties: false
+      required: [fullName, phone, relation]
+      properties:
+        fullName: {type: [string, 'null'], maxLength: 300}
+        phone: {type: [string, 'null'], maxLength: 50}
+        relation: {type: [string, 'null'], maxLength: 200}
+    IncidentAddress:
+      type: object
+      additionalProperties: false
+      required: [raw, region, district, street, house, landmark, latitude, longitude]
+      properties:
+        raw: {type: string, maxLength: 2000}
+        region: {type: [string, 'null']}
+        district: {type: [string, 'null']}
+        street: {type: [string, 'null']}
+        house: {type: [string, 'null']}
+        landmark: {type: [string, 'null']}
+        latitude: {type: [number, 'null'], minimum: -90, maximum: 90}
+        longitude: {type: [number, 'null'], minimum: -180, maximum: 180}
+    ScenarioRequirements:
+      type: object
+      additionalProperties: false
+      required: [outboundCallRequired, requiredTargetIds, commentRequiredOnCompletion]
+      properties:
+        outboundCallRequired: {type: boolean}
+        requiredTargetIds:
+          type: array
+          uniqueItems: true
+          items: {type: string}
+        commentRequiredOnCompletion: {type: boolean}
+    CallTarget:
+      type: object
+      additionalProperties: false
+      required: [id, shortNumber, displayName, organization, voice]
+      properties:
+        id: {type: string}
+        shortNumber: {type: string, pattern: '^[0-9]{3,4}$'}
+        displayName: {type: string}
+        organization: {type: string}
+        voice: {type: string, enum: [MALE, FEMALE]}
+    CardTimelineEntry:
+      type: object
+      additionalProperties: false
+      required: [id, action, resultingStatus, reasonCode, comment, occurredAt, actorLabel]
+      properties:
+        id: {type: string, format: uuid}
+        action:
+          type: string
+          enum: [DELIVERED, ACCEPT, DECLINE, START_RESPONSE, REFUSE_WORK, COMPLETE]
+        resultingStatus: {$ref: '#/components/schemas/CardStatus'}
+        reasonCode: {type: [string, 'null']}
+        comment: {type: [string, 'null']}
+        occurredAt: {type: string, format: date-time}
+        actorLabel: {type: string}
+    OutboundCall:
+      type: object
+      additionalProperties: false
+      required: [id, cardId, target, state, startedAt, connectedAt, endedAt, media]
+      properties:
+        id: {type: string, format: uuid}
+        cardId: {type: string, format: uuid}
+        target: {$ref: '#/components/schemas/CallTarget'}
+        state:
+          type: string
+          enum: [DIALING, RINGING, CONNECTED, ACKNOWLEDGED, ENDED, NO_ANSWER, FAILED, CANCELLED]
+        startedAt: {type: string, format: date-time}
+        connectedAt: {type: [string, 'null'], format: date-time}
+        endedAt: {type: [string, 'null'], format: date-time}
+        media: {$ref: '#/components/schemas/CallMedia'}
+    CallMedia:
+      type: object
+      additionalProperties: false
+      required: [ringbackUrl, answerUrl, acknowledgementUrl, expiresAt]
+      properties:
+        ringbackUrl: {type: [string, 'null'], format: uri}
+        answerUrl: {type: [string, 'null'], format: uri}
+        acknowledgementUrl: {type: [string, 'null'], format: uri}
+        expiresAt: {type: [string, 'null'], format: date-time}
+    DictionaryItem:
+      type: object
+      additionalProperties: false
+      required: [id, code, label]
+      properties:
+        id: {type: string}
+        code: {type: string}
+        label: {type: string}
+    ReferenceBundle:
+      type: object
+      additionalProperties: false
+      required: [referenceVersion, checksum, services, reactionReasons]
+      properties:
+        referenceVersion: {type: string}
+        checksum: {type: string}
+        services:
+          type: array
+          items: {$ref: '#/components/schemas/DictionaryItem'}
+        reactionReasons:
+          type: array
+          items: {$ref: '#/components/schemas/DictionaryItem'}
+    Assessment:
+      type: object
+      additionalProperties: false
+      required: [id, sessionId, state, totalScore, timingScore, actionsScore, communicationScore, languageScore, issues]
+      properties:
+        id: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        state: {type: string, enum: [CALCULATING, COMPLETED, FAILED]}
+        totalScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        timingScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        actionsScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        communicationScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        languageScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        issues:
+          type: array
+          items: {$ref: '#/components/schemas/AssessmentIssue'}
+    AssessmentIssue:
+      type: object
+      additionalProperties: false
+      required: [code, severity, message, cardId]
+      properties:
+        code: {type: string}
+        severity: {type: string, enum: [INFO, WARNING, ERROR, CRITICAL]}
+        message: {type: string}
+        cardId: {type: [string, 'null'], format: uuid}
+        expected: {}
+        actual: {}
+    RealtimeEvent:
+      type: object
+      additionalProperties: false
+      required: [eventId, type, occurredAt, serverTime, sessionId, sequence, resourceId, payload]
+      properties:
+        eventId: {type: string, format: uuid}
+        type:
+          type: string
+          enum: [card.received, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, training.session_state_changed, assessment.completed, system.connection_warning]
+        occurredAt: {type: string, format: date-time}
+        serverTime: {type: string, format: date-time}
+        sessionId: {type: string, format: uuid}
+        sequence: {type: integer, minimum: 1}
+        resourceId: {type: [string, 'null']}
+        payload: {type: object, additionalProperties: true}
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId, fieldErrors, details]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            requestId: {type: string, format: uuid}
+            fieldErrors:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [path, code, message]
+                properties:
+                  path: {type: string}
+                  code: {type: string}
+                  message: {type: string}
+            details: {type: object, additionalProperties: true}

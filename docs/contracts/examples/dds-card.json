@@ -1,0 +1,81 @@
+{
+  "session": {
+    "id": "62c0a11f-cfb0-4cff-922f-a56118079602",
+    "mode": "CARD_ACTIONS",
+    "state": "ACTIVE",
+    "title": "Отработка действий ДДС — уровень 4",
+    "difficulty": 4,
+    "referenceVersion": "classifier-046-24",
+    "serverTime": "2026-09-18T10:22:31Z",
+    "startedAt": "2026-09-18T10:20:00Z",
+    "completedAt": null,
+    "cardIds": ["11b418c1-f5a4-4a91-8be0-7ba970f63a45"]
+  },
+  "card": {
+    "id": "11b418c1-f5a4-4a91-8be0-7ba970f63a45",
+    "sessionId": "62c0a11f-cfb0-4cff-922f-a56118079602",
+    "number": "112-2026-000001",
+    "receivedAt": "2026-09-18T10:22:20Z",
+    "source": "SYSTEM_112",
+    "senderLabel": "Оператор 112",
+    "status": "RECEIVED",
+    "allowedActions": ["ACCEPT", "DECLINE"],
+    "sla": {
+      "acceptanceDeadlineAt": "2026-09-18T10:22:50Z",
+      "processingDeadlineAt": null,
+      "acceptanceOverdue": false,
+      "processingOverdue": false
+    },
+    "caller": {
+      "fullName": "Сидоров Иван Сергеевич",
+      "phone": "+7 916 126-34-71",
+      "relation": "очевидец"
+    },
+    "address": {
+      "raw": "Москва, у станции Москва-Пассажирская-Киевская, около участкового пункта полиции",
+      "region": "Москва",
+      "district": null,
+      "street": null,
+      "house": null,
+      "landmark": "станция Москва-Пассажирская-Киевская, участковый пункт полиции",
+      "latitude": null,
+      "longitude": null
+    },
+    "description": "Горит мусорный контейнер. Пострадавших нет.",
+    "incidentType": {
+      "id": "incident.fire.garbage_container",
+      "code": "FIRE_GARBAGE_CONTAINER",
+      "label": "Возгорание мусорного контейнера"
+    },
+    "features": ["Открытое горение", "Пострадавших нет"],
+    "assignedServices": [
+      {"id": "service.dds.fire", "code": "101", "label": "Пожарно-спасательная служба"}
+    ],
+    "scenarioRequirements": {
+      "outboundCallRequired": true,
+      "requiredTargetIds": ["target.shift_supervisor"],
+      "commentRequiredOnCompletion": true
+    },
+    "callTargets": [
+      {
+        "id": "target.shift_supervisor",
+        "shortNumber": "1102",
+        "displayName": "Начальник дежурной смены",
+        "organization": "Пожарно-спасательный центр",
+        "voice": "MALE"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "d2574452-4d1c-4bcf-b5e2-d9e583ca14ea",
+        "action": "DELIVERED",
+        "resultingStatus": "RECEIVED",
+        "reasonCode": null,
+        "comment": null,
+        "occurredAt": "2026-09-18T10:22:20Z",
+        "actorLabel": "Система"
+      }
+    ],
+    "outboundCalls": []
+  }
+}
