@@ -418,13 +418,15 @@ components:
     CardListItem:
       type: object
       additionalProperties: false
-      required: [id, number, receivedAt, incidentTypeLabel, addressLabel, status, allowedActions, sla]
+      required: [id, number, receivedAt, incidentTypeLabel, addressLabel, description, senderLabel, status, allowedActions, sla]
       properties:
         id: {type: string, format: uuid}
         number: {type: string}
         receivedAt: {type: string, format: date-time}
         incidentTypeLabel: {type: string}
         addressLabel: {type: string}
+        description: {type: string, description: "Описание происшествия со слов заявителя — показывается в строке «Описание:» журнала"}
+        senderLabel: {type: string, description: "Кто создал карточку — оператор Службы 112 или внешняя информационная система"}
         status: {$ref: '#/components/schemas/CardStatus'}
         allowedActions:
           type: array
@@ -468,10 +470,10 @@ components:
           items: {$ref: '#/components/schemas/OutboundCall'}
     CardStatus:
       type: string
-      enum: [RECEIVED, ACCEPTED, NOT_ACCEPTED, RESPONSE_STARTED, WORK_REFUSED, COMPLETED]
+      enum: [RECEIVED, RECEIVED_BY_SERVICE, ACCEPTED, NOT_ACCEPTED, RESPONSE_STARTED, ARRIVED, WORK_IN_PROGRESS, WORK_REFUSED, COMPLETED]
     CardAction:
       type: string
-      enum: [ACCEPT, DECLINE, START_RESPONSE, REFUSE_WORK, COMPLETE]
+      enum: [ACCEPT, DECLINE, START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE]
     CardSla:
       type: object
       additionalProperties: false
@@ -495,7 +497,7 @@ components:
       additionalProperties: false
       required: [action]
       properties:
-        action: {type: string, enum: [START_RESPONSE, REFUSE_WORK, COMPLETE]}
+        action: {type: string, enum: [START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE]}
         reasonCode: {type: [string, 'null']}
         comment: {type: [string, 'null'], maxLength: 2000}
         clientOccurredAt: {type: [string, 'null'], format: date-time}
@@ -549,7 +551,7 @@ components:
         id: {type: string, format: uuid}
         action:
           type: string
-          enum: [DELIVERED, ACCEPT, DECLINE, START_RESPONSE, REFUSE_WORK, COMPLETE]
+          enum: [DELIVERED, RECEIVE, ACCEPT, DECLINE, START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE]
         resultingStatus: {$ref: '#/components/schemas/CardStatus'}
         reasonCode: {type: [string, 'null']}
         comment: {type: [string, 'null']}

@@ -15,9 +15,12 @@ import {
 
 const statusLabels: Record<string, string> = {
   RECEIVED: "Добавлена",
-  ACCEPTED: "Принято",
-  NOT_ACCEPTED: "Не принято",
+  RECEIVED_BY_SERVICE: "Получена службой",
+  ACCEPTED: "Принята",
+  NOT_ACCEPTED: "Не принята",
   RESPONSE_STARTED: "Начало реагирования",
+  ARRIVED: "Прибытие",
+  WORK_IN_PROGRESS: "Проведение работ",
   WORK_REFUSED: "Отказ от выполнения работ",
   COMPLETED: "Работы завершены",
 };
@@ -34,10 +37,13 @@ const callLabels: Record<string, string> = {
 };
 
 const actionLabels: Record<string, string> = {
-  DELIVERED: "Карточка доставлена",
-  ACCEPT: "Карточка принята",
-  DECLINE: "Карточка не принята",
+  DELIVERED: "Добавлена",
+  RECEIVE: "Получена службой",
+  ACCEPT: "Принята",
+  DECLINE: "Не принята",
   START_RESPONSE: "Начало реагирования",
+  ARRIVE: "Прибытие",
+  START_WORK: "Проведение работ",
   REFUSE_WORK: "Отказ от выполнения работ",
   COMPLETE: "Работы завершены",
 };
@@ -64,6 +70,12 @@ function timeOnly(value: string) {
 function countdown(deadline: string | null, now: number) {
   if (!deadline) return "—";
   const seconds = Math.max(0, Math.ceil((new Date(deadline).getTime() - now) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function elapsed(from: string, now: number) {
+  const seconds = Math.max(0, Math.floor((now - new Date(from).getTime()) / 1000));
   const minutes = Math.floor(seconds / 60);
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
@@ -150,12 +162,16 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
         <button type="submit" disabled={loading}>{loading ? "ПОДКЛЮЧЕНИЕ…" : "ВОЙТИ"}</button>
         {error && <p className="login-error">{error}</p>}
         <div className="support-copy">
-          Учебный тренажёр АРМ ДДС<br />
-          Сервер: {API_BASE.replace("/api/v1", "")}<br />
-          <a href={`${API_BASE.replace("/api/v1", "")}/swagger-ui.html`} target="_blank" rel="noreferrer">открыть Swagger</a>
+          Техподдержка<br />
+          +7 (495) 197-89-81<br />
+          (многоканальный)<br />
+          <a href="mailto:hd-112@mos.ru">hd-112@mos.ru</a>
         </div>
       </form>
-      <div className="login-version">ЛЦТ 2026 · учебный контур</div>
+      <div className="login-version">
+        ЛЦТ 2026 · учебный контур ·{" "}
+        <a href={`${API_BASE.replace("/api/v1", "")}/swagger-ui.html`} target="_blank" rel="noreferrer">Swagger</a>
+      </div>
     </main>
   );
 }
@@ -177,7 +193,7 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
   const [shortNumber, setShortNumber] = useState("1102");
   const [activeCall, setActiveCall] = useState<OutboundCall | null>(null);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
-  const [serviceMenu, setServiceMenu] = useState(false);
+  const [serviceMenu, setServiceMenu] = useState<string | null>(null);
 
   const sessionId = context?.activeSession?.id ?? null;
 
@@ -314,11 +330,12 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
     finally { setWorking(false); }
   };
 
-  const startResponse = async () => {
+  const runReaction = async (action: "START_RESPONSE" | "ARRIVE" | "START_WORK") => {
     if (!card) return;
     setWorking(true);
     try {
-      await refreshAfter(await api.react(token, card.id, "START_RESPONSE", "Начато реагирование"), "Реагирование начато");
+      const updated = await api.react(token, card.id, action);
+      await refreshAfter(updated, statusLabels[updated.status] ?? "Действие выполнено");
     } catch (err) { setError(getMessage(err)); }
     finally { setWorking(false); }
   };
@@ -379,6 +396,8 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
           now={now}
           context={context}
           loading={working}
+          onSubmit={submitSession}
+          sessionState={context?.activeSession?.state ?? ""}
         />
       ) : (
         <CardWorkspace
@@ -390,12 +409,10 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
           onBack={() => { setCard(null); setSelectedId(null); }}
           onAccept={accept}
           onDialog={(value) => { setComment(""); setCommentDialog(value); }}
-          onStartResponse={startResponse}
+          onReaction={runReaction}
           onCall={() => setCallDialog(true)}
           onEndCall={endCall}
-          onSubmit={submitSession}
           working={working}
-          sessionState={context?.activeSession?.state ?? ""}
         />
       )}
 
@@ -408,14 +425,20 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
       {notice && <div className="notice-toast">✓ {notice}</div>}
 
       {commentDialog && (
-        <Modal title={{ DECLINE: "Не принять карточку", REFUSE_WORK: "Отказ от выполнения работ", COMPLETE: "Завершение работ" }[commentDialog]} onClose={() => setCommentDialog(null)}>
-          <label className="dialog-label">Комментарий</label>
-          <textarea autoFocus value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Укажите основание и результат действий" />
-          <div className="dialog-actions">
-            <button className="secondary" onClick={() => setCommentDialog(null)}>Отмена</button>
-            <button className="primary" disabled={working || !comment.trim()} onClick={submitCommentAction}>Подтвердить</button>
-          </div>
-        </Modal>
+        <div className="status-form" role="dialog" aria-label="Проставление статуса реагирования">
+          <span className="status-form-status">
+            {{ DECLINE: "Не принята", REFUSE_WORK: "Отказ от выполнения работ", COMPLETE: "Работы завершены" }[commentDialog]}
+          </span>
+          <input
+            autoFocus
+            className="status-form-comment"
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Комментарий — основание и результат действий"
+          />
+          <button className="ok" title="Сохранить статус" disabled={working || !comment.trim()} onClick={submitCommentAction}>✓</button>
+          <button className="cancel" title="Отмена" onClick={() => setCommentDialog(null)}>✕</button>
+        </div>
       )}
 
       {callDialog && card && (
@@ -454,7 +477,7 @@ function Workspace({ token, onLogout }: { token: string; onLogout: () => void })
   );
 }
 
-function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loading }: {
+function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loading, onSubmit, sessionState }: {
   cards: CardListItem[];
   search: string;
   setSearch: (value: string) => void;
@@ -462,15 +485,27 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
   now: number;
   context: TraineeContext | null;
   loading: boolean;
+  onSubmit: () => void;
+  sessionState: string;
 }) {
   const current = new Date(now);
   return (
     <section className="journal">
       <div className="journal-heading">
         <div className="journal-search">
-          <h1>Поиск происшествий</h1>
-          <div className="search-row"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="номер, адрес, тип происшествия" /><span>⌕</span><button onClick={() => setSearch("")}>сбросить</button></div>
-          <small>расширенный по параметрам⌄</small>
+          <div className="search-line">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Поиск происшествий"
+              aria-label="Поиск происшествий"
+            />
+            <span className="magnifier" aria-hidden="true">⌕</span>
+          </div>
+          <div className="search-meta">
+            <small>расширенный по параметрам⌄</small>
+            <button onClick={() => setSearch("")}>сбросить</button>
+          </div>
         </div>
         <div className="digital-clock">
           <b>{new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(current)}</b>
@@ -480,7 +515,15 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
         </div>
       </div>
       <div className="list-area">
-        <div className="list-title"><b>Список происшествий⌃</b><span>● уведомления　 <select aria-label="Фильтр"><option>выберите что показать</option></select></span></div>
+        <div className="list-title">
+          <b>Список происшествий⌃</b>
+          <span>
+            {sessionState === "ACTIVE" && (
+              <button className="submit-session" onClick={onSubmit}>Завершить занятие</button>
+            )}
+            ● уведомления　 <select aria-label="Фильтр"><option>выберите что показать</option></select>
+          </span>
+        </div>
         <div className="incident-columns"><span>Связи</span><span>ЧС</span><span>Опер.</span><span>АРМ</span><span>Номер</span><span>Дата</span><span>Время</span><span>Тип происшествия</span><span>Постр.</span><span>Адрес</span><span>Статус службы</span></div>
         {cards.length === 0 ? (
           <div className="empty-list">{loading ? "Обновление…" : "Карточки не найдены"}</div>
@@ -488,8 +531,15 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
           <button key={item.id} className={`incident-row ${item.sla.acceptanceOverdue || item.sla.processingOverdue ? "overdue" : ""}`} onClick={() => onOpen(item.id)}>
             <span>⌄　◆　⚡</span><span>0</span><span>0</span><span>12</span><b>{item.number.replace(/\D/g, "").slice(-8)}</b>
             <span>{new Date(item.receivedAt).toLocaleDateString("ru-RU")}</span><strong>{timeOnly(item.receivedAt)}</strong>
-            <b>{item.incidentTypeLabel}</b><span>Нет</span><b>{item.addressLabel}</b><span>{statusLabels[item.status] ?? item.status}</span>
-            <em>Описание:　{dateTime(item.receivedAt)}　— {item.incidentTypeLabel}</em>
+            <b title={item.incidentTypeLabel}>{item.incidentTypeLabel}</b>
+            <span>Нет</span>
+            <b title={item.addressLabel}>{item.addressLabel}</b>
+            <span title={statusLabels[item.status] ?? item.status}>{statusLabels[item.status] ?? item.status}</span>
+            <em title={item.description}>
+              <span className="descr-label">Описание:</span>
+              <span className="descr-meta">{dateTime(item.receivedAt)} {item.senderLabel}　-</span>
+              <span className="descr-text">{item.description}</span>
+            </em>
             {(item.status === "RECEIVED" || item.status === "ACCEPTED" || item.status === "RESPONSE_STARTED") && (
               <i>{countdown(item.status === "RECEIVED" ? item.sla.acceptanceDeadlineAt : item.sla.processingDeadlineAt, now)}</i>
             )}
@@ -501,23 +551,24 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
   );
 }
 
-function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onBack, onAccept, onDialog, onStartResponse, onCall, onEndCall, onSubmit, working, sessionState }: {
+function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onBack, onAccept, onDialog, onReaction, onCall, onEndCall, working }: {
   card: IncidentCard;
   now: number;
   activeCall: OutboundCall | null;
-  serviceMenu: boolean;
-  setServiceMenu: (value: boolean) => void;
+  serviceMenu: string | null;
+  setServiceMenu: (value: string | null) => void;
   onBack: () => void;
   onAccept: () => void;
   onDialog: (value: "DECLINE" | "REFUSE_WORK" | "COMPLETE") => void;
-  onStartResponse: () => void;
+  onReaction: (action: "START_RESPONSE" | "ARRIVE" | "START_WORK") => void;
   onCall: () => void;
   onEndCall: () => void;
-  onSubmit: () => void;
   working: boolean;
-  sessionState: string;
 }) {
   const callActive = activeCall && !["ENDED", "FAILED", "NO_ANSWER", "CANCELLED"].includes(activeCall.state);
+  const lastEvent = card.timeline.at(-1);
+  const awaitingAcceptance = card.status === "RECEIVED" || card.status === "RECEIVED_BY_SERVICE";
+  const [statusList, setStatusList] = useState(false);
   return (
     <section className="card-workspace">
       <div className="phone-strip">
@@ -527,6 +578,15 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
         <div className="phone-slot"><b>☎</b><span>{activeCall?.target.organization ?? "предоставленный"}</span></div>
         <div className="phone-slot"><b>☎</b><span>телефон на место</span></div>
         <div className="card-number"><b>Происшествие {card.number.replace(/\D/g, "").slice(-8)}</b><small>созд. {dateTime(card.receivedAt)}<br />Опер., АРМ 12</small></div>
+        <div className={`card-timer ${card.sla.acceptanceOverdue || card.sla.processingOverdue ? "overdue" : ""}`}>
+          <b>{elapsed(card.receivedAt, now)}</b>
+          <span>минут</span><span>секунд</span>
+          <small>
+            {awaitingAcceptance
+              ? `принять за ${countdown(card.sla.acceptanceDeadlineAt, now)}`
+              : `отработать за ${countdown(card.sla.processingDeadlineAt, now)}`}
+          </small>
+        </div>
         <button className="view-button">просмотр</button>
         <button className="back-list" onClick={onBack}>архив/список</button>
       </div>
@@ -534,9 +594,6 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
       <div className="card-summary-row">
         <span>ФИО заявителя: <b>{card.caller.fullName ?? "не указано"}</b></span>
         <span>Пострадавшие: нет　 Отказ от скорой: нет　 Заблокированные: нет</span>
-        <span className={card.sla.acceptanceOverdue || card.sla.processingOverdue ? "sla overdue-text" : "sla"}>
-          {card.status === "RECEIVED" ? "Принять за " + countdown(card.sla.acceptanceDeadlineAt, now) : "Обработать за " + countdown(card.sla.processingDeadlineAt, now)}
-        </span>
       </div>
 
       <div className="card-columns">
@@ -551,8 +608,13 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
           <p>Класс: <strong>{card.incidentType.label.toLowerCase()}</strong>;</p>
           <p>[ВИС] Класс: <span>—</span></p>
           <div className="timeline">
-            {card.timeline.slice().reverse().map((event) => (
-              <div key={event.id}><time>{timeOnly(event.occurredAt)}</time><b>{actionLabels[event.action] ?? event.action}</b><span>{event.comment ?? statusLabels[event.resultingStatus]}</span></div>
+            {card.timeline.map((event) => (
+              <div key={event.id}>
+                <em>{event.actorLabel}</em>
+                <time>{dateTime(event.occurredAt)}</time>
+                <b>{actionLabels[event.action] ?? event.action}</b>
+                <span>{event.comment ? `❯ ${event.comment}` : ""}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -560,23 +622,44 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
 
       <div className="service-dock">
         <button className="services-label">Службы:</button>
-        {card.assignedServices.map((service) => (
-          <button key={service.id} className={`service-tile ${serviceMenu ? "active" : ""}`} onClick={() => setServiceMenu(!serviceMenu)}>
-            <b>{service.label.includes("Пожар") ? "Служба 101" : service.label}</b>
-            <span>{new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })} {statusLabels[card.status] ?? card.status}</span>
-          </button>
-        ))}
+        {card.assignedServices.map((service) => {
+          const expanded = serviceMenu === service.id;
+          return (
+            <div key={service.id} className={`service-tile ${expanded ? "active" : ""}`}>
+              <button
+                className="tile-body"
+                onClick={() => { setServiceMenu(expanded ? null : service.id); setStatusList(false); }}
+              >
+                <i className="tile-chevron">{expanded ? "⌄" : "⌃"}</i>
+                <b>{/^\d+$/.test(service.code) ? `Служба ${service.code}` : service.label}</b>
+                <span>{lastEvent ? timeOnly(lastEvent.occurredAt) : "—"} {statusLabels[card.status] ?? card.status}</span>
+              </button>
+              {expanded && (
+                <button
+                  className="tile-pencil"
+                  title="Проставить статус реагирования"
+                  onClick={() => setStatusList(!statusList)}
+                >
+                  ✎
+                </button>
+              )}
+            </div>
+          );
+        })}
         <div className="service-spacer" />
-        {card.status === "COMPLETED" && sessionState !== "COMPLETED" && <button className="submit-session" onClick={onSubmit}>Завершить занятие</button>}
         <button className="dock-icon" title="Сообщения">!</button><button className="dock-icon" onClick={onBack}>×</button>
 
-        {serviceMenu && (
+        {serviceMenu && statusList && (
           <div className="service-menu">
-            <div className="menu-status"><span>Текущий статус</span><b>{statusLabels[card.status] ?? card.status}</b></div>
-            {card.allowedActions.includes("ACCEPT") && <button onClick={onAccept} disabled={working}>✓ Принято</button>}
-            {card.allowedActions.includes("DECLINE") && <button onClick={() => onDialog("DECLINE")} disabled={working}>× Не принято</button>}
-            {card.allowedActions.includes("START_RESPONSE") && <button onClick={onStartResponse} disabled={working}>› Начало реагирования</button>}
-            {card.status === "RESPONSE_STARTED" && !callActive && <button onClick={onCall} disabled={working}>☎ Исходящий звонок</button>}
+            <div className="menu-status"><span>Статус реагирования</span><b>{statusLabels[card.status] ?? card.status}</b></div>
+            {card.allowedActions.includes("ACCEPT") && <button onClick={onAccept} disabled={working}>✓ Принята</button>}
+            {card.allowedActions.includes("DECLINE") && <button onClick={() => onDialog("DECLINE")} disabled={working}>× Не принята</button>}
+            {card.allowedActions.includes("START_RESPONSE") && <button onClick={() => onReaction("START_RESPONSE")} disabled={working}>› Начало реагирования</button>}
+            {card.allowedActions.includes("ARRIVE") && <button onClick={() => onReaction("ARRIVE")} disabled={working}>› Прибытие</button>}
+            {card.allowedActions.includes("START_WORK") && <button onClick={() => onReaction("START_WORK")} disabled={working}>› Проведение работ</button>}
+            {["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"].includes(card.status) && !callActive && (
+              <button onClick={onCall} disabled={working}>☎ Исходящий звонок</button>
+            )}
             {callActive && <button className="hangup" onClick={onEndCall} disabled={working}>☎ Завершить звонок</button>}
             {card.allowedActions.includes("REFUSE_WORK") && <button onClick={() => onDialog("REFUSE_WORK")} disabled={working}>× Отказ от выполнения работ</button>}
             {card.allowedActions.includes("COMPLETE") && <button onClick={() => onDialog("COMPLETE")} disabled={working}>✓ Работы завершены</button>}

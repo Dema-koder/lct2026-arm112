@@ -44,6 +44,8 @@ export type CardListItem = {
   receivedAt: string;
   incidentTypeLabel: string;
   addressLabel: string;
+  description: string;
+  senderLabel: string;
   status: string;
   allowedActions: string[];
   sla: CardSla;
@@ -216,7 +218,7 @@ export const api = {
   react: (
     token: string,
     cardId: string,
-    action: "START_RESPONSE" | "REFUSE_WORK" | "COMPLETE",
+    action: "START_RESPONSE" | "ARRIVE" | "START_WORK" | "REFUSE_WORK" | "COMPLETE",
     comment?: string,
   ) =>
     request<IncidentCard>(

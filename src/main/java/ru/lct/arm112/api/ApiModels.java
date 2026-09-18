@@ -32,8 +32,8 @@ public final class ApiModels {
 
     public record CardPage(Instant serverTime, List<CardListItem> items, String nextCursor) {}
     public record CardListItem(UUID id, String number, Instant receivedAt,
-                               String incidentTypeLabel, String addressLabel, String status,
-                               List<String> allowedActions, CardSla sla) {}
+                               String incidentTypeLabel, String addressLabel, String description,
+                               String senderLabel, String status, List<String> allowedActions, CardSla sla) {}
 
     public record IncidentCard(UUID id, UUID sessionId, String number, Instant receivedAt,
                                String source, String senderLabel, String status,
@@ -61,7 +61,7 @@ public final class ApiModels {
                                   @Size(max = 2000) String comment,
                                   Instant clientOccurredAt) {}
 
-    public enum ReactionAction { START_RESPONSE, REFUSE_WORK, COMPLETE }
+    public enum ReactionAction { START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE }
 
     public record Caller(String fullName, String phone, String relation) {}
 

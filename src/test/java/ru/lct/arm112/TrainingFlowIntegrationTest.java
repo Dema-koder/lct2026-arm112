@@ -89,6 +89,22 @@ class TrainingFlowIntegrationTest {
                 null, token, UUID.randomUUID().toString());
         assertThat(json(ended).get("state").asText()).isEqualTo("ENDED");
 
+        // Статусы реагирования проставляются только последовательно: перепрыгнуть
+        // через «Прибытие» и «Проведение работ» нельзя (памятка ДДС).
+        HttpResponse<String> tooEarly = post("/api/v1/cards/" + CARD_ID + "/reaction-events",
+                "{\"action\":\"COMPLETE\",\"comment\":\"Информация передана, работы завершены\"}",
+                token, UUID.randomUUID().toString());
+        assertThat(tooEarly.statusCode()).isEqualTo(409);
+        assertThat(json(tooEarly).get("error").get("code").asText()).isEqualTo("INVALID_STATE_TRANSITION");
+
+        HttpResponse<String> arrived = post("/api/v1/cards/" + CARD_ID + "/reaction-events",
+                "{\"action\":\"ARRIVE\"}", token, UUID.randomUUID().toString());
+        assertThat(json(arrived).get("status").asText()).isEqualTo("ARRIVED");
+
+        HttpResponse<String> working = post("/api/v1/cards/" + CARD_ID + "/reaction-events",
+                "{\"action\":\"START_WORK\"}", token, UUID.randomUUID().toString());
+        assertThat(json(working).get("status").asText()).isEqualTo("WORK_IN_PROGRESS");
+
         HttpResponse<String> completed = post("/api/v1/cards/" + CARD_ID + "/reaction-events",
                 "{\"action\":\"COMPLETE\",\"comment\":\"Информация передана, работы завершены\"}",
                 token, UUID.randomUUID().toString());

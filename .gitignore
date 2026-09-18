@@ -4,3 +4,5 @@ target/
 *.iml
 *.log
 .DS_Store
+/materials/
+frontend/tsconfig.tsbuildinfo

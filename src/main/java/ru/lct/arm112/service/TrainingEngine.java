@@ -124,7 +124,17 @@ public class TrainingEngine {
     }
 
     public IncidentCard card(UUID id) {
-        return toView(requireCard(id));
+        MutableCard card = requireCard(id);
+        synchronized (card) {
+            // Открытие карточки диспетчером на АРМ-112 автоматически переводит её
+            // в статус «Получена службой» — см. памятку ДДС, таблица статусов реагирования.
+            if (card.status.equals("RECEIVED")) {
+                card.status = "RECEIVED_BY_SERVICE";
+                addTimeline(card, "RECEIVE", null, null);
+                publishCard(card, "card.updated");
+            }
+            return toView(card);
+        }
     }
 
     public IncidentCard acceptance(UUID cardId, AcceptanceCommand command,
@@ -133,14 +143,16 @@ public class TrainingEngine {
             MutableCard card = requireCard(cardId);
             synchronized (card) {
                 requireActiveSession();
-                if (!card.status.equals("RECEIVED")) {
-                    throw invalidTransition(card.status);
-                }
+                boolean fresh = card.status.equals("RECEIVED") || card.status.equals("RECEIVED_BY_SERVICE");
                 if (command.action() == AcceptanceAction.DECLINE) {
+                    if (!fresh) throw invalidTransition(card.status);
                     requireReason(command.reasonCode(), command.comment());
                     card.status = "NOT_ACCEPTED";
                     addTimeline(card, "DECLINE", command.reasonCode(), command.comment());
                 } else {
+                    // Из «Не принята» единственный доступный переход — «Принята»:
+                    // диспетчер обязан исправить ошибочный отказ. См. памятку ДДС, «Что делать если…».
+                    if (!fresh && !card.status.equals("NOT_ACCEPTED")) throw invalidTransition(card.status);
                     card.status = "ACCEPTED";
                     card.acceptedAt = Instant.now();
                     card.processingDeadlineAt = card.acceptedAt.plusSeconds(180);
@@ -159,19 +171,29 @@ public class TrainingEngine {
             synchronized (card) {
                 requireActiveSession();
                 switch (command.action()) {
+                    // «Выбрать статусы реагирования можно только последовательно» — памятка ДДС,
+                    // раздел «Проставление статусов реагирования». Перепрыгнуть через статус нельзя.
                     case START_RESPONSE -> {
                         requireState(card, "ACCEPTED");
                         card.status = "RESPONSE_STARTED";
                     }
+                    case ARRIVE -> {
+                        requireState(card, "RESPONSE_STARTED");
+                        card.status = "ARRIVED";
+                    }
+                    case START_WORK -> {
+                        requireState(card, "ARRIVED");
+                        card.status = "WORK_IN_PROGRESS";
+                    }
+                    // Отказ от выполнения работ доступен на любом этапе после приёма —
+                    // он присутствует в выпадающем списке наравне со статусами хода работ.
                     case REFUSE_WORK -> {
-                        if (!card.status.equals("ACCEPTED") && !card.status.equals("RESPONSE_STARTED")) {
-                            throw invalidTransition(card.status);
-                        }
+                        requireOneOf(card, "ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS");
                         requireReason(command.reasonCode(), command.comment());
                         card.status = "WORK_REFUSED";
                     }
                     case COMPLETE -> {
-                        requireState(card, "RESPONSE_STARTED");
+                        requireState(card, "WORK_IN_PROGRESS");
                         if (card.requirements.commentRequiredOnCompletion() && isBlank(command.comment())) {
                             throw validation("comment", "REQUIRED", "Для завершения требуется комментарий");
                         }
@@ -195,7 +217,7 @@ public class TrainingEngine {
             MutableCard card = requireCard(cardId);
             synchronized (card) {
                 requireActiveSession();
-                requireState(card, "RESPONSE_STARTED");
+                requireOneOf(card, "ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS");
                 CallTarget target = card.callTargets.stream()
                         .filter(item -> item.shortNumber().equals(request.shortNumber()))
                         .findFirst()
@@ -339,8 +361,10 @@ public class TrainingEngine {
     }
 
     private void addTimeline(MutableCard card, String action, String reasonCode, String comment) {
+        // «Добавлена» и «Получена службой» — технические статусы, их проставляет система.
+        boolean technical = action.equals("DELIVERED") || action.equals("RECEIVE");
         card.timeline.add(new CardTimelineEntry(UUID.randomUUID(), action, card.status,
-                reasonCode, comment, Instant.now(), "Обучающийся"));
+                reasonCode, comment, Instant.now(), technical ? "Система" : "Обучающийся"));
     }
 
     private boolean requiredCallCompleted(MutableCard card) {
@@ -351,8 +375,8 @@ public class TrainingEngine {
 
     private CardListItem toListItem(MutableCard card) {
         return new CardListItem(card.id, card.number, card.receivedAt,
-                card.incidentType.label(), card.address.raw(), card.status,
-                allowedActions(card), sla(card));
+                card.incidentType.label(), card.address.raw(), card.description,
+                card.senderLabel, card.status, allowedActions(card), sla(card));
     }
 
     private IncidentCard toView(MutableCard card) {
@@ -373,9 +397,12 @@ public class TrainingEngine {
 
     private List<String> allowedActions(MutableCard card) {
         return switch (card.status) {
-            case "RECEIVED" -> List.of("ACCEPT", "DECLINE");
+            case "RECEIVED", "RECEIVED_BY_SERVICE" -> List.of("ACCEPT", "DECLINE");
+            case "NOT_ACCEPTED" -> List.of("ACCEPT");
             case "ACCEPTED" -> List.of("START_RESPONSE", "REFUSE_WORK");
-            case "RESPONSE_STARTED" -> List.of("REFUSE_WORK", "COMPLETE");
+            case "RESPONSE_STARTED" -> List.of("ARRIVE", "REFUSE_WORK");
+            case "ARRIVED" -> List.of("START_WORK", "REFUSE_WORK");
+            case "WORK_IN_PROGRESS" -> List.of("COMPLETE", "REFUSE_WORK");
             default -> List.of();
         };
     }
@@ -414,6 +441,13 @@ public class TrainingEngine {
 
     private void requireState(MutableCard card, String expected) {
         if (!card.status.equals(expected)) throw invalidTransition(card.status);
+    }
+
+    private void requireOneOf(MutableCard card, String... allowed) {
+        for (String state : allowed) {
+            if (card.status.equals(state)) return;
+        }
+        throw invalidTransition(card.status);
     }
 
     private ApiException invalidTransition(String currentState) {

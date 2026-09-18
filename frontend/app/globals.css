@@ -59,7 +59,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .login-version { position: absolute; z-index: 4; bottom: 14px; right: 18px; font-size: 11px; opacity: .72; }
 
 /* App chrome */
-.arm-shell { min-width: 1040px; min-height: 100vh; background: var(--steel-500); overflow: hidden; }
+.arm-shell { min-width: 980px; min-height: 100vh; background: var(--steel-500); overflow: hidden; }
 .top-strip { height: 34px; display: flex; align-items: center; justify-content: center; background: #f7f7f7; border-bottom: 1px solid #bbc1c4; position: relative; }
 .product-name { font-size: 14px; }
 .user-chip { position: absolute; right: 10px; top: 5px; border: 0; background: transparent; color: #3c4a51; font-size: 11px; }
@@ -68,38 +68,49 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 /* Journal */
 .journal { min-height: calc(100vh - 34px); }
 .journal-heading { position: relative; height: 116px; display: grid; grid-template-columns: 1fr 310px; background: #f1f2f2; }
-.journal-search { padding: 16px 18px 10px; }
-.journal-search h1 { margin: 0 0 6px; font-size: 27px; font-weight: 400; border-bottom: 1px solid #111; }
-.search-row { display: grid; grid-template-columns: minmax(160px, 360px) 28px 72px; align-items: center; position: absolute; top: 70px; right: 322px; }
-.search-row input { height: 26px; border: 1px solid #b5bdc0; background: white; padding: 0 8px; outline: none; }
-.search-row span { font-size: 25px; transform: rotate(-20deg); }
-.search-row button { height: 25px; border: 1px solid #9da8ad; background: #f6f7f7; color: #68777e; }
-.journal-search small { font-size: 11px; }
+/* «Поиск происшествий» — плейсхолдер внутри широкого поля на всю ширину, лупа справа (кадр dds-05.png) */
+.journal-search { min-width: 0; padding: 14px 18px 10px; display: flex; flex-direction: column; justify-content: center; }
+.search-line { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; border-bottom: 1px solid #111; }
+.search-line input { min-width: 0; padding: 0 0 5px; border: 0; background: transparent; outline: none; font-size: 26px; font-weight: 400; color: #111; }
+.search-line input::placeholder { color: #111; opacity: 1; }
+.magnifier { font-size: 26px; line-height: 1; text-align: center; transform: rotate(-20deg); }
+.search-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.search-meta small { font-size: 11px; white-space: nowrap; }
+.search-meta button { height: 25px; padding: 0 12px; border: 1px solid #9da8ad; background: #f6f7f7; color: #68777e; white-space: nowrap; }
 .digital-clock { position: relative; padding: 16px 18px; color: white; background: #2f393f; }
 .digital-clock b { display: block; font-size: 13px; text-transform: capitalize; }
 .digital-clock strong { position: absolute; right: 36px; top: 18px; font-size: 42px; line-height: 1; }
 .digital-clock > span { position: absolute; right: 9px; top: 18px; font-size: 17px; }
 .digital-clock small { display: block; margin-top: 10px; color: #dbe1e4; }
 .list-area { min-height: calc(100vh - 150px); padding: 12px 14px 40px; color: #e8eef0; background: var(--steel-500); }
-.list-title { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-.list-title b { font-size: 15px; }
-.list-title span { color: #d8e0e3; font-size: 11px; }
-.list-title select { width: 180px; height: 26px; margin-left: 16px; color: white; border: 1px solid #c3ccd0; background: transparent; }
-.incident-columns { display: grid; grid-template-columns: 80px 40px 50px 45px 82px 88px 78px 1.3fr 48px 2fr 150px; gap: 1px; padding: 0 7px 6px; color: #d8e0e3; font-size: 10px; }
-.incident-row { position: relative; width: 100%; min-height: 62px; margin-bottom: 6px; padding: 0; display: grid; grid-template-columns: 80px 40px 50px 45px 82px 88px 78px 1.3fr 48px 2fr 150px; grid-template-rows: 32px 26px; gap: 1px; color: #eef4f6; text-align: left; border: 0; background: transparent; }
+.list-title { min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; }
+.list-title b { flex: none; font-size: 15px; }
+.list-title span { min-width: 0; display: flex; align-items: center; gap: 10px; color: #d8e0e3; font-size: 11px; white-space: nowrap; }
+.list-title select { flex: 0 1 180px; min-width: 96px; height: 26px; color: white; border: 1px solid #c3ccd0; background: transparent; }
+/* Сетка журнала: одна переменная на заголовок и строки. Фиксированные служебные
+   колонки ужимаются на узких экранах, «Тип происшествия» и «Адрес» получают остаток. */
+.list-area { --journal-cols: 80px 40px 50px 45px 82px 88px 78px minmax(0, 1.3fr) 48px minmax(0, 2fr) 150px; }
+.incident-columns { display: grid; grid-template-columns: var(--journal-cols); gap: 1px; padding: 0 7px 6px; color: #d8e0e3; font-size: 10px; }
+.incident-columns > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.incident-row { position: relative; width: 100%; min-height: 62px; margin-bottom: 6px; padding: 0; display: grid; grid-template-columns: var(--journal-cols); grid-template-rows: 32px 26px; gap: 1px; color: #eef4f6; text-align: left; border: 0; background: transparent; }
 .incident-row > span, .incident-row > b, .incident-row > strong { display: flex; align-items: center; min-width: 0; padding: 0 7px; overflow: hidden; background: var(--steel-800); border-right: 1px solid #839199; white-space: nowrap; text-overflow: ellipsis; }
 .incident-row > strong { font-size: 16px; color: white; }
-.incident-row > em { grid-column: 1 / -1; grid-row: 2; padding: 6px 8px; overflow: hidden; font-style: normal; white-space: nowrap; text-overflow: ellipsis; background: #3d4b53; }
+/* Строка описания: «Описание:» серым, дата и автор приглушённо, сам текст — светлым (кадр dds-05.png) */
+.incident-row > em { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 8px; padding: 6px 8px; overflow: hidden; font-style: normal; white-space: nowrap; background: #3d4b53; }
+.descr-label { flex: none; color: #b9c6cc; }
+.descr-meta { flex: none; color: #8fb4c9; }
+.descr-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: bold; color: #ffffff; }
 .incident-row > i { position: absolute; right: 6px; top: 4px; padding: 3px 5px; color: white; font-style: normal; background: #0c7eb8; }
 .incident-row:hover > * { filter: brightness(1.12); }
+/* В оригинале красным заливается ячейка статуса службы — см. памятку ДДС, «Статусы карточки». */
+.incident-row.overdue > span:last-of-type { background: #b03f2e; color: white; font-weight: bold; }
 .incident-row.overdue > i { background: #c84631; }
-.incident-row.overdue > strong { color: #ffd5cb; }
 .empty-list { padding: 80px; text-align: center; color: #dfe5e7; }
 .pagination { margin-top: 16px; text-align: right; color: #e1e7e9; font-size: 11px; }
 
 /* Card */
 .card-workspace { min-height: calc(100vh - 34px); padding-bottom: 72px; background: #cbd0d3; }
-.phone-strip { height: 64px; display: grid; grid-template-columns: 46px 1.2fr 1.2fr 1.2fr 1.2fr 210px 78px; grid-template-rows: 32px 32px; gap: 5px; padding: 5px; background: #c7cccf; }
+.phone-strip { height: 64px; display: grid; grid-template-columns: 46px 1fr 1fr 1fr 1fr 190px 104px 78px; grid-template-rows: 32px 32px; gap: 5px; padding: 5px; background: #c7cccf; }
 .back-button { grid-row: 1 / 3; border: 0; background: #f4f4f4; font-size: 28px; color: #45535a; }
 .phone-state, .phone-slot, .card-number { min-width: 0; display: flex; align-items: center; gap: 7px; padding: 5px 8px; background: #eef0f1; border-left: 3px solid #aeb5b9; }
 .phone-state { grid-row: 1 / 3; }
@@ -109,12 +120,17 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .phone-slot { grid-row: 1 / 3; }
 .card-number { grid-row: 1 / 3; display: block; border-left: 0; }
 .card-number small { display: block; font-size: 10px; }
-.view-button, .back-list { grid-column: 7; color: white; border: 0; background: var(--blue); font-size: 10px; }
+.card-timer { grid-row: 1 / 3; display: grid; grid-template-columns: 1fr 1fr; align-content: center; padding: 4px 8px; color: white; background: #2f393f; }
+.card-timer b { grid-column: 1 / -1; font-size: 26px; line-height: 1; letter-spacing: .04em; }
+.card-timer > span { font-size: 9px; color: #b9c4c9; }
+.card-timer > span:last-of-type { text-align: right; }
+.card-timer small { grid-column: 1 / -1; margin-top: 3px; font-size: 10px; color: #8fd0ef; }
+.card-timer.overdue { background: #8f2f22; }
+.card-timer.overdue small { color: #ffd5cb; }
+.view-button, .back-list { grid-column: 8; color: white; border: 0; background: var(--blue); font-size: 10px; }
 .back-list { grid-row: 2; background: var(--steel-900); }
-.card-summary-row { height: 42px; display: grid; grid-template-columns: 1fr 1.2fr 190px; gap: 5px; padding: 5px; background: #ccd1d4; }
+.card-summary-row { height: 42px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 5px; padding: 5px; background: #ccd1d4; }
 .card-summary-row > span { padding: 9px; overflow: hidden; background: #f3f3f3; white-space: nowrap; text-overflow: ellipsis; }
-.card-summary-row .sla { text-align: center; font-weight: bold; color: #1874a5; }
-.card-summary-row .overdue-text { color: #d23b27; }
 .card-columns { display: grid; grid-template-columns: 45% 55%; min-height: calc(100vh - 220px); gap: 5px; padding: 0 5px; background: #cbd0d3; }
 .caller-pane, .incident-pane { position: relative; padding-top: 5px; }
 .caller-pane > b, .caller-pane > span, .incident-pane > b, .incident-pane > p { display: block; min-height: 31px; padding: 8px 10px; margin: 0 0 5px; background: #f2f2f2; }
@@ -129,26 +145,43 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .incident-pane > p span { color: #7e8b91; }
 .timeline { position: absolute; left: 10px; bottom: 90px; width: min(560px, calc(100% - 20px)); max-height: 190px; overflow: auto; color: white; background: #0a83c5; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
 .timeline:empty { display: none; }
-.timeline div { display: grid; grid-template-columns: 70px 190px 1fr; gap: 8px; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.22); }
+.timeline div { display: grid; grid-template-columns: 46px 132px 168px 1fr; gap: 8px; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.22); }
+.timeline em { font-style: normal; font-size: 10px; opacity: .85; }
 .timeline time { font-size: 10px; }
-.timeline span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.timeline b, .timeline span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.timeline b { font-size: 12px; }
 
 /* Service dock */
-.service-dock { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; height: 72px; display: flex; align-items: stretch; color: white; background: #45545c; border-top: 1px solid #d7dcde; }
+.service-dock { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; height: 72px; display: flex; align-items: stretch; color: white; background: #5a6a72; border-top: 1px solid #d7dcde; }
 .service-dock > button { color: white; border: 0; border-right: 1px solid #87949a; background: transparent; }
 .services-label { width: 72px; }
-.service-tile { min-width: 130px; padding: 8px 12px; }
+.service-tile { position: relative; min-width: 130px; border-right: 1px solid #87949a; }
+.service-tile .tile-body { width: 100%; height: 100%; padding: 4px 12px 8px; color: white; text-align: center; border: 0; background: transparent; }
 .service-tile b, .service-tile span { display: block; }
-.service-tile span { margin-top: 7px; font-size: 9px; }
-.service-tile.active { border-top: 4px solid white; background: #35434a; }
+.service-tile b { font-size: 12px; }
+.service-tile span { margin-top: 6px; font-size: 9px; }
+.tile-chevron { display: block; font-style: normal; font-size: 11px; line-height: 1; opacity: .8; }
+.tile-pencil { position: absolute; top: 2px; right: 3px; width: 20px; height: 18px; padding: 0; color: white; border: 0; background: transparent; font-size: 12px; }
+.tile-pencil:hover { background: rgba(255,255,255,.25); }
+.service-tile.active { background: #0784c6; }
 .service-spacer { flex: 1; }
-.submit-session { align-self: center; height: 42px; padding: 0 18px; margin-right: 8px; background: var(--blue) !important; }
+.submit-session { height: 28px; padding: 0 14px; margin-right: 14px; color: white; border: 0; background: var(--blue); font-size: 12px; }
+.submit-session:hover { background: var(--blue-dark); }
 .dock-icon { align-self: center; width: 38px; height: 38px; margin: 0 3px; border: 1px solid white !important; font-size: 22px; }
 .service-menu { position: absolute; left: 72px; bottom: 72px; width: 390px; padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; background: #0784c6; box-shadow: 0 -5px 18px rgba(0,0,0,.22); }
 .service-menu button { min-height: 39px; padding: 7px 9px; color: white; text-align: left; border: 1px solid rgba(255,255,255,.34); background: #0b75ad; }
 .service-menu button:hover { background: #086594; }
 .service-menu .hangup { background: #a93f31; }
 .menu-status { grid-column: 1 / -1; display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid rgba(255,255,255,.4); }
+
+/* Форма проставления статуса — строка над панелью служб, как на кадре dds-16.png */
+.status-form { position: fixed; z-index: 20; left: 72px; right: 96px; bottom: 74px; display: grid; grid-template-columns: 210px 1fr 38px 38px; gap: 6px; align-items: center; padding: 6px; background: #eef0f1; border: 1px solid #9aa6ac; box-shadow: 0 -4px 14px rgba(0,0,0,.22); }
+.status-form-status { padding: 0 8px; font-weight: bold; color: #24313a; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.status-form-comment { height: 32px; padding: 0 9px; border: 1px solid #9aa6ac; background: white; outline-color: var(--blue); }
+.status-form button { height: 32px; border: 1px solid #9aa6ac; background: white; font-size: 16px; }
+.status-form .ok { color: #17713f; }
+.status-form .cancel { color: #8f2f22; }
+.status-form button:hover { background: #dfe4e6; }
 
 /* Overlays */
 .error-banner { position: fixed; z-index: 40; top: 44px; left: 50%; width: min(620px, 80vw); transform: translateX(-50%); padding: 12px 44px 12px 14px; color: white; background: #9d372c; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
@@ -179,6 +212,28 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .score-grid span { display: flex; justify-content: space-between; padding: 10px; background: #dce1e3; }
 .assessment-issue { padding: 8px; color: #872d24; background: #f4dcd9; }
+
+/* Узкие экраны: ужимаем служебные колонки и хром, чтобы названия происшествий
+   и адреса не обрезались. Состав колонок и порядок остаются как в оригинале. */
+@media (max-width: 1500px) {
+  .list-area { --journal-cols: 62px 32px 42px 40px 78px 76px 64px minmax(0, 1.3fr) 40px minmax(0, 2fr) 132px; }
+  .journal-heading { grid-template-columns: 1fr 272px; }
+  .digital-clock strong { font-size: 36px; }
+  .service-menu { width: 340px; }
+}
+
+@media (max-width: 1250px) {
+  .list-area { --journal-cols: 52px 26px 36px 34px 72px 66px 58px minmax(0, 1.4fr) 34px minmax(0, 2fr) 116px; }
+  .journal-heading { grid-template-columns: 1fr 236px; }
+  .digital-clock { padding: 14px 12px; }
+  .digital-clock strong { font-size: 30px; right: 30px; }
+  .digital-clock > span { font-size: 14px; }
+  .incident-row > span, .incident-row > b, .incident-row > strong { padding: 0 5px; }
+  .incident-row > strong { font-size: 14px; }
+  .search-line input, .magnifier { font-size: 22px; }
+  .phone-strip { grid-template-columns: 40px 1fr 1fr 1fr 1fr 168px 96px 70px; }
+  .card-number b { font-size: 12px; }
+}
 
 @media (max-width: 900px) {
   .login-panel { right: 7vw; width: 50vw; }
