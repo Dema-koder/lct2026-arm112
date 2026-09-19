@@ -7,6 +7,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.*;
+import ru.lct.arm112.persistence.TrainingStateStore;
+import ru.lct.arm112.persistence.TrainingStateStore.CallState;
+import ru.lct.arm112.persistence.TrainingStateStore.CardState;
+import ru.lct.arm112.persistence.TrainingStateStore.TrainingSnapshot;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +38,7 @@ public class TrainingEngine {
             "Пожарно-спасательный центр", "MALE");
 
     private final EventService events;
+    private final TrainingStateStore stateStore;
     private final Map<UUID, MutableCard> cards = new ConcurrentHashMap<>();
     private final Map<UUID, MutableCall> calls = new ConcurrentHashMap<>();
     private final Map<UUID, Assessment> assessments = new ConcurrentHashMap<>();
@@ -45,15 +50,24 @@ public class TrainingEngine {
     });
 
     private volatile String sessionState = "ACTIVE";
-    private final Instant sessionStartedAt = Instant.now();
+    private volatile Instant sessionStartedAt = Instant.now();
     private volatile Instant sessionCompletedAt;
 
-    public TrainingEngine(EventService events) {
+    public TrainingEngine(EventService events, TrainingStateStore stateStore) {
         this.events = events;
+        this.stateStore = stateStore;
     }
 
     @PostConstruct
-    void seed() {
+    void initialize() {
+        stateStore.load().ifPresentOrElse(this::restore, () -> {
+            seed();
+            persist();
+        });
+        resumeActiveCalls();
+    }
+
+    private void seed() {
         Instant receivedAt = Instant.now();
         MutableCard card = new MutableCard();
         card.id = CARD_ID;
@@ -125,6 +139,8 @@ public class TrainingEngine {
 
     public IncidentCard card(UUID id) {
         MutableCard card = requireCard(id);
+        boolean changed = false;
+        IncidentCard view;
         synchronized (card) {
             // Открытие карточки диспетчером на АРМ-112 автоматически переводит её
             // в статус «Получена службой» — см. памятку ДДС, таблица статусов реагирования.
@@ -132,9 +148,12 @@ public class TrainingEngine {
                 card.status = "RECEIVED_BY_SERVICE";
                 addTimeline(card, "RECEIVE", null, null);
                 publishCard(card, "card.updated");
+                changed = true;
             }
-            return toView(card);
+            view = toView(card);
         }
+        if (changed) persist();
+        return view;
     }
 
     public IncidentCard acceptance(UUID cardId, AcceptanceCommand command,
@@ -319,6 +338,7 @@ public class TrainingEngine {
     @Scheduled(fixedRate = 1000)
     void detectOverdue() {
         Instant now = Instant.now();
+        boolean changed = false;
         for (MutableCard card : cards.values()) {
             synchronized (card) {
                 if (!card.acceptanceOverdue
@@ -326,15 +346,18 @@ public class TrainingEngine {
                         && now.isAfter(card.acceptanceDeadlineAt)) {
                     card.acceptanceOverdue = true;
                     publishCard(card, "card.acceptance_overdue");
+                    changed = true;
                 }
                 if (!card.processingOverdue && card.processingDeadlineAt != null
                         && !List.of("NOT_ACCEPTED", "WORK_REFUSED", "COMPLETED").contains(card.status)
                         && now.isAfter(card.processingDeadlineAt)) {
                     card.processingOverdue = true;
                     publishCard(card, "card.processing_overdue");
+                    changed = true;
                 }
             }
         }
+        if (changed) persist();
     }
 
     private void scheduleCallState(UUID callId, String state, long delayMs) {
@@ -347,6 +370,7 @@ public class TrainingEngine {
                 if (state.equals("CONNECTED")) call.connectedAt = Instant.now();
                 publishCall(call);
             }
+            persist();
         }, delayMs, TimeUnit.MILLISECONDS);
     }
 
@@ -497,7 +521,101 @@ public class TrainingEngine {
             if (existing != null) return (T) existing.value;
             T value = action.get();
             idempotency.put(storageKey, new IdempotentResult(signature, value));
+            persist();
             return value;
+        }
+    }
+
+    private synchronized void persist() {
+        List<CardState> cardStates = cards.values().stream()
+                .map(card -> {
+                    synchronized (card) {
+                        return new CardState(card.id, card.sessionId, card.number, card.receivedAt,
+                                card.source, card.senderLabel, card.status, card.acceptanceDeadlineAt,
+                                card.processingDeadlineAt, card.acceptedAt, card.acceptanceOverdue,
+                                card.processingOverdue, card.caller, card.address, card.description,
+                                card.incidentType, card.features, card.assignedServices, card.requirements,
+                                card.callTargets, List.copyOf(card.timeline), List.copyOf(card.callIds));
+                    }
+                })
+                .toList();
+        List<CallState> callStates = calls.values().stream()
+                .map(call -> {
+                    synchronized (call) {
+                        return new CallState(call.id, call.cardId, call.target, call.state,
+                                call.startedAt, call.connectedAt, call.endedAt);
+                    }
+                })
+                .toList();
+        stateStore.save(new TrainingSnapshot(sessionState, sessionStartedAt, sessionCompletedAt,
+                cardStates, callStates, List.copyOf(assessments.values())));
+    }
+
+    private void restore(TrainingSnapshot snapshot) {
+        sessionState = snapshot.sessionState();
+        sessionStartedAt = snapshot.sessionStartedAt();
+        sessionCompletedAt = snapshot.sessionCompletedAt();
+        cards.clear();
+        calls.clear();
+        assessments.clear();
+
+        for (CardState state : snapshot.cards()) {
+            MutableCard card = new MutableCard();
+            card.id = state.id();
+            card.sessionId = state.sessionId();
+            card.number = state.number();
+            card.receivedAt = state.receivedAt();
+            card.source = state.source();
+            card.senderLabel = state.senderLabel();
+            card.status = state.status();
+            card.acceptanceDeadlineAt = state.acceptanceDeadlineAt();
+            card.processingDeadlineAt = state.processingDeadlineAt();
+            card.acceptedAt = state.acceptedAt();
+            card.acceptanceOverdue = state.acceptanceOverdue();
+            card.processingOverdue = state.processingOverdue();
+            card.caller = state.caller();
+            card.address = state.address();
+            card.description = state.description();
+            card.incidentType = state.incidentType();
+            card.features = List.copyOf(state.features());
+            card.assignedServices = List.copyOf(state.assignedServices());
+            card.requirements = state.requirements();
+            card.callTargets = List.copyOf(state.callTargets());
+            card.timeline = new ArrayList<>(state.timeline());
+            card.callIds = new ArrayList<>(state.callIds());
+            cards.put(card.id, card);
+        }
+        for (CallState state : snapshot.calls()) {
+            MutableCall call = new MutableCall();
+            call.id = state.id();
+            call.cardId = state.cardId();
+            call.target = state.target();
+            call.state = state.state();
+            call.startedAt = state.startedAt();
+            call.connectedAt = state.connectedAt();
+            call.endedAt = state.endedAt();
+            calls.put(call.id, call);
+        }
+        snapshot.assessments().forEach(assessment -> assessments.put(assessment.id(), assessment));
+    }
+
+    private void resumeActiveCalls() {
+        for (MutableCall call : calls.values()) {
+            switch (call.state) {
+                case "DIALING" -> {
+                    scheduleCallState(call.id, "RINGING", 300);
+                    scheduleCallState(call.id, "CONNECTED", 700);
+                    scheduleCallState(call.id, "ACKNOWLEDGED", 1200);
+                }
+                case "RINGING" -> {
+                    scheduleCallState(call.id, "CONNECTED", 400);
+                    scheduleCallState(call.id, "ACKNOWLEDGED", 900);
+                }
+                case "CONNECTED" -> scheduleCallState(call.id, "ACKNOWLEDGED", 500);
+                default -> {
+                    // Terminal and acknowledged calls need no automatic transition.
+                }
+            }
         }
     }
 

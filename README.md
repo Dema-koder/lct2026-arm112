@@ -1,6 +1,6 @@
 # Тренажёр АРМ-112 ДДС
 
-Полноценный учебный контур интерфейса обучающегося: Java/Spring Boot backend и адаптированный под него web-интерфейс АРМ ДДС. Оба приложения реализуют единый контракт [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml) и запускаются локально без внешних сервисов.
+Полноценный учебный контур интерфейса обучающегося: Java/Spring Boot backend, PostgreSQL и адаптированный под них web-интерфейс АРМ ДДС. Frontend и backend реализуют единый контракт [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml).
 
 ## Стек
 
@@ -9,36 +9,51 @@
 - Spring Web MVC и Bean Validation;
 - Spring Security, JWT HS256;
 - raw WebSocket с одноразовым ticket;
-- Maven;
-- in-memory учебное хранилище для MVP.
+- PostgreSQL 17, JDBC и Flyway;
+- Maven и Docker Compose;
 - React 19, TypeScript и Next.js/vinext;
 - REST API и WebSocket для обновления карточки в реальном времени.
 
-## Быстрый запуск всего приложения
+## Быстрый запуск через Docker Compose
 
-Потребуются Java 21, Maven, Node.js 22.13+ и npm.
+Понадобится Docker Desktop или Docker Engine с Compose. Java, Maven, Node.js и PostgreSQL устанавливать локально не нужно.
 
-В первом терминале из корня репозитория запустите backend:
-
-```bash
-mvn spring-boot:run
-```
-
-Во втором терминале запустите frontend:
+Из корня репозитория выполните:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up --build
 ```
+
+После запуска доступны:
+
+- интерфейс: `http://localhost:3000`;
+- backend: `http://localhost:8080`;
+- Swagger UI: `http://localhost:8080/swagger-ui.html`;
+- PostgreSQL: `localhost:55432`.
 
 Откройте интерфейс: `http://localhost:3000`. Войдите с логином `trainee` и паролем `trainee`.
 
-Backend будет доступен на `http://localhost:8080`. Проверка состояния:
+Проверка состояния контейнеров и backend:
 
 ```bash
+docker compose ps
 curl http://localhost:8080/actuator/health
 ```
+
+Остановка без удаления данных:
+
+```bash
+docker compose down
+```
+
+Состояние занятия сохранится в Docker volume `postgres_data`. Полный сброс демонстрационных данных выполняется отдельной командой, которая безвозвратно удаляет этот volume:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Подробные варианты запуска, локальная разработка и диагностика описаны в [`docs/POSTGRES_DOCKER.md`](docs/POSTGRES_DOCKER.md).
 
 Интерактивная документация Swagger UI:
 
@@ -85,13 +100,14 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 - обязательность звонка и комментария согласно сценарию;
 - идемпотентность команд;
 - аудит действий в timeline;
+- сохранение состояния занятия, карточек, звонков и оценки в PostgreSQL;
 - JWT и одноразовые WebSocket-ticket;
-- realtime-события и REST replay по `sequence`;
+- сохранение realtime-событий и REST replay по `sequence` после перезапуска backend;
 - итоговая оценка занятия;
 - единый формат ошибок.
 - Swagger UI, работающий непосредственно с версионированным OpenAPI-контрактом.
 
-При запуске создаётся демонстрационная сессия с одной карточкой. Данные хранятся в памяти и сбрасываются после перезапуска — это сознательное ограничение первой интеграционной версии. Следующий инфраструктурный шаг — подключение PostgreSQL и миграций, не меняющее DTO фронтенда.
+При первом запуске создаётся демонстрационная сессия с одной карточкой. После этого backend загружает её состояние из PostgreSQL. Миграции схемы применяются Flyway автоматически до инициализации учебного сценария. API-контракт и DTO frontend при подключении БД не изменились.
 
 ## WebSocket
 
@@ -126,8 +142,13 @@ Frontend-тест собирает production bundle, проверяет сер�
 | Переменная | Назначение | Значение по умолчанию |
 |---|---|---|
 | `SERVER_PORT` | HTTP-порт | `8080` |
+| `SPRING_DATASOURCE_URL` | JDBC URL PostgreSQL | `jdbc:postgresql://localhost:5432/arm112` |
+| `SPRING_DATASOURCE_USERNAME` | пользователь PostgreSQL | `arm112` |
+| `SPRING_DATASOURCE_PASSWORD` | пароль PostgreSQL | `arm112` |
 | `ARM112_JWT_SECRET` | локальный ключ JWT, заменить вне dev | встроенный dev-ключ |
 | `ARM112_ALLOWED_ORIGINS` | origins фронтенда через запятую | `http://localhost:3000,http://localhost:5173` |
+
+Параметры Compose можно переопределить через `.env`; полный пример находится в [`.env.example`](.env.example). В частности, `POSTGRES_PORT`, `BACKEND_PORT` и `FRONTEND_PORT` меняют опубликованные порты хоста.
 
 API-контракт и правила независимой разработки фронтенда и бэкенда находятся в [`docs/contracts/README.md`](docs/contracts/README.md).
 

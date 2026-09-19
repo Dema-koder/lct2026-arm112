@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:arm112-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+  flyway:
+    enabled: true
+
+arm112:
+  jwt-secret: local-training-secret-key-change-me-2026
+  token-ttl: PT8H
+  allowed-origins: http://localhost:3000,http://localhost:5173
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi.yaml
+    disable-swagger-default-url: true

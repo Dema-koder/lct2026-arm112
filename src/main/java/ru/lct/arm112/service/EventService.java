@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import ru.lct.arm112.api.ApiModels.RealtimeEvent;
+import ru.lct.arm112.persistence.RealtimeEventStore;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,29 +20,29 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class EventService {
     private final ObjectMapper objectMapper;
-    private final Map<UUID, CopyOnWriteArrayList<RealtimeEvent>> events = new ConcurrentHashMap<>();
+    private final RealtimeEventStore eventStore;
     private final Map<UUID, AtomicLong> sequences = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<WebSocketSession> sockets = new CopyOnWriteArrayList<>();
 
-    public EventService(ObjectMapper objectMapper) {
+    public EventService(ObjectMapper objectMapper, RealtimeEventStore eventStore) {
         this.objectMapper = objectMapper;
+        this.eventStore = eventStore;
     }
 
     public RealtimeEvent publish(UUID sessionId, String type, String resourceId,
                                  Map<String, Object> payload) {
-        long sequence = sequences.computeIfAbsent(sessionId, ignored -> new AtomicLong()).incrementAndGet();
+        long sequence = sequences.computeIfAbsent(sessionId,
+                ignored -> new AtomicLong(eventStore.lastSequence(sessionId))).incrementAndGet();
         Instant now = Instant.now();
         RealtimeEvent event = new RealtimeEvent(UUID.randomUUID(), type, now, now,
                 sessionId, sequence, resourceId, payload);
-        events.computeIfAbsent(sessionId, ignored -> new CopyOnWriteArrayList<>()).add(event);
+        eventStore.append(event);
         broadcast(event);
         return event;
     }
 
     public List<RealtimeEvent> after(UUID sessionId, long afterSequence) {
-        return events.getOrDefault(sessionId, new CopyOnWriteArrayList<>()).stream()
-                .filter(event -> event.sequence() > afterSequence)
-                .toList();
+        return eventStore.after(sessionId, afterSequence);
     }
 
     public void register(WebSocketSession session) {

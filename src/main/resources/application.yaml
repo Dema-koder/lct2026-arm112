@@ -1,6 +1,14 @@
 spring:
   application:
     name: arm112-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/arm112}
+    username: ${SPRING_DATASOURCE_USERNAME:arm112}
+    password: ${SPRING_DATASOURCE_PASSWORD:arm112}
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_MAXIMUM_POOL_SIZE:10}
+  flyway:
+    enabled: true
   jackson:
     default-property-inclusion: always
 

@@ -2,3 +2,9 @@
 .idea
 target
 *.log
+frontend/node_modules
+frontend/dist
+frontend/.next
+frontend/.vinext
+frontend/.wrangler
+docs/materials

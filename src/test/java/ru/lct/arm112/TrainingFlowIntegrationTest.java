@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.util.ReflectionTestUtils;
+import ru.lct.arm112.persistence.TrainingStateStore;
 import ru.lct.arm112.service.TrainingEngine;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -32,6 +33,9 @@ class TrainingFlowIntegrationTest {
 
     @Autowired
     TrainingEngine trainingEngine;
+
+    @Autowired
+    TrainingStateStore stateStore;
 
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -142,6 +146,16 @@ class TrainingFlowIntegrationTest {
         HttpResponse<String> replay = get("/api/v1/training-sessions/" + SESSION_ID
                 + "/events?afterSequence=0", token);
         assertThat(json(replay).get("items").size()).isGreaterThanOrEqualTo(8);
+
+        TrainingStateStore.TrainingSnapshot persisted = stateStore.load().orElseThrow();
+        assertThat(persisted.sessionState()).isEqualTo("COMPLETED");
+        assertThat(persisted.cards()).singleElement()
+                .extracting(TrainingStateStore.CardState::status)
+                .isEqualTo("COMPLETED");
+        assertThat(persisted.calls()).singleElement()
+                .extracting(TrainingStateStore.CallState::state)
+                .isEqualTo("ENDED");
+        assertThat(persisted.assessments()).hasSize(1);
     }
 
     private HttpResponse<String> get(String path, String token) throws Exception {
