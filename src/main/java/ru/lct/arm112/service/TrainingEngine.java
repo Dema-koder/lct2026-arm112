@@ -321,7 +321,8 @@ public class TrainingEngine {
         Instant now = Instant.now();
         for (MutableCard card : cards.values()) {
             synchronized (card) {
-                if (!card.acceptanceOverdue && card.status.equals("RECEIVED")
+                if (!card.acceptanceOverdue
+                        && List.of("RECEIVED", "RECEIVED_BY_SERVICE").contains(card.status)
                         && now.isAfter(card.acceptanceDeadlineAt)) {
                     card.acceptanceOverdue = true;
                     publishCard(card, "card.acceptance_overdue");

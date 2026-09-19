@@ -37,4 +37,6 @@ test("keeps the UI aligned with backend contract v0.2", async () => {
   assert.match(page, /Поиск происшествий/);
   assert.match(page, /Начало реагирования/);
   assert.match(page, /Завершить занятие/);
+  assert.match(page, /\["RECEIVED", "RECEIVED_BY_SERVICE"\]\.includes\(card\.status\)/);
+  assert.match(page, /\["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"\]\.includes\(card\.status\)/);
 });

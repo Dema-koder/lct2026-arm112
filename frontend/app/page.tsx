@@ -80,6 +80,16 @@ function elapsed(from: string, now: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
+function journalDeadline(card: CardListItem) {
+  if (["RECEIVED", "RECEIVED_BY_SERVICE"].includes(card.status)) {
+    return card.sla.acceptanceDeadlineAt;
+  }
+  if (["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"].includes(card.status)) {
+    return card.sla.processingDeadlineAt;
+  }
+  return null;
+}
+
 function getMessage(error: unknown) {
   return error instanceof Error ? error.message : "Неизвестная ошибка";
 }
@@ -527,8 +537,9 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
         <div className="incident-columns"><span>Связи</span><span>ЧС</span><span>Опер.</span><span>АРМ</span><span>Номер</span><span>Дата</span><span>Время</span><span>Тип происшествия</span><span>Постр.</span><span>Адрес</span><span>Статус службы</span></div>
         {cards.length === 0 ? (
           <div className="empty-list">{loading ? "Обновление…" : "Карточки не найдены"}</div>
-        ) : cards.map((item) => (
-          <button key={item.id} className={`incident-row ${item.sla.acceptanceOverdue || item.sla.processingOverdue ? "overdue" : ""}`} onClick={() => onOpen(item.id)}>
+        ) : cards.map((item) => {
+          const deadline = journalDeadline(item);
+          return <button key={item.id} className={`incident-row ${item.sla.acceptanceOverdue || item.sla.processingOverdue ? "overdue" : ""}`} onClick={() => onOpen(item.id)}>
             <span>⌄　◆　⚡</span><span>0</span><span>0</span><span>12</span><b>{item.number.replace(/\D/g, "").slice(-8)}</b>
             <span>{new Date(item.receivedAt).toLocaleDateString("ru-RU")}</span><strong>{timeOnly(item.receivedAt)}</strong>
             <b title={item.incidentTypeLabel}>{item.incidentTypeLabel}</b>
@@ -540,11 +551,9 @@ function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loadi
               <span className="descr-meta">{dateTime(item.receivedAt)} {item.senderLabel}　-</span>
               <span className="descr-text">{item.description}</span>
             </em>
-            {(item.status === "RECEIVED" || item.status === "ACCEPTED" || item.status === "RESPONSE_STARTED") && (
-              <i>{countdown(item.status === "RECEIVED" ? item.sla.acceptanceDeadlineAt : item.sla.processingDeadlineAt, now)}</i>
-            )}
-          </button>
-        ))}
+            {deadline && <i>{countdown(deadline, now)}</i>}
+          </button>;
+        })}
         <div className="pagination">Страница: 1　 Записей на странице: 10　 <b>1–{cards.length} из {cards.length}</b>　‹　›</div>
       </div>
     </section>

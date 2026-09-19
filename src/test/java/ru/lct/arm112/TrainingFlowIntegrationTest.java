@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.util.ReflectionTestUtils;
+import ru.lct.arm112.service.TrainingEngine;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -12,6 +14,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +29,9 @@ class TrainingFlowIntegrationTest {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    TrainingEngine trainingEngine;
 
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -54,6 +61,20 @@ class TrainingFlowIntegrationTest {
         HttpResponse<String> context = get("/api/v1/trainee/context", token);
         assertThat(context.statusCode()).isEqualTo(200);
         assertThat(json(context).get("activeSession").get("mode").asText()).isEqualTo("CARD_ACTIONS");
+
+        HttpResponse<String> opened = get("/api/v1/cards/" + CARD_ID, token);
+        assertThat(json(opened).get("status").asText()).isEqualTo("RECEIVED_BY_SERVICE");
+
+        // Открытая, но ещё не принятая карточка не должна выпадать из контроля
+        // 30-секундного норматива после автоматического RECEIVE.
+        @SuppressWarnings("unchecked")
+        Map<UUID, Object> cards = (Map<UUID, Object>) ReflectionTestUtils.getField(trainingEngine, "cards");
+        Object mutableCard = cards.get(CARD_ID);
+        ReflectionTestUtils.setField(mutableCard, "acceptanceDeadlineAt", Instant.now().minusSeconds(1));
+        ReflectionTestUtils.invokeMethod(trainingEngine, "detectOverdue");
+
+        HttpResponse<String> overdue = get("/api/v1/cards/" + CARD_ID, token);
+        assertThat(json(overdue).get("sla").get("acceptanceOverdue").asBoolean()).isTrue();
 
         HttpResponse<String> invalidDecline = post("/api/v1/cards/" + CARD_ID + "/acceptance",
                 "{\"action\":\"DECLINE\"}", token, UUID.randomUUID().toString());
