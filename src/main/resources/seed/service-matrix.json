@@ -1,0 +1,315 @@
+{
+  "fire.garbage": [
+    "101",
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "GOR_HOZ",
+    "CODD",
+    "MAYOR",
+    "OATI",
+    "OIV",
+    "OIV_TINAO",
+    "ECO"
+  ],
+  "fire.apartment": [
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "MOSLIFT",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OATI",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fire.building": [
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "MOEK",
+    "OEK",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OATI",
+    "ROSGVARD",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fire.smoke": [
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "MOSLIFT",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fire.vehicle": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fire.grass": [
+    "101",
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "GOR_HOZ",
+    "CODD",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fire.alarm": [
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "METRO",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "dtp.injured": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "ROSGVARD"
+  ],
+  "dtp.no_injured": [
+    "102",
+    "MOSGORTRANS",
+    "CODD",
+    "MAYOR"
+  ],
+  "dtp.water": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "explosion": [
+    "101",
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "MOSVODOKANAL",
+    "OEK",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "OATI",
+    "ROSGVARD",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "explosion.threat": [
+    "101",
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "CODD",
+    "MOSBEZ",
+    "MAYOR",
+    "ROSGVARD",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "gas.smell": [
+    "101",
+    "103",
+    "104",
+    "CEMP",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "fight": [
+    "102",
+    "103",
+    "MAYOR",
+    "ROSGVARD"
+  ],
+  "crime.robbery": [
+    "102",
+    "103",
+    "MOSBEZ",
+    "ROSGVARD"
+  ],
+  "crime.hooligan": [
+    "102",
+    "103"
+  ],
+  "medical.trauma": [
+    "103"
+  ],
+  "medical.illness": [
+    "103"
+  ],
+  "medical.suicide": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MAYOR"
+  ],
+  "person.danger": [
+    "101",
+    "102",
+    "103",
+    "MOSBEZ",
+    "MAYOR",
+    "ROSGVARD"
+  ],
+  "person.missing": [
+    "102",
+    "103"
+  ],
+  "person.body": [
+    "102",
+    "103",
+    "CEMP",
+    "CODD",
+    "MAYOR",
+    "ROSGVARD"
+  ],
+  "water.rescue": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "utility.water": [
+    "102",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "MOEK",
+    "MAYOR",
+    "OATI",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "utility.elevator": [
+    "GOR_HOZ",
+    "MOSLIFT",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "utility.power": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "OEK",
+    "MAYOR",
+    "OATI",
+    "ROSGVARD",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "tree.fallen": [
+    "101",
+    "102",
+    "103",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "OEK",
+    "CODD",
+    "MAYOR",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "manhole.open": [
+    "101",
+    "102",
+    "104",
+    "GOR_HOZ",
+    "MOSVODOKANAL",
+    "MOEK",
+    "CODD",
+    "MAYOR",
+    "MOSVODOSTOK",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "collapse.threat": [
+    "101",
+    "102",
+    "103",
+    "104",
+    "CEMP",
+    "MOSGORTRANS",
+    "GOR_HOZ",
+    "CODD",
+    "MAYOR",
+    "ROSGVARD",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "animal": [
+    "102",
+    "103",
+    "CEMP",
+    "GOR_HOZ",
+    "OIV",
+    "OIV_TINAO"
+  ],
+  "wrong_number": [],
+  "cancel": [],
+  "test_call": [],
+  "consult": [],
+  "foreign": []
+}

@@ -11,9 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WsTicketService {
     private final Map<String, Ticket> tickets = new ConcurrentHashMap<>();
 
-    public Ticket issue(String subject) {
+    public Ticket issue(String subject, String role) {
         Instant expiresAt = Instant.now().plusSeconds(30);
-        Ticket ticket = new Ticket(UUID.randomUUID().toString(), subject, expiresAt);
+        Ticket ticket = new Ticket(UUID.randomUUID().toString(), subject, role, expiresAt);
         tickets.put(ticket.value(), ticket);
         return ticket;
     }
@@ -26,5 +26,5 @@ public class WsTicketService {
         return ticket;
     }
 
-    public record Ticket(String value, String subject, Instant expiresAt) {}
+    public record Ticket(String value, String subject, String role, Instant expiresAt) {}
 }
