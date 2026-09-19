@@ -1,8 +1,12 @@
 openapi: 3.1.0
 info:
-  title: ARM-112 DDS Trainee API
-  version: 0.2.0-draft
-  description: Контракт интерфейса обучающегося ДДС и бэкенда тренажёра.
+  title: ARM-112 Training Service API
+  version: 0.3.0
+  description: |
+    Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
+    обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
+    персональные занятия, оценка ИИ с приоритетом оценки преподавателя, аудит.
+    Все ответы строгие (`additionalProperties: false`): новое поле — новая версия контракта.
 servers:
   - url: /api/v1
 security:
@@ -14,9 +18,13 @@ tags:
   - name: References
   - name: Training
   - name: Cards
+  - name: Drafts
   - name: Calls
   - name: Assessment
+  - name: Teacher
+  - name: Admin
 paths:
+  # ------------------------------------------------------------------ auth
   /auth/login:
     post:
       tags: [Auth]
@@ -46,6 +54,18 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/User'}
         '401': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/password:
+    post:
+      tags: [Auth]
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PasswordChangeRequest'}
+      responses:
+        '204': {description: Пароль изменён}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
   /auth/ws-ticket:
     post:
       tags: [Auth]
@@ -55,13 +75,8 @@ paths:
           description: Одноразовый билет WebSocket
           content:
             application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [ticket, expiresAt]
-                properties:
-                  ticket: {type: string}
-                  expiresAt: {type: string, format: date-time}
+              schema: {$ref: '#/components/schemas/WsTicket'}
+  # ------------------------------------------------------------------ trainee
   /trainee/context:
     get:
       tags: [Trainee]
@@ -72,6 +87,55 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TraineeContext'}
+  /trainee/results:
+    get:
+      tags: [Trainee]
+      operationId: listTraineeResults
+      description: Свои результаты. Зачёт виден только после публикации преподавателем (visible=false до этого).
+      responses:
+        '200':
+          description: Результаты занятий
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ResultItem'}
+  /trainee/rating:
+    get:
+      tags: [Trainee]
+      operationId: getTraineeRating
+      responses:
+        '200':
+          description: Рейтинг и место в группе
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Rating'}
+  /trainee/materials:
+    get:
+      tags: [Trainee]
+      operationId: listTraineeMaterials
+      responses:
+        '200':
+          description: Материалы, назначенные группе
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Material'}
+  /trainee/materials/{id}/download:
+    get:
+      tags: [Trainee]
+      operationId: downloadMaterial
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Файл материала
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
+        '403': {$ref: '#/components/responses/ErrorResponse'}
+  # ------------------------------------------------------------------ references
   /references:
     get:
       tags: [References]
@@ -89,13 +153,58 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ReferenceBundle'}
+  /references/incident-types:
+    get:
+      tags: [References]
+      operationId: searchIncidentTypes
+      parameters:
+        - in: query
+          name: query
+          schema: {type: string}
+          description: Поиск по неизменяемой части слова и синонимам, как в оригинале
+      responses:
+        '200':
+          description: Типы происшествий
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/IncidentTypeItem'}
+  /references/survey-cards/{incidentTypeId}:
+    get:
+      tags: [References]
+      operationId: getSurveyCard
+      parameters:
+        - in: path
+          name: incidentTypeId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Опросная карта типа
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SurveyCard'}
+  # ------------------------------------------------------------------ training sessions
+  /training-sessions:
+    get:
+      tags: [Training]
+      operationId: listTrainingSessions
+      responses:
+        '200':
+          description: Свои занятия
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/SessionSummary'}
   /training-sessions/active:
     get:
       tags: [Training]
       operationId: getActiveTrainingSession
       responses:
         '200':
-          description: Назначенная активная сессия
+          description: Активная персональная сессия
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TrainingSession'}
@@ -112,6 +221,7 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TrainingSession'}
+        '403': {$ref: '#/components/responses/ErrorResponse'}
         '404': {$ref: '#/components/responses/ErrorResponse'}
   /training-sessions/{sessionId}/submit:
     post:
@@ -122,16 +232,10 @@ paths:
         - {$ref: '#/components/parameters/IdempotencyKey'}
       responses:
         '202':
-          description: Оценка запущена
+          description: Оценка рассчитана
           content:
             application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [assessmentId, state]
-                properties:
-                  assessmentId: {type: string, format: uuid}
-                  state: {const: CALCULATING}
+              schema: {$ref: '#/components/schemas/SubmitResponse'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
   /training-sessions/{sessionId}/events:
@@ -149,14 +253,8 @@ paths:
           description: Пропущенные события
           content:
             application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [items]
-                properties:
-                  items:
-                    type: array
-                    items: {$ref: '#/components/schemas/RealtimeEvent'}
+              schema: {$ref: '#/components/schemas/EventPage'}
+  # ------------------------------------------------------------------ cards (ДДС)
   /cards:
     get:
       tags: [Cards]
@@ -170,14 +268,11 @@ paths:
           name: status
           schema: {$ref: '#/components/schemas/CardStatus'}
         - in: query
-          name: cursor
-          schema: {type: string}
-        - in: query
           name: limit
           schema: {type: integer, minimum: 1, maximum: 100, default: 25}
       responses:
         '200':
-          description: Очередь карточек
+          description: Журнал карточек своей сессии
           content:
             application/json:
               schema: {$ref: '#/components/schemas/CardPage'}
@@ -189,7 +284,7 @@ paths:
         - {$ref: '#/components/parameters/CardId'}
       responses:
         '200':
-          description: Готовая карточка ДДС
+          description: Карточка ДДС. Первое открытие обучающимся переводит её в «Получена службой»
           content:
             application/json:
               schema: {$ref: '#/components/schemas/IncidentCard'}
@@ -245,14 +340,7 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [shortNumber]
-              properties:
-                shortNumber:
-                  type: string
-                  pattern: '^[0-9]{3,4}$'
+            schema: {$ref: '#/components/schemas/StartCallRequest'}
       responses:
         '201':
           description: Исходящий звонок начат
@@ -288,6 +376,89 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/OutboundCall'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
+  # ------------------------------------------------------------------ drafts (оператор 112)
+  /card-drafts:
+    get:
+      tags: [Drafts]
+      operationId: listCardDrafts
+      parameters:
+        - in: query
+          name: sessionId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Черновики карточек сессии
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/CardDraft'}
+    post:
+      tags: [Drafts]
+      operationId: createCardDraft
+      description: Следующая вводная из очереди занятия. Если есть незакрытый черновик — возвращается он.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateDraftRequest'}
+      responses:
+        '201':
+          description: Черновик с вводной и таймером
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardDraft'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /card-drafts/{draftId}:
+    get:
+      tags: [Drafts]
+      operationId: getCardDraft
+      parameters:
+        - {$ref: '#/components/parameters/DraftId'}
+      responses:
+        '200':
+          description: Черновик
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardDraft'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+    patch:
+      tags: [Drafts]
+      operationId: patchCardDraft
+      description: Частичное обновление полей. Службы пересчитываются по ЕКП при смене типов; автоматические удалить нельзя.
+      parameters:
+        - {$ref: '#/components/parameters/DraftId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CardDraftPatch'}
+      responses:
+        '200':
+          description: Обновлённый черновик (с подсказками в режиме тренировки)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardDraft'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /card-drafts/{draftId}/save:
+    post:
+      tags: [Drafts]
+      operationId: saveCardDraft
+      description: Фиксирует время, делает карточку сценарием «сформировано обучающимися»; последняя вводная завершает занятие.
+      parameters:
+        - {$ref: '#/components/parameters/DraftId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      responses:
+        '200':
+          description: Карточка сохранена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardDraft'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  # ------------------------------------------------------------------ assessment
   /assessments/{assessmentId}:
     get:
       tags: [Assessment]
@@ -299,11 +470,538 @@ paths:
           schema: {type: string, format: uuid}
       responses:
         '200':
-          description: Результат занятия
+          description: Итоговая оценка (преподавателя, если есть, иначе ИИ)
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Assessment'}
+        '403':
+          description: RESULTS_NOT_PUBLISHED — зачёт ещё не опубликован, либо чужой результат
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorEnvelope'}
         '404': {$ref: '#/components/responses/ErrorResponse'}
+  # ------------------------------------------------------------------ teacher
+  /teacher/scenarios:
+    get:
+      tags: [Teacher]
+      operationId: listScenarios
+      parameters:
+        - {in: query, name: category, schema: {type: string}}
+        - {in: query, name: source, schema: {$ref: '#/components/schemas/ScenarioSource'}}
+        - {in: query, name: confirmed, schema: {type: boolean}}
+      responses:
+        '200':
+          description: Библиотека сценариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ScenarioListItem'}
+    post:
+      tags: [Teacher]
+      operationId: createScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ScenarioUpsert'}
+      responses:
+        '201':
+          description: Сценарий создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/generate:
+    post:
+      tags: [Teacher]
+      operationId: generateScenarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GenerateRequest'}
+      responses:
+        '201':
+          description: Сгенерированные сценарии (эталон не подтверждён)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/{id}:
+    get:
+      tags: [Teacher]
+      operationId: getScenario
+      parameters:
+        - {$ref: '#/components/parameters/StringId'}
+      responses:
+        '200':
+          description: Сценарий с эталоном
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scenario'}
+    put:
+      tags: [Teacher]
+      operationId: updateScenario
+      parameters:
+        - {$ref: '#/components/parameters/StringId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ScenarioUpsert'}
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/{id}/confirm-reference:
+    post:
+      tags: [Teacher]
+      operationId: confirmReference
+      parameters:
+        - {$ref: '#/components/parameters/StringId'}
+      responses:
+        '200':
+          description: Эталон подтверждён преподавателем
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Scenario'}
+  /teacher/groups:
+    get:
+      tags: [Teacher]
+      operationId: listTeacherGroups
+      responses:
+        '200':
+          description: Свои группы с участниками
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Group'}
+  /teacher/lessons:
+    get:
+      tags: [Teacher]
+      operationId: listLessons
+      parameters:
+        - {in: query, name: state, schema: {$ref: '#/components/schemas/LessonState'}}
+      responses:
+        '200':
+          description: Свои занятия
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Lesson'}
+    post:
+      tags: [Teacher]
+      operationId: createLesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LessonCreate'}
+      responses:
+        '201':
+          description: Занятие создано (черновик, сессии ожидают старта)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lesson'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/lessons/{id}:
+    get:
+      tags: [Teacher]
+      operationId: getLesson
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Занятие
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lesson'}
+        '403': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/lessons/{id}/start:
+    post:
+      tags: [Teacher]
+      operationId: startLesson
+      description: У каждого участника стартует персональная сессия с его АРМ из учётной записи.
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Занятие начато
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lesson'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/lessons/{id}/complete:
+    post:
+      tags: [Teacher]
+      operationId: completeLesson
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Занятие завершено, незавершённые сессии оценены по факту
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lesson'}
+  /teacher/lessons/{id}/publish:
+    post:
+      tags: [Teacher]
+      operationId: publishLessonResults
+      description: Только для зачёта (kind=EXAM) после завершения.
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Результаты опубликованы
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lesson'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/lessons/{id}/monitor:
+    get:
+      tags: [Teacher]
+      operationId: monitorLesson
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Состояние всех участников
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonMonitor'}
+  /teacher/lessons/{id}/report:
+    get:
+      tags: [Teacher]
+      operationId: lessonReport
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Отчёт по занятию
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonReport'}
+  /teacher/lessons/{id}/report.csv:
+    get:
+      tags: [Teacher]
+      operationId: lessonReportCsv
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Отчёт в CSV (UTF-8 с BOM, разделитель «;»)
+          content:
+            text/csv:
+              schema: {type: string}
+  /teacher/sessions/{sessionId}:
+    get:
+      tags: [Teacher]
+      operationId: getSessionDetail
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+      responses:
+        '200':
+          description: Сессия обучающегося целиком
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SessionDetail'}
+        '403': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/sessions/{sessionId}/assessment:
+    put:
+      tags: [Teacher]
+      operationId: assessSession
+      description: Оценка преподавателя хранится рядом с оценкой ИИ и становится итоговой.
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TeacherAssessment'}
+      responses:
+        '200':
+          description: Итоговая оценка
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Assessment'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /teacher/materials:
+    get:
+      tags: [Teacher]
+      operationId: listMaterials
+      responses:
+        '200':
+          description: Свои материалы
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Material'}
+    post:
+      tags: [Teacher]
+      operationId: uploadMaterial
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title]
+              properties:
+                file: {type: string, format: binary}
+                title: {type: string}
+                groupIds:
+                  type: array
+                  items: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Материал загружен
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Material'}
+  /teacher/materials/{id}:
+    delete:
+      tags: [Teacher]
+      operationId: deleteMaterial
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '204': {description: Удалено}
+  # ------------------------------------------------------------------ admin
+  /admin/users:
+    get:
+      tags: [Admin]
+      operationId: listUsers
+      parameters:
+        - {in: query, name: role, schema: {$ref: '#/components/schemas/Role'}}
+        - {in: query, name: active, schema: {type: boolean}}
+      responses:
+        '200':
+          description: Пользователи
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/UserAdminView'}
+    post:
+      tags: [Admin]
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserCreate'}
+      responses:
+        '201':
+          description: Создан
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserAdminView'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/users/{id}:
+    put:
+      tags: [Admin]
+      operationId: updateUser
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserUpdate'}
+      responses:
+        '200':
+          description: Обновлён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserAdminView'}
+  /admin/users/{id}/block:
+    post:
+      tags: [Admin]
+      operationId: blockUser
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Заблокирован, результаты сохранены
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserAdminView'}
+  /admin/users/{id}/unblock:
+    post:
+      tags: [Admin]
+      operationId: unblockUser
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Разблокирован
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserAdminView'}
+  /admin/users/{id}/reset-password:
+    post:
+      tags: [Admin]
+      operationId: resetPassword
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PasswordReset'}
+      responses:
+        '204': {description: Пароль сброшен}
+  /admin/groups:
+    get:
+      tags: [Admin]
+      operationId: listGroups
+      responses:
+        '200':
+          description: Все группы
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Group'}
+    post:
+      tags: [Admin]
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GroupUpsert'}
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Group'}
+  /admin/groups/{id}:
+    put:
+      tags: [Admin]
+      operationId: updateGroup
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GroupUpsert'}
+      responses:
+        '200':
+          description: Обновлена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Group'}
+  /admin/settings:
+    get:
+      tags: [Admin]
+      operationId: getSettings
+      responses:
+        '200':
+          description: Настройки
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Settings'}
+    put:
+      tags: [Admin]
+      operationId: updateSettings
+      description: Частичное обновление. audit.retention_days не может быть меньше 180.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Settings'}
+      responses:
+        '200':
+          description: Настройки после изменения
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Settings'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/audit:
+    get:
+      tags: [Admin]
+      operationId: queryAudit
+      parameters:
+        - {in: query, name: actorId, schema: {type: string, format: uuid}}
+        - {in: query, name: role, schema: {$ref: '#/components/schemas/Role'}}
+        - {in: query, name: action, schema: {type: string}}
+        - {in: query, name: from, schema: {type: string, format: date-time}}
+        - {in: query, name: to, schema: {type: string, format: date-time}}
+        - {in: query, name: cursor, schema: {type: string}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 500, default: 50}}
+      responses:
+        '200':
+          description: Страница журнала аудита (от новых к старым)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuditPage'}
+  /admin/system/health:
+    get:
+      tags: [Admin]
+      operationId: systemHealth
+      responses:
+        '200':
+          description: Состояние сервисов
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SystemHealth'}
+  /admin/system/log:
+    get:
+      tags: [Admin]
+      operationId: systemLog
+      parameters:
+        - {in: query, name: lines, schema: {type: integer, minimum: 1, maximum: 2000, default: 200}}
+      responses:
+        '200':
+          description: Хвост файла логов
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LogTail'}
+  /admin/backups:
+    get:
+      tags: [Admin]
+      operationId: listBackups
+      responses:
+        '200':
+          description: Резервные копии
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/BackupInfo'}
+    post:
+      tags: [Admin]
+      operationId: createBackup
+      responses:
+        '201':
+          description: Копия создана
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BackupInfo'}
+  /admin/backups/{fileName}/restore:
+    post:
+      tags: [Admin]
+      operationId: restoreBackup
+      description: Необратимо заменяет базу содержимым копии. Требует confirm=RESTORE.
+      parameters:
+        - {in: path, name: fileName, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RestoreRequest'}
+      responses:
+        '204': {description: Восстановлено}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
 components:
   securitySchemes:
     bearerAuth:
@@ -314,7 +1012,7 @@ components:
       type: apiKey
       in: header
       name: X-Contract-Version
-      description: Версия контракта клиента. Для текущего API укажите 0.2.
+      description: Версия контракта клиента. Для текущего API укажите 0.3.
   parameters:
     SessionId:
       in: path
@@ -331,6 +1029,21 @@ components:
       name: callId
       required: true
       schema: {type: string, format: uuid}
+    DraftId:
+      in: path
+      name: draftId
+      required: true
+      schema: {type: string, format: uuid}
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: {type: string, format: uuid}
+    StringId:
+      in: path
+      name: id
+      required: true
+      schema: {type: string}
     IdempotencyKey:
       in: header
       name: Idempotency-Key
@@ -343,6 +1056,36 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
   schemas:
+    # ---------------------------------------------------------------- common enums
+    Role:
+      type: string
+      enum: [ADMIN, TEACHER, TRAINEE]
+    LessonKind:
+      type: string
+      description: Тренировка — подсказки по ходу; проверка — результат сразу; зачёт — после публикации
+      enum: [TRAINING, CHECK, EXAM]
+    LessonMode:
+      type: string
+      enum: [CARD_FILL, CARD_ACTIONS]
+    LessonState:
+      type: string
+      enum: [DRAFT, ACTIVE, COMPLETED]
+    CardSource:
+      type: string
+      enum: [GENERATED, TRAINEE_MADE, MIXED]
+    ScenarioSource:
+      type: string
+      enum: [TICKET, GENERATED, TRAINEE_MADE]
+    SessionState:
+      type: string
+      enum: [PENDING, ACTIVE, COMPLETED]
+    CardStatus:
+      type: string
+      enum: [RECEIVED, RECEIVED_BY_SERVICE, ACCEPTED, NOT_ACCEPTED, RESPONSE_STARTED, ARRIVED, WORK_IN_PROGRESS, WORK_REFUSED, COMPLETED]
+    CardAction:
+      type: string
+      enum: [ACCEPT, DECLINE, START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE]
+    # ---------------------------------------------------------------- auth / users
     LoginRequest:
       type: object
       additionalProperties: false
@@ -358,14 +1101,31 @@ components:
         accessToken: {type: string}
         expiresAt: {type: string, format: date-time}
         user: {$ref: '#/components/schemas/User'}
+    PasswordChangeRequest:
+      type: object
+      additionalProperties: false
+      required: [current, next]
+      properties:
+        current: {type: string}
+        next: {type: string, minLength: 4, maxLength: 200}
+    WsTicket:
+      type: object
+      additionalProperties: false
+      required: [ticket, expiresAt]
+      properties:
+        ticket: {type: string}
+        expiresAt: {type: string, format: date-time}
     User:
       type: object
       additionalProperties: false
-      required: [id, displayName, role]
+      required: [id, displayName, role, login, workstationNumber, groupId]
       properties:
         id: {type: string, format: uuid}
         displayName: {type: string}
-        role: {const: TRAINEE}
+        role: {$ref: '#/components/schemas/Role'}
+        login: {type: string}
+        workstationNumber: {type: [string, 'null'], description: "Номер АРМ обучающегося из учётной записи"}
+        groupId: {type: [string, 'null'], format: uuid}
     Workstation:
       type: object
       additionalProperties: false
@@ -386,16 +1146,15 @@ components:
           anyOf:
             - {$ref: '#/components/schemas/TrainingSession'}
             - {type: 'null'}
+    # ---------------------------------------------------------------- sessions
     TrainingSession:
       type: object
       additionalProperties: false
-      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds]
+      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds, draftIds, lessonId, lessonKind, pendingScenarios]
       properties:
         id: {type: string, format: uuid}
-        mode: {const: CARD_ACTIONS}
-        state:
-          type: string
-          enum: [ASSIGNED, ACTIVE, SUBMITTED, ASSESSING, COMPLETED, CANCELLED, EXPIRED]
+        mode: {$ref: '#/components/schemas/LessonMode'}
+        state: {$ref: '#/components/schemas/SessionState'}
         title: {type: string}
         difficulty: {type: integer, minimum: 1, maximum: 10}
         referenceVersion: {type: string}
@@ -405,6 +1164,49 @@ components:
         cardIds:
           type: array
           items: {type: string, format: uuid}
+        draftIds:
+          type: array
+          items: {type: string, format: uuid}
+        lessonId: {type: string, format: uuid}
+        lessonKind: {$ref: '#/components/schemas/LessonKind'}
+        pendingScenarios: {type: integer, minimum: 0, description: "Сколько вводных ещё в очереди"}
+    SessionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, lessonId, lessonTitle, lessonKind, mode, state, startedAt, completedAt]
+      properties:
+        id: {type: string, format: uuid}
+        lessonId: {type: string, format: uuid}
+        lessonTitle: {type: string}
+        lessonKind: {anyOf: [{$ref: '#/components/schemas/LessonKind'}, {type: 'null'}]}
+        mode: {anyOf: [{$ref: '#/components/schemas/LessonMode'}, {type: 'null'}]}
+        state: {$ref: '#/components/schemas/SessionState'}
+        startedAt: {type: [string, 'null'], format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+    SubmitResponse:
+      type: object
+      additionalProperties: false
+      required: [assessmentId, state]
+      properties:
+        assessmentId: {type: string, format: uuid}
+        state: {type: string, enum: [CALCULATING, COMPLETED]}
+    EventPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/RealtimeEvent'}
+    Hint:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      description: Подсказка в режиме тренировки
+      properties:
+        field: {type: string}
+        message: {type: string}
+    # ---------------------------------------------------------------- cards
     CardPage:
       type: object
       additionalProperties: false
@@ -425,8 +1227,8 @@ components:
         receivedAt: {type: string, format: date-time}
         incidentTypeLabel: {type: string}
         addressLabel: {type: string}
-        description: {type: string, description: "Описание происшествия со слов заявителя — показывается в строке «Описание:» журнала"}
-        senderLabel: {type: string, description: "Кто создал карточку — оператор Службы 112 или внешняя информационная система"}
+        description: {type: string}
+        senderLabel: {type: string}
         status: {$ref: '#/components/schemas/CardStatus'}
         allowedActions:
           type: array
@@ -435,7 +1237,7 @@ components:
     IncidentCard:
       type: object
       additionalProperties: false
-      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls]
+      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls, hints, ownServiceCode]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -457,6 +1259,7 @@ components:
           items: {type: string}
         assignedServices:
           type: array
+          description: Все оповещённые по ЕКП службы — плитки панели; редактируется только своя
           items: {$ref: '#/components/schemas/DictionaryItem'}
         scenarioRequirements: {$ref: '#/components/schemas/ScenarioRequirements'}
         callTargets:
@@ -468,12 +1271,10 @@ components:
         outboundCalls:
           type: array
           items: {$ref: '#/components/schemas/OutboundCall'}
-    CardStatus:
-      type: string
-      enum: [RECEIVED, RECEIVED_BY_SERVICE, ACCEPTED, NOT_ACCEPTED, RESPONSE_STARTED, ARRIVED, WORK_IN_PROGRESS, WORK_REFUSED, COMPLETED]
-    CardAction:
-      type: string
-      enum: [ACCEPT, DECLINE, START_RESPONSE, ARRIVE, START_WORK, REFUSE_WORK, COMPLETE]
+        hints:
+          type: array
+          items: {$ref: '#/components/schemas/Hint'}
+        ownServiceCode: {type: string, description: "Код службы обучающегося (плитка, которую он ведёт)"}
     CardSla:
       type: object
       additionalProperties: false
@@ -501,6 +1302,12 @@ components:
         reasonCode: {type: [string, 'null']}
         comment: {type: [string, 'null'], maxLength: 2000}
         clientOccurredAt: {type: [string, 'null'], format: date-time}
+    StartCallRequest:
+      type: object
+      additionalProperties: false
+      required: [shortNumber]
+      properties:
+        shortNumber: {type: string, pattern: '^[0-9]{3,4}$'}
     Caller:
       type: object
       additionalProperties: false
@@ -546,7 +1353,7 @@ components:
     CardTimelineEntry:
       type: object
       additionalProperties: false
-      required: [id, action, resultingStatus, reasonCode, comment, occurredAt, actorLabel]
+      required: [id, action, resultingStatus, reasonCode, comment, occurredAt, actorLabel, actorRole]
       properties:
         id: {type: string, format: uuid}
         action:
@@ -557,6 +1364,7 @@ components:
         comment: {type: [string, 'null']}
         occurredAt: {type: string, format: date-time}
         actorLabel: {type: string}
+        actorRole: {type: string, enum: [SYSTEM, TRAINEE, TEACHER], description: "Действия преподавателя («делай, как я») не попадают в оценку"}
     OutboundCall:
       type: object
       additionalProperties: false
@@ -602,22 +1410,241 @@ components:
         reactionReasons:
           type: array
           items: {$ref: '#/components/schemas/DictionaryItem'}
+    IncidentTypeItem:
+      type: object
+      additionalProperties: false
+      required: [id, label, category, frequent, significant]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        category: {type: string}
+        frequent: {type: boolean, description: "Плашка «часто используемые»"}
+        significant: {type: boolean, description: "Плашка «значимые типы»"}
+    SurveyCard:
+      type: object
+      additionalProperties: false
+      required: [id, incidentTypeId, questions]
+      properties:
+        id: {type: string}
+        incidentTypeId: {type: string}
+        questions:
+          type: array
+          items: {$ref: '#/components/schemas/SurveyQuestion'}
+    SurveyQuestion:
+      type: object
+      additionalProperties: false
+      required: [id, text, kind, options]
+      properties:
+        id: {type: string}
+        text: {type: string}
+        kind: {type: string, enum: [CHOICE, TEXT]}
+        options:
+          type: array
+          items: {$ref: '#/components/schemas/DictionaryItem'}
+    # ---------------------------------------------------------------- scenarios / drafts
+    FormalAddress:
+      type: object
+      additionalProperties: false
+      description: Формализованный адрес по составу полей карточки оператора 112
+      properties:
+        country: {type: [string, 'null']}
+        region: {type: [string, 'null']}
+        locality: {type: [string, 'null']}
+        object: {type: [string, 'null']}
+        okrug: {type: [string, 'null']}
+        district: {type: [string, 'null']}
+        street: {type: [string, 'null']}
+        house: {type: [string, 'null']}
+        building: {type: [string, 'null']}
+        structure: {type: [string, 'null']}
+        apartment: {type: [string, 'null']}
+        entrance: {type: [string, 'null']}
+        floor: {type: [string, 'null']}
+        code: {type: [string, 'null']}
+        descriptive: {type: [string, 'null'], description: "Описательный адрес — ориентир заявителя"}
+    ScenarioCaller:
+      type: object
+      additionalProperties: false
+      properties:
+        fullName: {type: [string, 'null']}
+        phone: {type: [string, 'null']}
+    Scenario:
+      type: object
+      additionalProperties: false
+      required: [id, source, category, difficulty, callerText, caller, rawAddress, expectedAddress, expectedIncidentTypes, expectedServices, addressClarified, expectedDecision, expectedDecisionReason, outboundCallRequired, referenceConfirmed, referenceConfirmedAt, createdBy, createdAt]
+      properties:
+        id: {type: string}
+        source: {$ref: '#/components/schemas/ScenarioSource'}
+        category: {type: string}
+        difficulty: {type: integer, minimum: 1, maximum: 10}
+        callerText: {type: string, description: "Вводная «со слов заявителя»"}
+        caller: {anyOf: [{$ref: '#/components/schemas/ScenarioCaller'}, {type: 'null'}]}
+        rawAddress: {type: [string, 'null']}
+        expectedAddress: {anyOf: [{$ref: '#/components/schemas/FormalAddress'}, {type: 'null'}]}
+        expectedIncidentTypes:
+          type: array
+          items: {type: string}
+        expectedServices:
+          type: array
+          items: {type: string}
+        addressClarified: {type: boolean}
+        expectedDecision: {type: [string, 'null'], enum: [ACCEPT, DECLINE, null], description: "Пусто — вычисляется по ЕКП: принять, если служба обучающегося оповещается"}
+        expectedDecisionReason: {type: [string, 'null']}
+        outboundCallRequired: {type: boolean}
+        referenceConfirmed: {type: boolean}
+        referenceConfirmedAt: {type: [string, 'null'], format: date-time}
+        createdBy: {type: [string, 'null'], format: uuid}
+        createdAt: {type: string, format: date-time}
+    ScenarioListItem:
+      type: object
+      additionalProperties: false
+      required: [id, source, category, difficulty, callerText, rawAddress, expectedIncidentTypes, referenceConfirmed]
+      properties:
+        id: {type: string}
+        source: {$ref: '#/components/schemas/ScenarioSource'}
+        category: {type: string}
+        difficulty: {type: integer}
+        callerText: {type: string}
+        rawAddress: {type: [string, 'null']}
+        expectedIncidentTypes:
+          type: array
+          items: {type: string}
+        referenceConfirmed: {type: boolean}
+    ScenarioUpsert:
+      type: object
+      additionalProperties: false
+      required: [category, difficulty, callerText]
+      properties:
+        id: {type: [string, 'null'], maxLength: 64}
+        category: {type: string}
+        difficulty: {type: integer, minimum: 1, maximum: 10}
+        callerText: {type: string, maxLength: 2000}
+        caller: {anyOf: [{$ref: '#/components/schemas/ScenarioCaller'}, {type: 'null'}]}
+        rawAddress: {type: [string, 'null'], maxLength: 1000}
+        expectedAddress: {anyOf: [{$ref: '#/components/schemas/FormalAddress'}, {type: 'null'}]}
+        expectedIncidentTypes: {type: [array, 'null'], items: {type: string}}
+        expectedServices: {type: [array, 'null'], items: {type: string}}
+        expectedDecision: {type: [string, 'null']}
+        expectedDecisionReason: {type: [string, 'null']}
+        outboundCallRequired: {type: boolean}
+    GenerateRequest:
+      type: object
+      additionalProperties: false
+      required: [category, count, difficulty]
+      properties:
+        category: {type: string}
+        count: {type: integer, minimum: 1, maximum: 20}
+        difficulty: {type: integer, minimum: 1, maximum: 10}
+    CreateDraftRequest:
+      type: object
+      additionalProperties: false
+      required: [sessionId]
+      properties:
+        sessionId: {type: string, format: uuid}
+    DraftPhones:
+      type: object
+      additionalProperties: false
+      properties:
+        ani: {type: [string, 'null']}
+        provided: {type: [string, 'null']}
+        onSite: {type: [string, 'null']}
+    DraftCaller:
+      type: object
+      additionalProperties: false
+      properties:
+        fullName: {type: [string, 'null']}
+        status: {type: [string, 'null']}
+    DraftFlags:
+      type: object
+      additionalProperties: false
+      properties:
+        victims: {type: boolean}
+        victimsCount: {type: [integer, 'null']}
+        ambulanceRefused: {type: boolean}
+        blocked: {type: boolean}
+        noContact: {type: boolean}
+        callDropped: {type: boolean}
+    SurveyAnswer:
+      type: object
+      additionalProperties: false
+      required: [questionId]
+      properties:
+        questionId: {type: string}
+        optionId: {type: [string, 'null']}
+        text: {type: [string, 'null']}
+    DraftService:
+      type: object
+      additionalProperties: false
+      required: [code, label, auto]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        auto: {type: boolean, description: "Подобрана по ЕКП; удалить нельзя"}
+    CardDraft:
+      type: object
+      additionalProperties: false
+      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints]
+      properties:
+        id: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        scenarioId: {type: string}
+        number: {type: string}
+        startedAt: {type: string, format: date-time}
+        savedAt: {type: [string, 'null'], format: date-time}
+        deadlineAt: {type: [string, 'null'], format: date-time}
+        state: {type: string, enum: [DRAFT, SAVED]}
+        callerText: {type: string}
+        phones: {$ref: '#/components/schemas/DraftPhones'}
+        caller: {$ref: '#/components/schemas/DraftCaller'}
+        address: {$ref: '#/components/schemas/FormalAddress'}
+        flags: {$ref: '#/components/schemas/DraftFlags'}
+        incidentTypeIds: {type: array, items: {type: string}}
+        surveyAnswers: {type: array, items: {$ref: '#/components/schemas/SurveyAnswer'}}
+        description: {type: string, maxLength: 1999}
+        services: {type: array, items: {$ref: '#/components/schemas/DraftService'}}
+        hints: {type: array, items: {$ref: '#/components/schemas/Hint'}}
+    CardDraftPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        phones: {anyOf: [{$ref: '#/components/schemas/DraftPhones'}, {type: 'null'}]}
+        caller: {anyOf: [{$ref: '#/components/schemas/DraftCaller'}, {type: 'null'}]}
+        address: {anyOf: [{$ref: '#/components/schemas/FormalAddress'}, {type: 'null'}]}
+        flags: {anyOf: [{$ref: '#/components/schemas/DraftFlags'}, {type: 'null'}]}
+        incidentTypeIds: {type: [array, 'null'], items: {type: string}}
+        surveyAnswers: {type: [array, 'null'], items: {$ref: '#/components/schemas/SurveyAnswer'}}
+        description: {type: [string, 'null'], maxLength: 1999}
+        extraServiceCodes: {type: [array, 'null'], items: {type: string}, description: "Службы, добавленные вручную"}
+    # ---------------------------------------------------------------- assessment
     Assessment:
       type: object
       additionalProperties: false
-      required: [id, sessionId, state, totalScore, timingScore, actionsScore, communicationScore, languageScore, issues]
+      required: [id, sessionId, state, mode, totalScore, timingScore, actionsScore, communicationScore, languageScore, addressScore, classificationScore, servicesScore, syntaxErrors, issues, recommendations, source, aiTotalScore, teacherTotalScore, teacherComment, teacherAssessedAt]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
         state: {type: string, enum: [CALCULATING, COMPLETED, FAILED]}
-        totalScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        mode: {$ref: '#/components/schemas/LessonMode'}
+        totalScore: {type: [number, 'null'], minimum: 0, maximum: 100, description: "Итог: оценка преподавателя, если есть, иначе ИИ"}
         timingScore: {type: [number, 'null'], minimum: 0, maximum: 100}
         actionsScore: {type: [number, 'null'], minimum: 0, maximum: 100}
         communicationScore: {type: [number, 'null'], minimum: 0, maximum: 100}
         languageScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        addressScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        classificationScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        servicesScore: {type: [number, 'null'], minimum: 0, maximum: 100}
+        syntaxErrors: {type: [integer, 'null'], minimum: 0}
         issues:
           type: array
           items: {$ref: '#/components/schemas/AssessmentIssue'}
+        recommendations:
+          type: array
+          items: {type: string}
+        source: {type: string, enum: [AI, TEACHER]}
+        aiTotalScore: {type: [number, 'null']}
+        teacherTotalScore: {type: [number, 'null']}
+        teacherComment: {type: [string, 'null']}
+        teacherAssessedAt: {type: [string, 'null'], format: date-time}
     AssessmentIssue:
       type: object
       additionalProperties: false
@@ -629,6 +1656,273 @@ components:
         cardId: {type: [string, 'null'], format: uuid}
         expected: {}
         actual: {}
+    TeacherAssessment:
+      type: object
+      additionalProperties: false
+      required: [total]
+      properties:
+        total: {type: number, minimum: 0, maximum: 100}
+        comment: {type: [string, 'null'], maxLength: 2000}
+    ResultItem:
+      type: object
+      additionalProperties: false
+      required: [sessionId, lessonId, lessonTitle, lessonKind, mode, completedAt, visible, finalTotal, source, assessmentId]
+      properties:
+        sessionId: {type: string, format: uuid}
+        lessonId: {type: string, format: uuid}
+        lessonTitle: {type: string}
+        lessonKind: {$ref: '#/components/schemas/LessonKind'}
+        mode: {$ref: '#/components/schemas/LessonMode'}
+        completedAt: {type: [string, 'null'], format: date-time}
+        visible: {type: boolean}
+        finalTotal: {type: [number, 'null']}
+        source: {type: [string, 'null'], enum: [AI, TEACHER, null]}
+        assessmentId: {type: [string, 'null'], format: uuid}
+    Rating:
+      type: object
+      additionalProperties: false
+      required: [value, rank, groupSize, completedSessions]
+      properties:
+        value: {type: [number, 'null']}
+        rank: {type: [integer, 'null']}
+        groupSize: {type: [integer, 'null']}
+        completedSessions: {type: [integer, 'null']}
+    # ---------------------------------------------------------------- teacher
+    Group:
+      type: object
+      additionalProperties: false
+      required: [id, name, teacherId, teacherName, members]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        teacherId: {type: string, format: uuid}
+        teacherName: {type: [string, 'null']}
+        members:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+    GroupUpsert:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string, maxLength: 200}
+        teacherId: {type: [string, 'null'], format: uuid}
+    Lesson:
+      type: object
+      additionalProperties: false
+      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount]
+      properties:
+        id: {type: string, format: uuid}
+        teacherId: {type: string, format: uuid}
+        groupId: {type: [string, 'null'], format: uuid}
+        groupName: {type: [string, 'null']}
+        title: {type: string}
+        kind: {$ref: '#/components/schemas/LessonKind'}
+        mode: {$ref: '#/components/schemas/LessonMode'}
+        cardSource: {$ref: '#/components/schemas/CardSource'}
+        state: {$ref: '#/components/schemas/LessonState'}
+        scenarioIds: {type: array, items: {type: string}}
+        createdAt: {type: string, format: date-time}
+        startedAt: {type: [string, 'null'], format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        resultsPublishedAt: {type: [string, 'null'], format: date-time}
+        sessionCount: {type: integer}
+    LessonCreate:
+      type: object
+      additionalProperties: false
+      required: [title, kind, mode, cardSource, scenarioIds, traineeIds]
+      properties:
+        title: {type: string, maxLength: 200}
+        groupId: {type: [string, 'null'], format: uuid}
+        kind: {$ref: '#/components/schemas/LessonKind'}
+        mode: {$ref: '#/components/schemas/LessonMode'}
+        cardSource: {$ref: '#/components/schemas/CardSource'}
+        scenarioIds: {type: array, minItems: 1, items: {type: string}}
+        traineeIds: {type: array, minItems: 1, items: {type: string, format: uuid}}
+    LessonMonitor:
+      type: object
+      additionalProperties: false
+      required: [lesson, sessions]
+      properties:
+        lesson: {$ref: '#/components/schemas/Lesson'}
+        sessions:
+          type: array
+          items: {$ref: '#/components/schemas/MonitorRow'}
+    MonitorRow:
+      type: object
+      additionalProperties: false
+      required: [sessionId, traineeId, traineeName, workstationNumber, state, currentStatus, acceptanceOverdue, processingOverdue, startedAt, completedAt, completedCards, totalCards, finalTotal]
+      properties:
+        sessionId: {type: string, format: uuid}
+        traineeId: {type: string, format: uuid}
+        traineeName: {type: string}
+        workstationNumber: {type: [string, 'null']}
+        state: {$ref: '#/components/schemas/SessionState'}
+        currentStatus: {type: [string, 'null']}
+        acceptanceOverdue: {type: boolean}
+        processingOverdue: {type: boolean}
+        startedAt: {type: [string, 'null'], format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        completedCards: {type: integer}
+        totalCards: {type: integer}
+        finalTotal: {type: [number, 'null']}
+    LessonReport:
+      type: object
+      additionalProperties: false
+      required: [lesson, rows, groupRating]
+      properties:
+        lesson: {$ref: '#/components/schemas/Lesson'}
+        rows:
+          type: array
+          items: {$ref: '#/components/schemas/ReportRow'}
+        groupRating: {type: [number, 'null']}
+    ReportRow:
+      type: object
+      additionalProperties: false
+      required: [sessionId, traineeId, traineeName, workstationNumber, timingScore, syntaxErrors, level, aiTotal, teacherTotal, finalTotal, state]
+      properties:
+        sessionId: {type: string, format: uuid}
+        traineeId: {type: string, format: uuid}
+        traineeName: {type: string}
+        workstationNumber: {type: [string, 'null']}
+        timingScore: {type: [number, 'null']}
+        syntaxErrors: {type: [integer, 'null']}
+        level: {type: [number, 'null'], description: "Уровень подготовки = рейтинг обучающегося"}
+        aiTotal: {type: [number, 'null']}
+        teacherTotal: {type: [number, 'null']}
+        finalTotal: {type: [number, 'null']}
+        state: {$ref: '#/components/schemas/SessionState'}
+    SessionDetail:
+      type: object
+      additionalProperties: false
+      required: [session, trainee, cards, drafts, assessment]
+      properties:
+        session: {$ref: '#/components/schemas/SessionSummary'}
+        trainee: {anyOf: [{$ref: '#/components/schemas/User'}, {type: 'null'}]}
+        cards: {type: array, items: {$ref: '#/components/schemas/IncidentCard'}}
+        drafts: {type: array, items: {$ref: '#/components/schemas/CardDraft'}}
+        assessment: {anyOf: [{$ref: '#/components/schemas/Assessment'}, {type: 'null'}]}
+    Material:
+      type: object
+      additionalProperties: false
+      required: [id, teacherId, title, fileName, contentType, sizeBytes, uploadedAt, groupIds]
+      properties:
+        id: {type: string, format: uuid}
+        teacherId: {type: string, format: uuid}
+        title: {type: string}
+        fileName: {type: string}
+        contentType: {type: [string, 'null']}
+        sizeBytes: {type: integer}
+        uploadedAt: {type: string, format: date-time}
+        groupIds: {type: array, items: {type: string, format: uuid}}
+    # ---------------------------------------------------------------- admin
+    UserAdminView:
+      type: object
+      additionalProperties: false
+      required: [id, login, displayName, role, workstationNumber, groupId, active, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        login: {type: string}
+        displayName: {type: string}
+        role: {$ref: '#/components/schemas/Role'}
+        workstationNumber: {type: [string, 'null']}
+        groupId: {type: [string, 'null'], format: uuid}
+        active: {type: boolean}
+        createdAt: {type: string, format: date-time}
+    UserCreate:
+      type: object
+      additionalProperties: false
+      required: [login, password, displayName, role]
+      properties:
+        login: {type: string, maxLength: 100}
+        password: {type: string, minLength: 4, maxLength: 200}
+        displayName: {type: string, maxLength: 200}
+        role: {$ref: '#/components/schemas/Role'}
+        workstationNumber: {type: [string, 'null'], maxLength: 10}
+        groupId: {type: [string, 'null'], format: uuid}
+    UserUpdate:
+      type: object
+      additionalProperties: false
+      required: [displayName, role]
+      properties:
+        displayName: {type: string, maxLength: 200}
+        role: {$ref: '#/components/schemas/Role'}
+        workstationNumber: {type: [string, 'null'], maxLength: 10}
+        groupId: {type: [string, 'null'], format: uuid}
+    PasswordReset:
+      type: object
+      additionalProperties: false
+      required: [password]
+      properties:
+        password: {type: string, minLength: 4, maxLength: 200}
+    Settings:
+      type: object
+      description: Ключ → значение (строки). Известные ключи — в описании.
+      additionalProperties: {type: string}
+      properties:
+        audit.retention_days: {type: string, description: "≥ 180"}
+        telephony.ringing_ms: {type: string}
+        telephony.connect_ms: {type: string}
+        telephony.acknowledge_ms: {type: string}
+        sla.acceptance_seconds: {type: string}
+        sla.processing_seconds: {type: string}
+        logging.level: {type: string}
+    AuditEntry:
+      type: object
+      additionalProperties: false
+      required: [id, actorUserId, actorLogin, actorRole, action, resourceType, resourceId, httpStatus, requestId, clientIp, payload, occurredAt]
+      properties:
+        id: {type: string, format: uuid}
+        actorUserId: {type: [string, 'null'], format: uuid}
+        actorLogin: {type: [string, 'null']}
+        actorRole: {type: [string, 'null']}
+        action: {type: string}
+        resourceType: {type: [string, 'null']}
+        resourceId: {type: [string, 'null']}
+        httpStatus: {type: [integer, 'null']}
+        requestId: {type: [string, 'null'], format: uuid}
+        clientIp: {type: [string, 'null']}
+        payload: {type: [string, 'null'], description: "Тело запроса без паролей, до 4 КБ"}
+        occurredAt: {type: string, format: date-time}
+    AuditPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/AuditEntry'}}
+        nextCursor: {type: [string, 'null']}
+    SystemHealth:
+      type: object
+      additionalProperties: false
+      required: [status, database, openSockets, activeSessions, version, serverTime]
+      properties:
+        status: {type: string, enum: [UP, DOWN]}
+        database: {type: string, enum: [UP, DOWN]}
+        openSockets: {type: integer}
+        activeSessions: {type: integer}
+        version: {type: string}
+        serverTime: {type: string, format: date-time}
+    BackupInfo:
+      type: object
+      additionalProperties: false
+      required: [fileName, sizeBytes, createdAt]
+      properties:
+        fileName: {type: string}
+        sizeBytes: {type: integer}
+        createdAt: {type: string, format: date-time}
+    RestoreRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm]
+      properties:
+        confirm: {type: string, const: RESTORE}
+    LogTail:
+      type: object
+      additionalProperties: false
+      required: [lines]
+      properties:
+        lines: {type: array, items: {type: string}}
+    # ---------------------------------------------------------------- realtime / errors
     RealtimeEvent:
       type: object
       additionalProperties: false
@@ -637,11 +1931,11 @@ components:
         eventId: {type: string, format: uuid}
         type:
           type: string
-          enum: [card.received, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, training.session_state_changed, assessment.completed, system.connection_warning]
+          enum: [card.created, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
         occurredAt: {type: string, format: date-time}
         serverTime: {type: string, format: date-time}
-        sessionId: {type: string, format: uuid}
-        sequence: {type: integer, minimum: 1}
+        sessionId: {type: [string, 'null'], format: uuid, description: "null у служебных событий пользователю"}
+        sequence: {type: integer, minimum: 0}
         resourceId: {type: [string, 'null']}
         payload: {type: object, additionalProperties: true}
     ErrorEnvelope:

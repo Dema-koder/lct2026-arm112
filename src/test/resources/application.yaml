@@ -7,9 +7,24 @@ spring:
     enabled: true
 
 arm112:
+  version: 0.3.0-test
   jwt-secret: local-training-secret-key-change-me-2026
   token-ttl: PT8H
   allowed-origins: http://localhost:3000,http://localhost:5173
+  seed:
+    admin-password: admin
+    teacher-password: teacher
+    trainee-password: trainee
+  backup:
+    dir: ./target/test-backups
+    cron: "0 0 2 * * *"
+  materials:
+    dir: ./target/test-materials
+  log-file: ./target/test-arm112.log
+
+logging:
+  file:
+    name: ./target/test-arm112.log
 
 management:
   endpoints:

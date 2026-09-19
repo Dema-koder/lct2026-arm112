@@ -12,10 +12,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Снимок состояния одной персональной сессии: карточки, звонки, черновики и очередь сценариев.
+ * Ключ строки — идентификатор сессии; сессии из таблицы training_session.
+ */
 @Repository
 public class TrainingStateStore {
-    private static final String STATE_KEY = "default-training";
-
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
 
@@ -24,27 +26,31 @@ public class TrainingStateStore {
         this.objectMapper = objectMapper;
     }
 
-    public Optional<TrainingSnapshot> load() {
+    public Optional<TrainingSnapshot> load(UUID sessionId) {
         return jdbc.query(
                         "select payload from training_state where state_key = ?",
                         (resultSet, rowNumber) -> decode(resultSet.getString("payload")),
-                        STATE_KEY)
+                        sessionId.toString())
                 .stream()
                 .findFirst();
     }
 
     @Transactional
-    public synchronized void save(TrainingSnapshot snapshot) {
+    public synchronized void save(UUID sessionId, TrainingSnapshot snapshot) {
         String payload = encode(snapshot);
         int updated = jdbc.update("""
                 update training_state
                    set payload = ?, revision = revision + 1, updated_at = current_timestamp
                  where state_key = ?
-                """, payload, STATE_KEY);
+                """, payload, sessionId.toString());
         if (updated == 0) {
             jdbc.update("insert into training_state (state_key, payload) values (?, ?)",
-                    STATE_KEY, payload);
+                    sessionId.toString(), payload);
         }
+    }
+
+    public void delete(UUID sessionId) {
+        jdbc.update("delete from training_state where state_key = ?", sessionId.toString());
     }
 
     private String encode(TrainingSnapshot snapshot) {
@@ -64,17 +70,25 @@ public class TrainingStateStore {
     }
 
     public record TrainingSnapshot(
+            UUID sessionId,
+            UUID lessonId,
+            UUID traineeId,
+            String mode,
+            String lessonKind,
+            String workstationNumber,
             String sessionState,
             Instant sessionStartedAt,
             Instant sessionCompletedAt,
+            List<String> pendingScenarioIds,
             List<CardState> cards,
             List<CallState> calls,
-            List<Assessment> assessments
+            List<CardDraft> drafts
     ) {}
 
     public record CardState(
             UUID id,
             UUID sessionId,
+            String scenarioId,
             String number,
             Instant receivedAt,
             String source,
@@ -94,7 +108,9 @@ public class TrainingStateStore {
             ScenarioRequirements requirements,
             List<CallTarget> callTargets,
             List<CardTimelineEntry> timeline,
-            List<UUID> callIds
+            List<UUID> callIds,
+            List<String> expectedServices,
+            String expectedDecision
     ) {}
 
     public record CallState(

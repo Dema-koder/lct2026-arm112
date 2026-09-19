@@ -1,0 +1,3958 @@
+[
+  {
+    "id": "ticket-01-1",
+    "source": "TICKET",
+    "ticket": 1,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Возгорание мусорного контейнера, пострадавших нет",
+    "caller": {
+      "fullName": "Сидоров Иван Сергеевич",
+      "phone": "79161263471"
+    },
+    "rawAddress": "Москва, Депо, около ст. Москва-Пассажирская Киевская, длинное помещение недалеко от участкового пункта полиции",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "МЖД Киевская 1 км. 2",
+      "house": null,
+      "building": null,
+      "structure": "2",
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МЖД Киевская 1 км. 2 стр.2"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-01-2",
+    "source": "TICKET",
+    "ticket": 1,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 5,
+    "callerText": "Дерутся 10-15 человек, 5 пострадавших с различными травмами, дерутся палками и железными прутами",
+    "caller": {
+      "fullName": "Иванов Петр Иванович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, рядом с посольством Азербайджана на тротуаре",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Леонтьевский",
+      "house": "16",
+      "building": null,
+      "structure": "1",
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Леонтьевский переулок, дом 16, стр.1"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-01-3",
+    "source": "TICKET",
+    "ticket": 1,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Ребенок 11 лет,  упал с велосипеда, упал сам, отек руки и ноги. Вызывает мама",
+    "caller": {
+      "fullName": "Смирнов Илья",
+      "phone": "79163201283"
+    },
+    "rawAddress": "Волгоградская обл., г. Волжский, ул. Карла Маркса около Волжского Молсыркомбината",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Волгоградская обл.",
+      "locality": "Волжский",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Карла Маркса около Волжского Молсыркомбината",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Волгоградская обл., г. Волжский, ул. Карла Маркса около Волжского Молсыркомбината"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-02-1",
+    "source": "TICKET",
+    "ticket": 2,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Задымление мусоропровода в жилом доме, в доме 17 этажей, заявитель находится на 7-м этаже. Открытого пламени не видит, пострадавших людей нет",
+    "caller": {
+      "fullName": "Ким Олег Юрьевич",
+      "phone": "79161263471"
+    },
+    "rawAddress": "Москва, ул. Берзарина, дом 21, корп. 1, под. 3, домофон 68",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Берзарина",
+      "house": "21",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": "3",
+      "floor": null,
+      "code": "68",
+      "descriptive": "Москва, ул. Берзарина, дом 21, корп. 1, под. 3, домофон 68"
+    },
+    "expectedIncidentTypes": [
+      "fire.smoke"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOSLIFT",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-02-2",
+    "source": "TICKET",
+    "ticket": 2,
+    "ordinal": 2,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Поругался с продавцом «Мегафон», бросил трубку",
+    "caller": {
+      "fullName": null,
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Сущевский Вал дом 5 стр.1",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Сущевский Вал",
+      "house": "5",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Сущевский Вал дом 5 стр.1"
+    },
+    "expectedIncidentTypes": [
+      "crime.hooligan"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-02-3",
+    "source": "TICKET",
+    "ticket": 2,
+    "ordinal": 3,
+    "category": "RESCUE",
+    "difficulty": 3,
+    "callerText": "Падение автомашины в воду",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, набережная Яузы, в область, напротив Большого Нижнего пруда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "в область",
+      "locality": "Москва",
+      "object": "напротив Большого Нижнего пруда",
+      "okrug": null,
+      "district": null,
+      "street": "Яузы",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, набережная Яузы, в область, напротив Большого Нижнего пруда"
+    },
+    "expectedIncidentTypes": [
+      "dtp.water"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-03-1",
+    "source": "TICKET",
+    "ticket": 3,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит крыша частного дома, пострадавших нет, дом не газифицирован",
+    "caller": {
+      "fullName": "Иванова Инна Степановна",
+      "phone": "79161263471"
+    },
+    "rawAddress": "ул. Станционная, дом 28",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "МО",
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении адреса — г. Королёв",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении адреса — г. Королёв, МО"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-03-2",
+    "source": "TICKET",
+    "ticket": 3,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Громко играет музыка во дворе",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Бульвар Маршала Рокоссовского дом 25, двор",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "двор",
+      "okrug": null,
+      "district": null,
+      "street": "Маршала Рокоссовского",
+      "house": "25",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Бульвар Маршала Рокоссовского дом 25, двор"
+    },
+    "expectedIncidentTypes": [
+      "crime.hooligan"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-03-3",
+    "source": "TICKET",
+    "ticket": 3,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "На машину упало бревно с грузовика. В машине Ваз красный, водитель заблокирован",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Съезд с МКАД внутр на Симферопольское ш в обл, 100 метров не доезжая до Симферопольское ш (точка на карте), обочина",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Съезд с МКАД внутр на Симферопольское ш в обл",
+      "locality": null,
+      "object": "обочина",
+      "okrug": null,
+      "district": null,
+      "street": "100 метров не доезжая до Симферопольское ш (точка на карте)",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Съезд с МКАД внутр на Симферопольское ш в обл, 100 метров не доезжая до Симферопольское ш (точка на карте), обочина"
+    },
+    "expectedIncidentTypes": [
+      "tree.fallen"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "OEK",
+      "CODD",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-04-1",
+    "source": "TICKET",
+    "ticket": 4,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит балкон и два окна рядом на 13-м этаже, открытое пламя, пострадавших не видят, наблюдают с улицы, (этажность — 14, дом газифицирован)",
+    "caller": {
+      "fullName": "Сидорова Анна Викторовна",
+      "phone": "79161263471"
+    },
+    "rawAddress": "Москва, ул. Грина, № дома неизвестен, в данном доме находится библиотека № 193",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Грина",
+      "house": "11",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "ул. Грина, дом 11"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-04-2",
+    "source": "TICKET",
+    "ticket": 4,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Плохо женщине на автомобильной парковке. Потеря сознания. На вид 40 лет",
+    "caller": {
+      "fullName": "Иванова Ирина Петровна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Московская область, Балашиха, Мирской проезд д 16, со стороны мусорной площадки",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Московская область",
+      "locality": null,
+      "object": "Мирской проезд д 16, со стороны мусорной площадки",
+      "okrug": null,
+      "district": null,
+      "street": "Балашиха",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Московская область, Балашиха, Мирской проезд д 16, со стороны мусорной площадки"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-04-3",
+    "source": "TICKET",
+    "ticket": 4,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Открыть дверь в квартиру. В квартире проживает пожилой инвалид, одинокий, не открывает дверь 3-ий день",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Зеленоград 9 микрорайон корп.902, кв. 45 под. 1, эт. 3, код 45В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Зеленоград 9 микрорайон",
+      "house": null,
+      "building": "902",
+      "structure": null,
+      "apartment": "45 под. 1",
+      "entrance": null,
+      "floor": "3",
+      "code": "45В",
+      "descriptive": "Зеленоград 9 микрорайон корп.902, кв. 45 под. 1, эт. 3, код 45В"
+    },
+    "expectedIncidentTypes": [
+      "person.danger"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-05-1",
+    "source": "TICKET",
+    "ticket": 5,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Горит одно окно на 9 этаже, открытое пламя, рядом на балконе 2-е людей кричат о помощи, заявитель наблюдает с улицы, (этажность — 17, дом не газифицирован)",
+    "caller": {
+      "fullName": "Яшин Игорь Вадимович",
+      "phone": "79161263471"
+    },
+    "rawAddress": "Москва, ул. Цюрупы, дом 12, корп. 6, подъезд единственный, балкон со стороны подъезда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "балкон со стороны подъезда",
+      "okrug": null,
+      "district": null,
+      "street": "Цюрупы",
+      "house": "12",
+      "building": "6",
+      "structure": null,
+      "apartment": null,
+      "entrance": "единственный",
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Цюрупы, дом 12, корп. 6, подъезд единственный, балкон со стороны подъезда"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-05-2",
+    "source": "TICKET",
+    "ticket": 5,
+    "ordinal": 2,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Женщина выпила случайно не те лекарственные препараты, потеряла сознание. , д/р 10.03.1975, вызывает супруг",
+    "caller": {
+      "fullName": "Иванова Ирина Петровна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, Коломенская набережная дом 18, кв. 142, под. 3, эт. 4, код 142",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Коломенская",
+      "house": "18",
+      "building": null,
+      "structure": null,
+      "apartment": "142",
+      "entrance": "3",
+      "floor": "4",
+      "code": "142",
+      "descriptive": "Москва, Коломенская набережная дом 18, кв. 142, под. 3, эт. 4, код 142"
+    },
+    "expectedIncidentTypes": [
+      "person.missing"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-05-3",
+    "source": "TICKET",
+    "ticket": 5,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "На стройке жилого дома рабочий упал в котлован",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Московская область, городской округ Химки, микрорайон Подрезково, стройка между ул. Центральная и ул. 1-я Лесная",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Московская область",
+      "locality": null,
+      "object": "микрорайон Подрезково",
+      "okrug": null,
+      "district": null,
+      "street": "городской округ Химки",
+      "house": null,
+      "building": null,
+      "structure": "ойка между ул. Центральная и ул. 1-я Лесная",
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Московская область, городской округ Химки, микрорайон Подрезково, стройка между ул. Центральная и ул. 1-я Лесная"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-06-1",
+    "source": "TICKET",
+    "ticket": 6,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит а/м фольксваген цвет красный Х 863 МН 199, пострадавших нет,  (очевидец)",
+    "caller": {
+      "fullName": "Попов Виктор Дмитриевич",
+      "phone": "79161239878"
+    },
+    "rawAddress": "МКАД внутр. сторона, 1 км не доезжая до съезда на ул. Ген. Дорохова",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "49 км",
+      "okrug": null,
+      "district": null,
+      "street": "МКАД",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МКАД, 49 км"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-06-2",
+    "source": "TICKET",
+    "ticket": 6,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Мужчина 40 лет, плохо. Находится в автомобиле форд синий А284ТК 777, вызывает себе",
+    "caller": {
+      "fullName": "Иванов Павел Сергеевич",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, ул. Красный Казанец дом 19Б, напротив дома, на стоянке",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "напротив дома, на стоянке",
+      "okrug": null,
+      "district": null,
+      "street": "Красный Казанец",
+      "house": "19Б",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Красный Казанец дом 19Б, напротив дома, на стоянке"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-06-3",
+    "source": "TICKET",
+    "ticket": 6,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Трое мужчин плывут на льдине",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Московская область, Раменский городской округ, р. Быковка, СНТ Малаховский городок (деревня Михнево)",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Московская область",
+      "locality": null,
+      "object": "р. Быковка, СНТ Малаховский городок (деревня Михнево)",
+      "okrug": null,
+      "district": null,
+      "street": "Раменский городской округ",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Московская область, Раменский городской округ, р. Быковка, СНТ Малаховский городок (деревня Михнево)"
+    },
+    "expectedIncidentTypes": [
+      "water.rescue"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-07-1",
+    "source": "TICKET",
+    "ticket": 7,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит а/м Тойота цвет бежевый Р 254 ТС 99, пострадал водитель, 54 года, Дюжев Юрий Петрович, ожог рук,;  (очевидец)",
+    "caller": {
+      "fullName": "Фролова Яна Игоревна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, станция метро Отрадное, рядом с ТК «Золотой Вавилон», на проезжей части",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "ТК «Золотой Вавилон» справа",
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении адреса — а/м находится по ул. Декабристов",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении адреса — а/м находится по ул. Декабристов, ТК «Золотой Вавилон» справа"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-07-2",
+    "source": "TICKET",
+    "ticket": 7,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Сильная головная, А/Д 150/80, д/р 30.06.2001, вызывает себе",
+    "caller": {
+      "fullName": "Крючков Станислав Дмитриевич",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Рязань, ул. Вишневая, дом 15 ч/дом",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "ул. Вишневая",
+      "okrug": null,
+      "district": null,
+      "street": "Рязань",
+      "house": "15 ч/дом",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Рязань, ул. Вишневая, дом 15 ч/дом"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-07-3",
+    "source": "TICKET",
+    "ticket": 7,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "85 лет, Марков Илья Кузьмич, страдает потерей памяти, 6 часов назад ушел в поликлинику и не вернулся, дочь",
+    "caller": {
+      "fullName": "Маркова Ирина Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Маршала Соколовского, дом 1, кв 5, под. 1, эт. 2, код 5В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Маршала Соколовского",
+      "house": "1",
+      "building": null,
+      "structure": null,
+      "apartment": "5",
+      "entrance": "1",
+      "floor": "2",
+      "code": "5В",
+      "descriptive": "Москва, ул. Маршала Соколовского, дом 1, кв 5, под. 1, эт. 2, код 5В"
+    },
+    "expectedIncidentTypes": [
+      "person.missing"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-08-1",
+    "source": "TICKET",
+    "ticket": 8,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Задымление на минус первом этаже в торговом центре, источник не установлен, о пострадавших людях точной информации нет,  (работник мебельного магазина)",
+    "caller": {
+      "fullName": "Ивлев Артем Олегович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, станция метро Пражская, ТЦ «Электронный рай»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Кировоградская",
+      "house": "15",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "ул. Кировоградская, дом 15"
+    },
+    "expectedIncidentTypes": [
+      "fire.smoke"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOSLIFT",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-08-2",
+    "source": "TICKET",
+    "ticket": 8,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Лежит мужчина неизвестный, около 50 лет, без сознания, видимых травм и кровотечений нет,  (прохожий)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Дорога от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно 1,5 км от железнодорожного переезда, напротив пруда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "5 км от железнодорожного переезда, напротив пруда",
+      "okrug": null,
+      "district": null,
+      "street": "от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно",
+      "house": "1",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Дорога от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно 1,5 км от железнодорожного переезда, напротив пруда"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-08-3",
+    "source": "TICKET",
+    "ticket": 8,
+    "ordinal": 3,
+    "category": "RESCUE",
+    "difficulty": 3,
+    "callerText": "Тонет человек в настоящее время. Мужчина, кричит о помощи",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, озеро Круглое, на пляже, рядом дом ул. Таманская, дом 75 корп. 2",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "на пляже, рядом дом ул. Таманская",
+      "okrug": null,
+      "district": null,
+      "street": "озеро Круглое",
+      "house": "75",
+      "building": "2",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, озеро Круглое, на пляже, рядом дом ул. Таманская, дом 75 корп. 2"
+    },
+    "expectedIncidentTypes": [
+      "water.rescue"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-09-1",
+    "source": "TICKET",
+    "ticket": 9,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Задымление на платформе, пострадавших людей нет",
+    "caller": {
+      "fullName": "Тихий Олег Юрьевич",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, станция метро Арбатская",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении — Филевская",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении — Филевская линия"
+    },
+    "expectedIncidentTypes": [
+      "fire.smoke"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOSLIFT",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-09-2",
+    "source": "TICKET",
+    "ticket": 9,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Минина Ольга Петровна, 36 лет, беременность 39 недель, отошли воды, вызывает супруг",
+    "caller": {
+      "fullName": "Минин Сергей Антонович",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Дорога от Носовихинского ш., от железнодорожной станции Купавна в сторону Горьковского ш. (М7). Напротив Бисерово озеро, на автобусной остановке «Кафе»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "от железнодорожной станции Купавна в сторону Горьковского ш. (М7). Напротив Бисерово озеро, на автобусной остановке «Кафе»",
+      "okrug": null,
+      "district": null,
+      "street": "от Носовихинского",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Дорога от Носовихинского ш., от железнодорожной станции Купавна в сторону Горьковского ш. (М7). Напротив Бисерово озеро, на автобусной остановке «Кафе»"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-09-3",
+    "source": "TICKET",
+    "ticket": 9,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Мужчина упал с моста в воду, кричит, что не умеет плавать",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Бережковский мост, ТТК внут, середина моста",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "ТТК внут, середина моста",
+      "okrug": null,
+      "district": null,
+      "street": "Бережковский мост",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Бережковский мост, ТТК внут, середина моста"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-10-1",
+    "source": "TICKET",
+    "ticket": 10,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Горит помещение кассы, открытый огонь, пострадала кассир 45 л, Гвоздикова Анна Павловна, ожог лица и рук;  (очевидец)",
+    "caller": {
+      "fullName": "Беликова Юлия Викторовна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, ж/д станция Текстильщики, платформа в сторону обл., подъезд для служб со стороны ул. Люблинская",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "платформа в сторону обл.",
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "ж/д станция Текстильщики",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": "для служб со стороны ул. Люблинская",
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ж/д станция Текстильщики, платформа в сторону обл., подъезд для служб со стороны ул. Люблинская"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-10-2",
+    "source": "TICKET",
+    "ticket": 10,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Пожилая женщина, неизвестная, около 70 лет, сильные головные боли, стоит на перекрестке, останавливает машины, просит вызвать 03;  (прохожий)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Люберецкие поля фильтрации. На пересечении дороги из Кожухово в г. Железнодорожный и дороги из Некрасовки в г. Железнодорожный",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Люберецкие поля фильтрации. На пересечении дороги из Кожухово в г. Железнодорожный и дороги из Некрасовки в г. Железнодорожный",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Люберецкие поля фильтрации. На пересечении дороги из Кожухово в г. Железнодорожный и дороги из Некрасовки в г. Железнодорожный"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-10-3",
+    "source": "TICKET",
+    "ticket": 10,
+    "ordinal": 3,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Женщина просит о помощи из-за двери квартиры, дверь в квартиру закрыта, на месте сотрудники полиции,  (соседка)",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, Проспект Маршала Жукова дом 20 корп. 2, кв. 57, под. 3, эт. 5, код 57В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Маршала Жукова",
+      "house": "20",
+      "building": null,
+      "structure": null,
+      "apartment": "57",
+      "entrance": "3",
+      "floor": "5",
+      "code": "57В",
+      "descriptive": "Москва, Проспект Маршала Жукова дом 20 корп. 2, кв. 57, под. 3, эт. 5, код 57В"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-11-1",
+    "source": "TICKET",
+    "ticket": 11,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит кабина автобуса, № маршрута 63, бортовой № 15477, гос. знак назвать не может, пострадавших нет,  (очевидец)",
+    "caller": {
+      "fullName": "Титов Павел Петрович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, Дмитровское ш. в обл., рядом с автобусной остановкой «Лианозовский электро-механический завод»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении —",
+      "house": "110",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении — дом 110"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-11-2",
+    "source": "TICKET",
+    "ticket": 11,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Легкодушев Дмитрий Константинович, д/р 31.05.2011, головокружение, теряет сознание. Вызывает отец",
+    "caller": {
+      "fullName": "Максимов Олег Иванович",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, ул. Беломорская дом 10 корп. 2, на дворовой дороге",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "на дворовой дороге",
+      "okrug": null,
+      "district": null,
+      "street": "Беломорская",
+      "house": "10",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Беломорская дом 10 корп. 2, на дворовой дороге"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-11-3",
+    "source": "TICKET",
+    "ticket": 11,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 5,
+    "callerText": "Женщина собирала грибы, заблудилась. , 63 г, зарядка 10% на телефоне, 03 не треб. Звонит сама",
+    "caller": {
+      "fullName": "Тимофеева Маргарита Михайловна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Владимирская обл, Кольчугинский район, дер. Барыкино , лес за деревней",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "не доезжая пос. Бавлены",
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении адреса дер. Барыкино",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении адреса дер. Барыкино, не доезжая пос. Бавлены"
+    },
+    "expectedIncidentTypes": [
+      "person.missing"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-12-1",
+    "source": "TICKET",
+    "ticket": 12,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Сильное задымление в зале ресторана, о пострадавших точной информации нет,  (посетитель)",
+    "caller": {
+      "fullName": "Никитин Илья Вадимович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "МО, Рублево-Успенское ш., дер. Жуковка, ресторан «Веранда у Дачи»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении —",
+      "house": "70",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении — дом 70"
+    },
+    "expectedIncidentTypes": [
+      "fire.smoke"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOSLIFT",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-12-2",
+    "source": "TICKET",
+    "ticket": 12,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Сильные боли в сердце, женщина Сергеева Наталья Петрова 55 лет. Вызывает подруга",
+    "caller": {
+      "fullName": "Петрова Ирина Сергеевна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Тульская обл. На проселочной дороге от пос. Октябрьский Киреевского р-на в сторону пос. Троицкий. Рядом с плотиной реки Шиворонь, у водокачки",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Тульская обл. На проселочной дороге от пос. Октябрьский Киреевского р-на в сторону пос. Троицкий. Рядом с плотиной реки Шиворонь",
+      "locality": null,
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "у водокачки",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Тульская обл. На проселочной дороге от пос. Октябрьский Киреевского р-на в сторону пос. Троицкий. Рядом с плотиной реки Шиворонь, у водокачки"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-12-3",
+    "source": "TICKET",
+    "ticket": 12,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Мужчины на ограждении моста в крови",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Над МКАД между ул. Свободы и АЗС SHELL, внешняя сторона (МКАД, 73 км)",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "внешняя сторона (МКАД, 73 км)",
+      "okrug": null,
+      "district": null,
+      "street": "Над МКАД между ул. Свободы и АЗС SHELL",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Над МКАД между ул. Свободы и АЗС SHELL, внешняя сторона (МКАД, 73 км)"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-13-1",
+    "source": "TICKET",
+    "ticket": 13,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горят деревья в парке, площадь возгорания 10 м х 10 м, пострадавших людей нет",
+    "caller": {
+      "fullName": "Сидорова Ольга Викторовна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, Кусковский лесопарк",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "вход со стороны аллеи Первой Маёвки",
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении — рядом со стадионом Фрезер",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении — рядом со стадионом Фрезер, вход со стороны аллеи Первой Маёвки"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-13-2",
+    "source": "TICKET",
+    "ticket": 13,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Рожает жена, 40 недель, кровотечения нет, воды отошли 2 мин назад, д/р 20.05.1979, в автомобиле фольксваген синий О345ВН 177",
+    "caller": {
+      "fullName": "Соколова Ирина Ивановна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Ехал по Рублевке от Кутузовского проспекта в сторону п. Жуковка, проехали реку Чеченка, перед автобусной остановкой, название не знаю",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "проехали реку Чеченка, перед автобусной остановкой, название не знаю",
+      "okrug": null,
+      "district": null,
+      "street": "Ехал по Рублевке от Кутузовского проспекта в сторону п. Жуковка",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Ехал по Рублевке от Кутузовского проспекта в сторону п. Жуковка, проехали реку Чеченка, перед автобусной остановкой, название не знаю"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-13-3",
+    "source": "TICKET",
+    "ticket": 13,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "На обочине лежит мужчина в крови. На вид 40 лет",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "МКАД внутренний, поворот на Гольяново (МКАД, 103 км)",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "поворот на Гольяново (МКАД, 103 км)",
+      "okrug": null,
+      "district": null,
+      "street": "МКАД внутренний",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МКАД внутренний, поворот на Гольяново (МКАД, 103 км)"
+    },
+    "expectedIncidentTypes": [
+      "person.danger"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-14-1",
+    "source": "TICKET",
+    "ticket": 14,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 5,
+    "callerText": "Горит сухая трава рядом с АЗС Роснефть, огонь подходит к территории АЗС,  (работник АЗС)",
+    "caller": {
+      "fullName": "Потапов Иван Сергеевич",
+      "phone": "79161239878"
+    },
+    "rawAddress": "МО, трасса М-2, АЗС Роснефть, не доезжая до Расторгуевского ш.",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении адреса — 25 км по столбам в сторону Москвы",
+      "house": "2",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении адреса — 25 км по столбам в сторону Москвы, вл. 2"
+    },
+    "expectedIncidentTypes": [
+      "fire.grass"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-14-2",
+    "source": "TICKET",
+    "ticket": 14,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Подросток 12 лет задыхается, астма, вызывает брат (брату 19 лет)",
+    "caller": {
+      "fullName": "Ковалев Иван Сергеевич",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, Ленинградское шоссе, дом 112 корп. 4, кв. 385, под. 29, эт. 3, код 385В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Ленинградское",
+      "house": "112",
+      "building": "4",
+      "structure": null,
+      "apartment": "385",
+      "entrance": "29",
+      "floor": "3",
+      "code": "385В",
+      "descriptive": "Москва, Ленинградское шоссе, дом 112 корп. 4, кв. 385, под. 29, эт. 3, код 385В"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-14-3",
+    "source": "TICKET",
+    "ticket": 14,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Неизвестные затащили жену в машину у метро Комсомольская, скрылись в сторону ТТК. Иномарка белая, гос. номер не запомнил. Двое мужчин, кавказцы",
+    "caller": {
+      "fullName": "Иванов Илья Львович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Комсомольская площадь, дом 2А, у «Бургер Кинга»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "у «Бургер Кинга»",
+      "okrug": null,
+      "district": null,
+      "street": "Комсомольская",
+      "house": "2А",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Комсомольская площадь, дом 2А, у «Бургер Кинга»"
+    },
+    "expectedIncidentTypes": [
+      "crime.robbery"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "MOSBEZ",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-15-1",
+    "source": "TICKET",
+    "ticket": 15,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Горит лес за деревней Варварино, пострадавших нет, проезжала мимо",
+    "caller": {
+      "fullName": "Антонова Мария Петровна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "МО, Дмитровский городской округ, за деревней Варварино",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "Дмитровский городской округ, за деревней Варварино",
+      "okrug": null,
+      "district": null,
+      "street": "МО",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МО, Дмитровский городской округ, за деревней Варварино"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-15-2",
+    "source": "TICKET",
+    "ticket": 15,
+    "ordinal": 2,
+    "category": "RESCUE",
+    "difficulty": 3,
+    "callerText": "Мужчина 30 лет нырнул в воду, ударился о камень, рассек голову, кровотечение, в сознании,  (очевидец)",
+    "caller": {
+      "fullName": "Петрова Ирина Сергеевна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "МО, Одинцовский район, деревня Сколково, дом 17, пруд справа от дома",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "Одинцовский район, деревня Сколково, пруд справа от дома",
+      "okrug": null,
+      "district": null,
+      "street": "МО",
+      "house": "17",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МО, Одинцовский район, деревня Сколково, дом 17, пруд справа от дома"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-15-3",
+    "source": "TICKET",
+    "ticket": 15,
+    "ordinal": 3,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Сожитель ударил ножом в ногу. Кровотечение",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Зверенецкая, дом 22, кв. 7, под. 1, эт. 2, код 7В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Зверенецкая",
+      "house": "22",
+      "building": null,
+      "structure": null,
+      "apartment": "7",
+      "entrance": "1",
+      "floor": "2",
+      "code": "7В",
+      "descriptive": "Москва, ул. Зверенецкая, дом 22, кв. 7, под. 1, эт. 2, код 7В"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-16-1",
+    "source": "TICKET",
+    "ticket": 16,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Видит столб черного дыма со стороны жилых домов поселка, информации о пострадавших нет",
+    "caller": {
+      "fullName": "Левин Борис Степанович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "МО, ж/д станция Вялки, смотрит в сторону пос. Быково",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "ж/д станция Вялки, смотрит в сторону пос. Быково",
+      "okrug": null,
+      "district": null,
+      "street": "МО",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МО, ж/д станция Вялки, смотрит в сторону пос. Быково"
+    },
+    "expectedIncidentTypes": [
+      "fire.smoke"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOSLIFT",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-16-2",
+    "source": "TICKET",
+    "ticket": 16,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Ребенок 11 лет,  упал с велосипеда, упал сам, отек руки и ноги. Вызывает мама",
+    "caller": {
+      "fullName": "Смирнов Илья",
+      "phone": "79163201283"
+    },
+    "rawAddress": "Волгоградская обл., г. Волжский, ул. Карла Маркса около Волжского Молсыркомбината",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Волгоградская обл.",
+      "locality": "Волжский",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Карла Маркса около Волжского Молсыркомбината",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Волгоградская обл., г. Волжский, ул. Карла Маркса около Волжского Молсыркомбината"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-16-3",
+    "source": "TICKET",
+    "ticket": 16,
+    "ordinal": 3,
+    "category": "UTILITY",
+    "difficulty": 3,
+    "callerText": "Петрова Светлана Павловна 35 лет, выпила упаковку снотворного «Донормил», вызывает муж",
+    "caller": {
+      "fullName": "Петров Олег",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Знаменские Садки, дом 7 корп. 2, кв. 216, под. 4, эт. 4, код 216",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Знаменские Садки",
+      "house": "7",
+      "building": "2",
+      "structure": null,
+      "apartment": "216",
+      "entrance": "4",
+      "floor": "4",
+      "code": "216",
+      "descriptive": "Москва, ул. Знаменские Садки, дом 7 корп. 2, кв. 216, под. 4, эт. 4, код 216"
+    },
+    "expectedIncidentTypes": [
+      "utility.power"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "OEK",
+      "MAYOR",
+      "OATI",
+      "ROSGVARD",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-17-1",
+    "source": "TICKET",
+    "ticket": 17,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "В жилом доме сработала пожарная сигнализация. Дыма и возгорания нет",
+    "caller": {
+      "fullName": "Сухов Леонид Сергеевич",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, Большой Сухаревский переулок, дом 19 стр. 2, под. 1, код 2215",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Большой Сухаревский",
+      "house": "19",
+      "building": null,
+      "structure": "2",
+      "apartment": null,
+      "entrance": "1",
+      "floor": null,
+      "code": "2215",
+      "descriptive": "Москва, Большой Сухаревский переулок, дом 19 стр. 2, под. 1, код 2215"
+    },
+    "expectedIncidentTypes": [
+      "fire.vehicle"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-17-2",
+    "source": "TICKET",
+    "ticket": 17,
+    "ordinal": 2,
+    "category": "GAS",
+    "difficulty": 3,
+    "callerText": "У покупателя в магазине судороги, пена изо рта. При падении разбил голову. Мужчина 40-45 лет. Вызывает кассир магазина",
+    "caller": {
+      "fullName": "Соколова Вера Ивановна",
+      "phone": "79163201283"
+    },
+    "rawAddress": "Москва, ул. Твардовского, вл2к1,2 магазин «Лента», у касс",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "вл2к1, 2 магазин «Лента», у касс",
+      "okrug": null,
+      "district": null,
+      "street": "Твардовского",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Твардовского, вл2к1,2 магазин «Лента», у касс"
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "101",
+      "103",
+      "104",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-17-3",
+    "source": "TICKET",
+    "ticket": 17,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Избита женщина, около 30 лет, неизвестная, травма головы, кровотечение,  (прохожий)",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Дмитровское шоссе, дом 155 корп. 1, около магазина «Пятерочка»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "около магазина «Пятерочка»",
+      "okrug": null,
+      "district": null,
+      "street": "Дмитровское",
+      "house": "155",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Дмитровское шоссе, дом 155 корп. 1, около магазина «Пятерочка»"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-18-1",
+    "source": "TICKET",
+    "ticket": 18,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Видит пожар, что горит не знает",
+    "caller": {
+      "fullName": "Слобода Юрий Петрович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Дорога от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно 1,5 км от железнодорожного переезда, напротив пруда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "5 км от железнодорожного переезда, напротив пруда",
+      "okrug": null,
+      "district": null,
+      "street": "от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно",
+      "house": "1",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Дорога от Киевского ш. (М3) в сторону Минского ш. (М1) через Крекшино. Примерно 1,5 км от железнодорожного переезда, напротив пруда"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-18-2",
+    "source": "TICKET",
+    "ticket": 18,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Не может разбудить мужа. Муж издает хрипы. , 10.08.1977г",
+    "caller": {
+      "fullName": "Титов Александр Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "МО, Красногорск, ул. Пионерская, дом 19, кв. 5, под 1, эт. 2, код 5в",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "Красногорск, ул. Пионерская",
+      "okrug": null,
+      "district": null,
+      "street": "МО",
+      "house": "19",
+      "building": null,
+      "structure": null,
+      "apartment": "5",
+      "entrance": "1",
+      "floor": "2",
+      "code": "5в",
+      "descriptive": "МО, Красногорск, ул. Пионерская, дом 19, кв. 5, под 1, эт. 2, код 5в"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-18-3",
+    "source": "TICKET",
+    "ticket": 18,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 5,
+    "callerText": "С улицы слышны крики о помощи, кричит мужчина",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Огородный проезд, дом 12 , во дворе",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "в оригинале «15/19» зачёркнуто и от руки исправлено на",
+      "house": "12",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "в оригинале «15/19» зачёркнуто и от руки исправлено на 12"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-19-1",
+    "source": "TICKET",
+    "ticket": 19,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Горит поле, пострадавших нет",
+    "caller": {
+      "fullName": "Орлова Вера Ивановна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки",
+      "locality": null,
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": null,
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-19-2",
+    "source": "TICKET",
+    "ticket": 19,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Прихожанина укусила змея. В сознании. Мужчина 60 лет, Сизов Иван Петрович. Вызывает прохожий",
+    "caller": {
+      "fullName": "Петров Илья Владимирович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Рязанская обл., Свято-Иоанно-Богословский мужской монастырь, у входа",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Рязанская обл.",
+      "locality": null,
+      "object": "у входа",
+      "okrug": null,
+      "district": null,
+      "street": "Свято-Иоанно-Богословский мужской монастырь",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Рязанская обл., Свято-Иоанно-Богословский мужской монастырь, у входа"
+    },
+    "expectedIncidentTypes": [
+      "animal"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "CEMP",
+      "GOR_HOZ",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-19-3",
+    "source": "TICKET",
+    "ticket": 19,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Мужчину сбила электричка, на ж/д переходе. Доступ есть",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Платформа Лианозово, переход со стороны Лианозовского рынка",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "переход со стороны Лианозовского рынка",
+      "okrug": null,
+      "district": null,
+      "street": "Платформа Лианозово",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Платформа Лианозово, переход со стороны Лианозовского рынка"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-20-1",
+    "source": "TICKET",
+    "ticket": 20,
+    "ordinal": 1,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Дерутся 3 человека, без пострадавших, без оружия, Иванов Сергей Петрович (очевидец)",
+    "caller": {
+      "fullName": "Орлова Вера Ивановна",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, Олонецкий проезд, дом 4, за домом, дорожка в сторону кладбища",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "за домом, дорожка в сторону кладбища",
+      "okrug": null,
+      "district": null,
+      "street": "Олонецкий",
+      "house": "4",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Олонецкий проезд, дом 4, за домом, дорожка в сторону кладбища"
+    },
+    "expectedIncidentTypes": [
+      "fight"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-20-2",
+    "source": "TICKET",
+    "ticket": 20,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Женщина, речь невнятная, лицо перекошено. Просит вызвать 03. На вид 70 лет. Вызывает прохожий",
+    "caller": {
+      "fullName": "Титов Олег Иванович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Дорога от Каширского ш в сторону д. Истомиха, около авт. остановки Домодедовское кладбище рядом с КПП",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "около авт. остановки Домодедовское кладбище рядом с КПП",
+      "okrug": null,
+      "district": null,
+      "street": "от Каширского ш в сторону",
+      "house": "Истомиха",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Дорога от Каширского ш в сторону д. Истомиха, около авт. остановки Домодедовское кладбище рядом с КПП"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-20-3",
+    "source": "TICKET",
+    "ticket": 20,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Изнасиловали женщину, около 30 лет, травмы, просит вызвать полицию",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Кастанаевская, дом 42 корп. 2, во дворе",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "во дворе",
+      "okrug": null,
+      "district": null,
+      "street": "Кастанаевская",
+      "house": "42",
+      "building": "2",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Кастанаевская, дом 42 корп. 2, во дворе"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-21-1",
+    "source": "TICKET",
+    "ticket": 21,
+    "ordinal": 1,
+    "category": "MEDICAL",
+    "difficulty": 5,
+    "callerText": "Дерутся 10-15 человек, 5 пострадавших с различными травмами, дерутся палками и железными прутами",
+    "caller": {
+      "fullName": "Иванов Петр Иванович",
+      "phone": "79161239878"
+    },
+    "rawAddress": "Москва, рядом с посольством Азербайджана на тротуаре",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Леонтьевский",
+      "house": "16",
+      "building": null,
+      "structure": "1",
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Леонтьевский переулок, дом 16, стр. 1"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-21-2",
+    "source": "TICKET",
+    "ticket": 21,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "д/р 10.02.1956 рубила дрова и ударила топором себя по руке, случайно, кровотечение. Вызывает себе",
+    "caller": {
+      "fullName": "Перова Ирина Ивановна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Дорога от Клина в сторону Лотошино, не доезжая до Теряевских прудов повернуть к церкви, дом напротив остановки",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "не доезжая до Теряевских прудов повернуть к церкви",
+      "okrug": null,
+      "district": null,
+      "street": "от Клина в сторону Лотошино",
+      "house": "напротив остановки",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Дорога от Клина в сторону Лотошино, не доезжая до Теряевских прудов повернуть к церкви, дом напротив остановки"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-21-3",
+    "source": "TICKET",
+    "ticket": 21,
+    "ordinal": 3,
+    "category": "RESCUE",
+    "difficulty": 3,
+    "callerText": "Ребенок 4 года один в а/м, двери заблокировались",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "На парковке ресторана WHEITE, около Живописной бухты",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "около Живописной бухты",
+      "okrug": null,
+      "district": null,
+      "street": "На парковке ресторана WHEITE",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "На парковке ресторана WHEITE, около Живописной бухты"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-22-1",
+    "source": "TICKET",
+    "ticket": 22,
+    "ordinal": 1,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Дерутся в квартире, 2 мужчин, без пострадавших, без оружия,  (сосед)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Маршала Василевского дом 13 корп. 3, кв. 2, под. 1, эт. 1, код 2В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Маршала Василевского",
+      "house": "13",
+      "building": null,
+      "structure": null,
+      "apartment": "2",
+      "entrance": "1",
+      "floor": "1",
+      "code": "2В",
+      "descriptive": "Москва, ул. Маршала Василевского дом 13 корп. 3, кв. 2, под. 1, эт. 1, код 2В"
+    },
+    "expectedIncidentTypes": [
+      "fight"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-22-2",
+    "source": "TICKET",
+    "ticket": 22,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Ребенок 4 года , боль в животе, рвота с кровью. Находится в автомобиле Мазда-6, цвет белый, П325ОР 197, вызывает папа",
+    "caller": {
+      "fullName": "Соловьев Максим",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Стоят на Ленинградском ш. около памятника Ленина, напротив вокзала станции Ржев-1, ехали из Зубцов в сторону Селижарово",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "напротив вокзала станции Ржев-1, ехали из Зубцов в сторону Селижарово",
+      "okrug": null,
+      "district": null,
+      "street": "Стоят на Ленинградском ш. около памятника Ленина",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Стоят на Ленинградском ш. около памятника Ленина, напротив вокзала станции Ржев-1, ехали из Зубцов в сторону Селижарово"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-22-3",
+    "source": "TICKET",
+    "ticket": 22,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Знакомый отправил СМС — хочет повеситься. Доступа в квартиру нет,  (подруга)",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Белозерская, дом 11Б, кв. 5, под. 1, эт. 2",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Белозерская",
+      "house": "11Б",
+      "building": null,
+      "structure": null,
+      "apartment": "5",
+      "entrance": "1",
+      "floor": "2",
+      "code": null,
+      "descriptive": "Москва, ул. Белозерская, дом 11Б, кв. 5, под. 1, эт. 2"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-23-1",
+    "source": "TICKET",
+    "ticket": 23,
+    "ordinal": 1,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Скандал с пьяным мужем, требуется скорая для женщины, 28 лет, Петровой Елены Михайловны, травма головы, кровотечение,  (сосед)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Тихомирова дом 15 корп. 1, кв. 79, под. 2, эт. 4, код 80В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Тихомирова",
+      "house": "15",
+      "building": null,
+      "structure": null,
+      "apartment": "79",
+      "entrance": "2",
+      "floor": "4",
+      "code": "80В",
+      "descriptive": "Москва, ул. Тихомирова дом 15 корп. 1, кв. 79, под. 2, эт. 4, код 80В"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-23-2",
+    "source": "TICKET",
+    "ticket": 23,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 5,
+    "callerText": "10.03.1977. Чистила ухо, повредила барабанную перепонку, кровотечение, вызывает себе",
+    "caller": {
+      "fullName": "Липатина Ольга Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Лесная, дом 5",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "пос. Малино, ул. Лесная",
+      "okrug": null,
+      "district": null,
+      "street": "при уточнении адреса г. Зеленоград",
+      "house": "5",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "при уточнении адреса г. Зеленоград, пос. Малино, ул. Лесная, дом 5"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-23-3",
+    "source": "TICKET",
+    "ticket": 23,
+    "ordinal": 3,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Потерялся ребенок 30 минут назад — 5 лет, Степанов Гриша, одет в синюю куртку, желтую шапку, желтые шарф и варежки, синие брюки и черные ботинки, гулял с бабушкой во дворе, бабушка",
+    "caller": {
+      "fullName": "Степанова Антонина Марковна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, улица Домодедовская, дом 34 корп. 1, двор у 3 подъезда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "двор у 3 подъезда",
+      "okrug": null,
+      "district": null,
+      "street": "Домодедовская",
+      "house": "34",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, улица Домодедовская, дом 34 корп. 1, двор у 3 подъезда"
+    },
+    "expectedIncidentTypes": [
+      "person.missing"
+    ],
+    "expectedServices": [
+      "102",
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-24-1",
+    "source": "TICKET",
+    "ticket": 24,
+    "ordinal": 1,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Ссора во дворе из-за парковки,  (очевидец)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Вешняковская дом 37, двор у 5 подъезда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "двор у 5 подъезда",
+      "okrug": null,
+      "district": null,
+      "street": "Вешняковская",
+      "house": "37",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Вешняковская дом 37, двор у 5 подъезда"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-24-2",
+    "source": "TICKET",
+    "ticket": 24,
+    "ordinal": 2,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "8 лет, упал сам с горки, высота 1,5 метра, травма лица, кровотечение, вызывает мама",
+    "caller": {
+      "fullName": "Касанов Константин Константинович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Погонный проезд дом 1, корп. 4, двор, на детской площадке",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "двор, на детской площадке",
+      "okrug": null,
+      "district": null,
+      "street": "Погонный",
+      "house": "1",
+      "building": "4",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Погонный проезд дом 1, корп. 4, двор, на детской площадке"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-24-3",
+    "source": "TICKET",
+    "ticket": 24,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Женщина с младенцем на руках, попрошайничает, пристает к гражданам. У ребенка окровавленное лицо",
+    "caller": {
+      "fullName": "Степанова Антонина Марковна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Красная Пресня напротив метро 1905 года",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Красная Пресня напротив метро 1905 года",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Красная Пресня напротив метро 1905 года"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-25-1",
+    "source": "TICKET",
+    "ticket": 25,
+    "ordinal": 1,
+    "category": "OTHER",
+    "difficulty": 5,
+    "callerText": "На улице, на остановке трамвая мужчина нетрезвый сильно ругается и хватает прохожих за руки, 03 не требуется,  (очевидец)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Фабрициуса, остановка 62 автобуса «ул. Штурвальная»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "на стороне ул. Фабрициуса",
+      "house": "18",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "на стороне ул. Фабрициуса, дом 18"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-25-2",
+    "source": "TICKET",
+    "ticket": 25,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, МКАД, от Варшавского шоссе в сторону Каширского, напротив ТЦ Вегас, в левом ряду",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "от Варшавского шоссе в сторону Каширского, напротив ТЦ Вегас, в левом ряду",
+      "okrug": null,
+      "district": null,
+      "street": "МКАД",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, МКАД, от Варшавского шоссе в сторону Каширского, напротив ТЦ Вегас, в левом ряду"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-25-3",
+    "source": "TICKET",
+    "ticket": 25,
+    "ordinal": 3,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Заявитель пришел в квартиру бывшей супруги, т.к. ему позвонили соседи и сообщили, что в квартире 4 дня воет собака. Обнаружил труп бывшей жены, лежит на полу, трупные пятна, рядом большая лужа крови.",
+    "caller": {
+      "fullName": "Титов Игорь Романович",
+      "phone": "79031281223"
+    },
+    "rawAddress": "МО, г. Домодедово, ул. Текстильщиков, дом 31, кв. 5, под. 1, эт. 1, дом 5В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Домодедово",
+      "object": "ул. Текстильщиков",
+      "okrug": null,
+      "district": null,
+      "street": "МО",
+      "house": "5В",
+      "building": null,
+      "structure": null,
+      "apartment": "5",
+      "entrance": "1",
+      "floor": "1",
+      "code": null,
+      "descriptive": "МО, г. Домодедово, ул. Текстильщиков, дом 31, кв. 5, под. 1, эт. 1, дом 5В"
+    },
+    "expectedIncidentTypes": [
+      "animal"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "CEMP",
+      "GOR_HOZ",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-26-1",
+    "source": "TICKET",
+    "ticket": 26,
+    "ordinal": 1,
+    "category": "MEDICAL",
+    "difficulty": 5,
+    "callerText": "У входа на стадион — группа молодых людей, 10-12 человек, пытаются сломать тумбу с афишей, разбили стекло и бьют битами и железными палками. Пострадавших нет,  (очевидец)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, дворец спорта Мегаспорт на Ходынском поле",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Ходынский",
+      "house": "3",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Ходынский бульвар, дом 3"
+    },
+    "expectedIncidentTypes": [
+      "fight"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "ticket-26-2",
+    "source": "TICKET",
+    "ticket": 26,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, МКАД, напротив рынка Мельница, если ехать от Рублевского шоссе, в средних рядах",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "напротив рынка Мельница, если ехать от Рублевского шоссе, в средних рядах",
+      "okrug": null,
+      "district": null,
+      "street": "МКАД",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, МКАД, напротив рынка Мельница, если ехать от Рублевского шоссе, в средних рядах"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-26-3",
+    "source": "TICKET",
+    "ticket": 26,
+    "ordinal": 3,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "В доме престарелых скончалась женщина, после инсульта. Кривенко Лариса Степановна. Вызывает администратор , тел.",
+    "caller": {
+      "fullName": "Щеглова Ирина Ивановна",
+      "phone": "79031281223"
+    },
+    "rawAddress": "Москва, ул. Лескова, дом 6Б, эт. 1, охрана встретит. Центр для пожилых людей «Союз»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "охрана встретит. Центр для пожилых людей «Союз»",
+      "okrug": null,
+      "district": null,
+      "street": "Лескова",
+      "house": "6Б",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": "1",
+      "code": null,
+      "descriptive": "Москва, ул. Лескова, дом 6Б, эт. 1, охрана встретит. Центр для пожилых людей «Союз»"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-27-1",
+    "source": "TICKET",
+    "ticket": 27,
+    "ordinal": 1,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "Подозрительный автомобиль ваз2110 черная, очень грязная, гос. номер а155ат 33, приехала во двор ночью, чем-то сильно нагружена (просели задние колеса), под машиной лежит непонятная коробка с проводами,  (прохожий)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Тихорецкий бульвар, дом 12 корп. 1, во дворе у входа в магазин «Билла»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "во дворе у входа в магазин «Билла»",
+      "okrug": null,
+      "district": null,
+      "street": "Тихорецкий",
+      "house": "12",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Тихорецкий бульвар, дом 12 корп. 1, во дворе у входа в магазин «Билла»"
+    },
+    "expectedIncidentTypes": [
+      "fire.vehicle"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-27-2",
+    "source": "TICKET",
+    "ticket": 27,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, СК, от проспекта Мира, после ул. Малая Дмитровка, въезд в тоннель",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "от проспекта Мира, после ул. Малая Дмитровка, въезд в тоннель",
+      "okrug": null,
+      "district": null,
+      "street": "СК",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, СК, от проспекта Мира, после ул. Малая Дмитровка, въезд в тоннель"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-27-3",
+    "source": "TICKET",
+    "ticket": 27,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Соседи делают ремонт, со стены в ванной комнаты отлетела плитка и образовалась трещина около 1 м в длину. Пострадавших нет.  Петровна",
+    "caller": {
+      "fullName": "Вызывает Селезнева Наталья",
+      "phone": "79032261383"
+    },
+    "rawAddress": "Москва, Ленинский проспект, дом 57, кв. 28, под. 1, эт. 5, дом 57В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Ленинский",
+      "house": "57В",
+      "building": null,
+      "structure": null,
+      "apartment": "28",
+      "entrance": "1",
+      "floor": "5",
+      "code": null,
+      "descriptive": "Москва, Ленинский проспект, дом 57, кв. 28, под. 1, эт. 5, дом 57В"
+    },
+    "expectedIncidentTypes": [
+      "collapse.threat"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "ROSGVARD",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-28-1",
+    "source": "TICKET",
+    "ticket": 28,
+    "ordinal": 1,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "У подъезда молодой человек, лет 20, в синей джинсовой куртке в синих джинсах, черных ботинках, славянской внешности, стоит у домофона и кого-то ждет, в подъезд не заходит и причину своего присутствия старшей по подъезду не пояснил;  (старшая по подъезду)",
+    "caller": {
+      "fullName": "Иванова Инна Васильевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Матвеевская, дом 28, корп. 1, под 5, код 100",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Матвеевская",
+      "house": "28",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": "5",
+      "floor": null,
+      "code": "100",
+      "descriptive": "Москва, ул. Матвеевская, дом 28, корп. 1, под 5, код 100"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-28-2",
+    "source": "TICKET",
+    "ticket": 28,
+    "ordinal": 2,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168975623"
+    },
+    "rawAddress": "Москва, СК, напротив МИД, в сторону Тверской улицы",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "напротив МИД, в сторону Тверской улицы",
+      "okrug": null,
+      "district": null,
+      "street": "СК",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, СК, напротив МИД, в сторону Тверской улицы"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-28-3",
+    "source": "TICKET",
+    "ticket": 28,
+    "ordinal": 3,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "На Ярославском вокзале нет одного крепления на табло с указанием расписания пригородных поездов, есть угроза падения на торговую палатку. Пострадавших нет.",
+    "caller": {
+      "fullName": "Орлова Инна Сергеевна",
+      "phone": "79032261383"
+    },
+    "rawAddress": "Москва, Комсомольская пл, дом 5, платформа пригородного направления №3 (ярославский вокзал)",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "платформа пригородного направления №3 (ярославский вокзал)",
+      "okrug": null,
+      "district": null,
+      "street": "Комсомольская",
+      "house": "5",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Комсомольская пл, дом 5, платформа пригородного направления №3 (ярославский вокзал)"
+    },
+    "expectedIncidentTypes": [
+      "explosion.threat"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-29-1",
+    "source": "TICKET",
+    "ticket": 29,
+    "ordinal": 1,
+    "category": "OTHER",
+    "difficulty": 3,
+    "callerText": "На дорожке в парке лежит большая коробка, замотана скотчем, внутри что-то тикает,  (прохожий)",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, парк Лосиный остров, вход от улицы Красной сосны, далее по дорожке прямо до скамеек",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "вход от улицы Красной сосны, далее по дорожке прямо до скамеек",
+      "okrug": null,
+      "district": null,
+      "street": "парк Лосиный остров",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, парк Лосиный остров, вход от улицы Красной сосны, далее по дорожке прямо до скамеек"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-29-2",
+    "source": "TICKET",
+    "ticket": 29,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "ДТП, Б/П, Б/Р, драка между водителями, без пострадавших, без оружия",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки",
+      "locality": null,
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": null,
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Тульская обл. Дорога от г. Киреевск в сторону пос. Октябрьский. Между заводом ЗОК (завод ограждающих конструкций) и ж/д путями. 500 м от автобусной остановки"
+    },
+    "expectedIncidentTypes": [
+      "fight"
+    ],
+    "expectedServices": [
+      "102",
+      "103",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-29-3",
+    "source": "TICKET",
+    "ticket": 29,
+    "ordinal": 3,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Муж угрожает взорвать квартиру бывшей супруги.",
+    "caller": {
+      "fullName": "Смирнова Ольга Ивановна",
+      "phone": "79032261383"
+    },
+    "rawAddress": "Москва, проезд Шокальского дом 67, корп. 1 кв. 3 под. 1, эт. 1, код 67",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Шокальского",
+      "house": "67",
+      "building": "1 кв. 3 под. 1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": "1",
+      "code": "67",
+      "descriptive": "Москва, проезд Шокальского дом 67, корп. 1 кв. 3 под. 1, эт. 1, код 67"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-30-1",
+    "source": "TICKET",
+    "ticket": 30,
+    "ordinal": 1,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Угон машины, видели в последний раз вчера вечером, тойота синяя А128НА 177",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Ташкентская дом 25, корп. 1, двор от 7 подъезда",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "двор от 7 подъезда",
+      "okrug": null,
+      "district": null,
+      "street": "Ташкентская",
+      "house": "25",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Ташкентская дом 25, корп. 1, двор от 7 подъезда"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-30-2",
+    "source": "TICKET",
+    "ticket": 30,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Наезд на пешехода, мужчина, без сознания, на месте ваз2110 красный а128 аа177",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Тюменская на пересечении с Тюменский проездом",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Тюменская на пересечении с Тюменский проездом",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Тюменская на пересечении с Тюменский проездом"
+    },
+    "expectedIncidentTypes": [
+      "medical.illness"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-30-3",
+    "source": "TICKET",
+    "ticket": 30,
+    "ordinal": 3,
+    "category": "GAS",
+    "difficulty": 3,
+    "callerText": "В частном доме запах газа от трубы на вводе в дом, слышит шум в трубе. Газ магистральный. 03 не требуется",
+    "caller": {
+      "fullName": "Соколова Вера Ивановна",
+      "phone": "79163201283"
+    },
+    "rawAddress": "НМ, с/п Вороновское, пос. ЛМС, мкр. Солнечный, дом 20",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "с/п Вороновское, пос. ЛМС, мкр. Солнечный",
+      "okrug": null,
+      "district": null,
+      "street": "НМ",
+      "house": "20",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "НМ, с/п Вороновское, пос. ЛМС, мкр. Солнечный, дом 20"
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "101",
+      "103",
+      "104",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-31-1",
+    "source": "TICKET",
+    "ticket": 31,
+    "ordinal": 1,
+    "category": "POLICE",
+    "difficulty": 3,
+    "callerText": "Угон машины мерседес черный А128АА 177, на глазах владельца, уехала в сторону садового кольца",
+    "caller": {
+      "fullName": "Соколов Иван",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Большая Ордынка на пересечении с Пыжевским переулком",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Большая Ордынка на пересечении с Пыжевским переулком",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Большая Ордынка на пересечении с Пыжевским переулком"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-31-2",
+    "source": "TICKET",
+    "ticket": 31,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "Наезд на пешехода, мужчина в сознании, травма головы, с места скрылась ваз 2110 красная ? 128 ?? 177, в сторону области",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Рублевское шоссе, напротив ТЦ «Европарк»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "напротив ТЦ «Европарк»",
+      "okrug": null,
+      "district": null,
+      "street": "Рублевское",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Рублевское шоссе, напротив ТЦ «Европарк»"
+    },
+    "expectedIncidentTypes": [
+      "medical.trauma"
+    ],
+    "expectedServices": [
+      "103"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-31-3",
+    "source": "TICKET",
+    "ticket": 31,
+    "ordinal": 3,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Свист от газовой трубы в квартире, на кухне. 03 не треб.",
+    "caller": {
+      "fullName": "Трунов Олег Егорович",
+      "phone": "79163201283"
+    },
+    "rawAddress": "Москва, ул. Вавилова, дом 81 корп. 1, кв. 5, под. 1, эт. 2, код 5В",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Вавилова",
+      "house": "81",
+      "building": "1",
+      "structure": null,
+      "apartment": "5",
+      "entrance": "1",
+      "floor": "2",
+      "code": "5В",
+      "descriptive": "Москва, ул. Вавилова, дом 81 корп. 1, кв. 5, под. 1, эт. 2, код 5В"
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "101",
+      "103",
+      "104",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-32-1",
+    "source": "TICKET",
+    "ticket": 32,
+    "ordinal": 1,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "Завладение автотранспортом, остановили (перегородили проезд) машиной ваз 2115 черная, грязная, вытащили из машины и уехали на мерседес черный а 128 аа 177 в сторону Ходынского бульвара, 03 не требуется, ваз 2115 бросили на проезжей части",
+    "caller": {
+      "fullName": "Соколов Иван Петрович",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, ул. Маргелова, перед перекрестком с ул. Гризодубовой",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": "перед перекрестком с ул. Гризодубовой",
+      "okrug": null,
+      "district": null,
+      "street": "Маргелова",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, ул. Маргелова, перед перекрестком с ул. Гризодубовой"
+    },
+    "expectedIncidentTypes": [],
+    "expectedServices": [],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-32-2",
+    "source": "TICKET",
+    "ticket": 32,
+    "ordinal": 2,
+    "category": "MEDICAL",
+    "difficulty": 3,
+    "callerText": "ДТП, 3 пострадавших в троллейбусе, не блокированы, троллейбус маршрут 27, бортовой номер 11 458, + ваз2115, течет бензин",
+    "caller": {
+      "fullName": "Иванова Елена Сергеевна",
+      "phone": "79168963254"
+    },
+    "rawAddress": "Москва, Волгоградский проспект в сторону области, остановка «Завод Спецэлектрод»",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": "Волгоградский проспект в сторону области",
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "остановка «Завод Спецэлектрод»",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "Москва, Волгоградский проспект в сторону области, остановка «Завод Спецэлектрод»"
+    },
+    "expectedIncidentTypes": [
+      "dtp.injured"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "CODD",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": false
+  },
+  {
+    "id": "ticket-32-3",
+    "source": "TICKET",
+    "ticket": 32,
+    "ordinal": 3,
+    "category": "FIRE",
+    "difficulty": 3,
+    "callerText": "На МКАД (внутренняя и внешняя сторона) на протяжении от Ленинградского шоссе до Волоколамского горит уличное освещение.",
+    "caller": {
+      "fullName": "Зотова Алина Петровна",
+      "phone": "79163201283"
+    },
+    "rawAddress": "МКАД между 74 и 68 км",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "МКАД между 74 и 68 км",
+      "house": null,
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "МКАД между 74 и 68 км"
+    },
+    "expectedIncidentTypes": [
+      "fire.garbage"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO",
+      "ECO"
+    ],
+    "addressClarified": false
+  }
+]

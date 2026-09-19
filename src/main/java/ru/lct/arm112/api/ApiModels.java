@@ -3,6 +3,7 @@ package ru.lct.arm112.api;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -15,20 +16,33 @@ import java.util.UUID;
 public final class ApiModels {
     private ApiModels() {}
 
+    // ---------------------------------------------------------------- auth / users
+
     public record LoginRequest(@NotBlank @Size(max = 100) String username,
                                @NotBlank @Size(max = 200) String password) {}
 
     public record AuthResponse(String accessToken, Instant expiresAt, User user) {}
-    public record User(UUID id, String displayName, String role) {}
+    public record User(UUID id, String displayName, String role, String login,
+                       String workstationNumber, UUID groupId) {}
+    public record PasswordChangeRequest(@NotBlank String current,
+                                        @NotBlank @Size(min = 4, max = 200) String next) {}
     public record Workstation(UUID id, String number, String label) {}
     public record TraineeContext(User user, Workstation workstation, Instant serverTime,
                                  TrainingSession activeSession) {}
     public record WsTicket(String ticket, Instant expiresAt) {}
 
+    // ---------------------------------------------------------------- sessions
+
     public record TrainingSession(UUID id, String mode, String state, String title,
                                   @Min(1) @Max(10) int difficulty, String referenceVersion,
                                   Instant serverTime, Instant startedAt, Instant completedAt,
-                                  List<UUID> cardIds) {}
+                                  List<UUID> cardIds, List<UUID> draftIds, UUID lessonId,
+                                  String lessonKind, int pendingScenarios) {}
+
+    public record SessionSummary(UUID id, UUID lessonId, String lessonTitle, String lessonKind,
+                                 String mode, String state, Instant startedAt, Instant completedAt) {}
+
+    // ---------------------------------------------------------------- cards (CARD_ACTIONS)
 
     public record CardPage(Instant serverTime, List<CardListItem> items, String nextCursor) {}
     public record CardListItem(UUID id, String number, Instant receivedAt,
@@ -44,7 +58,8 @@ public final class ApiModels {
                                ScenarioRequirements scenarioRequirements,
                                List<CallTarget> callTargets,
                                List<CardTimelineEntry> timeline,
-                               List<OutboundCall> outboundCalls) {}
+                               List<OutboundCall> outboundCalls,
+                               List<Hint> hints, String ownServiceCode) {}
 
     public record CardSla(Instant acceptanceDeadlineAt, Instant processingDeadlineAt,
                           boolean acceptanceOverdue, boolean processingOverdue) {}
@@ -79,7 +94,7 @@ public final class ApiModels {
 
     public record CardTimelineEntry(UUID id, String action, String resultingStatus,
                                     String reasonCode, String comment, Instant occurredAt,
-                                    String actorLabel) {}
+                                    String actorLabel, String actorRole) {}
 
     public record StartCallRequest(@NotBlank @Pattern(regexp = "^[0-9]{3,4}$") String shortNumber) {}
 
@@ -95,13 +110,150 @@ public final class ApiModels {
                                   List<DictionaryItem> services,
                                   List<DictionaryItem> reactionReasons) {}
 
+    /** Подсказка обучающемуся в режиме тренировки (решение №10). */
+    public record Hint(String field, String message) {}
+
+    // ---------------------------------------------------------------- scenarios / card fill
+
+    public record FormalAddress(String country, String region, String locality, String object,
+                                String okrug, String district, String street, String house,
+                                String building, String structure, String apartment,
+                                String entrance, String floor, String code, String descriptive) {}
+
+    public record ScenarioCaller(String fullName, String phone) {}
+
+    public record Scenario(String id, String source, String category, @Min(1) @Max(10) int difficulty,
+                           String callerText, ScenarioCaller caller, String rawAddress,
+                           FormalAddress expectedAddress, List<String> expectedIncidentTypes,
+                           List<String> expectedServices, boolean addressClarified,
+                           String expectedDecision, String expectedDecisionReason,
+                           boolean outboundCallRequired,
+                           boolean referenceConfirmed, Instant referenceConfirmedAt,
+                           UUID createdBy, Instant createdAt) {}
+
+    public record ScenarioListItem(String id, String source, String category, int difficulty,
+                                   String callerText, String rawAddress,
+                                   List<String> expectedIncidentTypes, boolean referenceConfirmed) {}
+
+    public record ScenarioUpsert(@Size(max = 64) String id, @NotBlank String category,
+                                 @Min(1) @Max(10) int difficulty,
+                                 @NotBlank @Size(max = 2000) String callerText, ScenarioCaller caller,
+                                 @Size(max = 1000) String rawAddress, FormalAddress expectedAddress,
+                                 List<String> expectedIncidentTypes, List<String> expectedServices,
+                                 String expectedDecision, String expectedDecisionReason,
+                                 boolean outboundCallRequired) {}
+
+    public record GenerateRequest(@NotBlank String category, @Min(1) @Max(20) int count,
+                                  @Min(1) @Max(10) int difficulty) {}
+
+    public record CardDraft(UUID id, UUID sessionId, String scenarioId, String number,
+                            Instant startedAt, Instant savedAt, Instant deadlineAt, String state,
+                            String callerText, DraftPhones phones, DraftCaller caller,
+                            FormalAddress address, DraftFlags flags, List<String> incidentTypeIds,
+                            List<SurveyAnswer> surveyAnswers, String description,
+                            List<DraftService> services, List<Hint> hints) {}
+
+    public record DraftPhones(String ani, String provided, String onSite) {}
+    public record DraftCaller(String fullName, String status) {}
+    public record DraftFlags(boolean victims, Integer victimsCount, boolean ambulanceRefused,
+                             boolean blocked, boolean noContact, boolean callDropped) {}
+    public record SurveyAnswer(String questionId, String optionId, String text) {}
+    public record DraftService(String code, String label, boolean auto) {}
+
+    public record CardDraftPatch(DraftPhones phones, DraftCaller caller, FormalAddress address,
+                                 DraftFlags flags, List<String> incidentTypeIds,
+                                 List<SurveyAnswer> surveyAnswers,
+                                 @Size(max = 1999) String description,
+                                 List<String> extraServiceCodes) {}
+
+    public record CreateDraftRequest(@NotNull UUID sessionId) {}
+
+    public record IncidentTypeItem(String id, String label, String category,
+                                   boolean frequent, boolean significant) {}
+    public record SurveyCard(String id, String incidentTypeId, List<SurveyQuestion> questions) {}
+    public record SurveyQuestion(String id, String text, String kind, List<DictionaryItem> options) {}
+
+    // ---------------------------------------------------------------- assessment
+
     public record SubmitResponse(UUID assessmentId, String state) {}
-    public record Assessment(UUID id, UUID sessionId, String state, Double totalScore,
+    public record Assessment(UUID id, UUID sessionId, String state, String mode, Double totalScore,
                              Double timingScore, Double actionsScore,
                              Double communicationScore, Double languageScore,
-                             List<AssessmentIssue> issues) {}
+                             Double addressScore, Double classificationScore, Double servicesScore,
+                             Integer syntaxErrors,
+                             List<AssessmentIssue> issues, List<String> recommendations,
+                             String source, Double aiTotalScore, Double teacherTotalScore,
+                             String teacherComment, Instant teacherAssessedAt) {}
     public record AssessmentIssue(String code, String severity, String message,
                                   UUID cardId, Object expected, Object actual) {}
+    public record TeacherAssessment(@NotNull @Min(0) @Max(100) Double total,
+                                    @Size(max = 2000) String comment) {}
+
+    public record ResultItem(UUID sessionId, UUID lessonId, String lessonTitle, String lessonKind,
+                             String mode, Instant completedAt, boolean visible,
+                             Double finalTotal, String source, UUID assessmentId) {}
+    public record Rating(Double value, Integer rank, Integer groupSize, Integer completedSessions) {}
+
+    // ---------------------------------------------------------------- lessons (teacher)
+
+    public record Group(UUID id, String name, UUID teacherId, String teacherName,
+                        List<User> members) {}
+    public record GroupUpsert(@NotBlank @Size(max = 200) String name, UUID teacherId) {}
+
+    public record Lesson(UUID id, UUID teacherId, UUID groupId, String groupName, String title,
+                         String kind, String mode, String cardSource, String state,
+                         List<String> scenarioIds, Instant createdAt, Instant startedAt,
+                         Instant completedAt, Instant resultsPublishedAt, int sessionCount) {}
+
+    public record LessonCreate(@NotBlank @Size(max = 200) String title, UUID groupId,
+                               @NotBlank String kind, @NotBlank String mode, @NotBlank String cardSource,
+                               @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds) {}
+
+    public record LessonMonitor(Lesson lesson, List<MonitorRow> sessions) {}
+    public record MonitorRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,
+                             String state, String currentStatus, boolean acceptanceOverdue,
+                             boolean processingOverdue, Instant startedAt, Instant completedAt,
+                             int completedCards, int totalCards, Double finalTotal) {}
+
+    public record LessonReport(Lesson lesson, List<ReportRow> rows, Double groupRating) {}
+    public record ReportRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,
+                            Double timingScore, Integer syntaxErrors, Double level,
+                            Double aiTotal, Double teacherTotal, Double finalTotal, String state) {}
+
+    public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
+                                List<CardDraft> drafts, Assessment assessment) {}
+
+    public record Material(UUID id, UUID teacherId, String title, String fileName, String contentType,
+                           long sizeBytes, Instant uploadedAt, List<UUID> groupIds) {}
+
+    // ---------------------------------------------------------------- admin
+
+    public record UserAdminView(UUID id, String login, String displayName, String role,
+                                String workstationNumber, UUID groupId, boolean active,
+                                Instant createdAt) {}
+    public record UserCreate(@NotBlank @Size(max = 100) String login,
+                             @NotBlank @Size(min = 4, max = 200) String password,
+                             @NotBlank @Size(max = 200) String displayName,
+                             @NotBlank String role, @Size(max = 10) String workstationNumber,
+                             UUID groupId) {}
+    public record UserUpdate(@NotBlank @Size(max = 200) String displayName,
+                             @NotBlank String role, @Size(max = 10) String workstationNumber,
+                             UUID groupId) {}
+    public record PasswordReset(@NotBlank @Size(min = 4, max = 200) String password) {}
+
+    public record AuditEntry(UUID id, UUID actorUserId, String actorLogin, String actorRole,
+                             String action, String resourceType, String resourceId,
+                             Integer httpStatus, UUID requestId, String clientIp,
+                             String payload, Instant occurredAt) {}
+    public record AuditPage(List<AuditEntry> items, String nextCursor) {}
+
+    public record SystemHealth(String status, String database, int openSockets,
+                               int activeSessions, String version, Instant serverTime) {}
+    public record BackupInfo(String fileName, long sizeBytes, Instant createdAt) {}
+    public record RestoreRequest(@NotBlank String confirm) {}
+    public record LogTail(List<String> lines) {}
+
+    // ---------------------------------------------------------------- realtime / errors
 
     public record RealtimeEvent(UUID eventId, String type, Instant occurredAt,
                                 Instant serverTime, UUID sessionId, long sequence,

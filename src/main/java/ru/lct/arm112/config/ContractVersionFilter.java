@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Component
 public class ContractVersionFilter extends OncePerRequestFilter {
-    private static final String SUPPORTED_VERSION = "0.2";
+    private static final String SUPPORTED_VERSION = "0.3";
     private final ObjectMapper objectMapper;
 
     public ContractVersionFilter(ObjectMapper objectMapper) {
@@ -44,7 +44,7 @@ public class ContractVersionFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         response.setHeader("X-Request-Id", requestId.toString());
         objectMapper.writeValue(response.getOutputStream(), new ErrorEnvelope(new ErrorBody(
-                "CONTRACT_VERSION_UNSUPPORTED", "Поддерживается версия контракта 0.2",
+                "CONTRACT_VERSION_UNSUPPORTED", "Поддерживается версия контракта 0.3",
                 requestId, List.of(), Map.of("supportedVersion", SUPPORTED_VERSION))));
     }
 

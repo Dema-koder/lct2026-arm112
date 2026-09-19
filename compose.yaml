@@ -28,6 +28,14 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-arm112}
       ARM112_JWT_SECRET: ${ARM112_JWT_SECRET:-local-training-secret-key-change-me-2026}
       ARM112_ALLOWED_ORIGINS: ${ARM112_ALLOWED_ORIGINS:-http://localhost:3000}
+      ARM112_SEED_ADMIN_PASSWORD: ${ARM112_SEED_ADMIN_PASSWORD:-admin}
+      ARM112_SEED_TEACHER_PASSWORD: ${ARM112_SEED_TEACHER_PASSWORD:-teacher}
+      ARM112_SEED_TRAINEE_PASSWORD: ${ARM112_SEED_TRAINEE_PASSWORD:-trainee}
+      ARM112_BACKUP_DIR: /data/backups
+      ARM112_MATERIALS_DIR: /data/materials
+      ARM112_LOG_FILE: /data/logs/arm112.log
+    volumes:
+      - backend_data:/data
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
@@ -57,3 +65,4 @@ services:
 
 volumes:
   postgres_data:
+  backend_data:
