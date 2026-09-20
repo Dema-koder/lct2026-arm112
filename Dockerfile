@@ -5,12 +5,11 @@ COPY docs/contracts/ docs/contracts/
 COPY src/ src/
 RUN mvn -q clean package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 10001 arm112 \
+RUN apk add --no-cache curl \
+    && addgroup -S -g 10001 arm112 \
+    && adduser -S -u 10001 -G arm112 -D arm112 \
     && mkdir -p /data/backups /data/materials /data/logs \
     && chown -R arm112:arm112 /data
 COPY --from=build /workspace/target/arm112-backend-*.jar app.jar

@@ -167,3 +167,5 @@ API-контракт и правила независимой разработк
 Подробная пошаговая инструкция по запуску Swagger, авторизации и прохождению полного учебного сценария: [`docs/frontend/SWAGGER_GUIDE.md`](docs/frontend/SWAGGER_GUIDE.md).
 
 Настройка и команды frontend описаны отдельно в [`frontend/README.md`](frontend/README.md).
+
+Production-выкладка на сервер при каждом push/merge в `main` описана в [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
