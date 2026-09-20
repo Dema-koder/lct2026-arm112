@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, type Assessment, type Material, type Rating, type ResultItem } from "../../../lib/api";
-import { bytes, dateTime, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
+import { bytes, criterionLabels, dateTime, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
 
 /** Мои результаты: список занятий по правилу видимости, детали оценки, рейтинг, материалы группы. */
 export function Results({ token, refreshKey }: { token: string; refreshKey: number }) {
@@ -126,6 +126,20 @@ export function AssessmentView({ assessment, onClose, title }: { assessment: Ass
           {assessment.source === "TEACHER" && <span>Оценка системы <b>{score(assessment.aiTotalScore)}</b></span>}
         </div>
         {assessment.teacherComment && <p className="teacher-comment"><b>Преподаватель:</b> {assessment.teacherComment}</p>}
+        {assessment.teacherCriteria.filter((c) => c.comment || c.score !== null).length > 0 && (
+          <ul className="criteria-notes">
+            {assessment.teacherCriteria.filter((c) => c.comment || c.score !== null).map((c) => {
+              const ai = assessment.aiCriteria.find((a) => a.code === c.code)?.score ?? null;
+              return (
+                <li key={c.code}>
+                  <b>{criterionLabels[c.code] ?? c.code}:</b>{" "}
+                  {c.score !== null ? <>{score(c.score)} <small>(система: {score(ai)})</small></> : <small>балл системы {score(ai)}</small>}
+                  {c.comment && <> — {c.comment}</>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {assessment.issues.filter((i) => i.severity !== "INFO").map((issue, index) => (
           <p key={index} className={`assessment-issue ${issue.severity === "CRITICAL" ? "critical" : ""}`}>{issue.message}</p>
         ))}

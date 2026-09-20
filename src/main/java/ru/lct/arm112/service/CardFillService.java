@@ -79,7 +79,7 @@ public class CardFillService {
                     new DraftCaller(caller == null ? null : caller.fullName(), "заявитель"),
                     new FormalAddress("Россия", null, null, null, null, null, null, null, null, null, null, null, null, null, null),
                     new DraftFlags(false, null, false, false, false, false),
-                    List.of(), List.of(), "", List.of(), List.of());
+                    List.of(), List.of(), "", List.of(), List.of(), scenario.title());
             engine.registerDraft(state, draft);
             engine.publishDraft(state, draft, "draft.created");
             engine.persist(state);
@@ -111,7 +111,7 @@ public class CardFillService {
                     List.copyOf(types),
                     patch.surveyAnswers() != null ? patch.surveyAnswers() : current.surveyAnswers(),
                     patch.description() != null ? patch.description() : current.description(),
-                    services, List.of());
+                    services, List.of(), current.scenarioTitle());
             state.drafts.put(draftId, updated);
             engine.publishDraft(state, updated, "draft.updated");
             engine.persist(state);
@@ -135,7 +135,7 @@ public class CardFillService {
                 CardDraft saved = new CardDraft(current.id(), current.sessionId(), current.scenarioId(), current.number(),
                         current.startedAt(), Instant.now(), current.deadlineAt(), "SAVED", current.callerText(),
                         current.phones(), current.caller(), current.address(), current.flags(), current.incidentTypeIds(),
-                        current.surveyAnswers(), current.description(), current.services(), List.of());
+                        current.surveyAnswers(), current.description(), current.services(), List.of(), current.scenarioTitle());
                 state.drafts.put(draftId, saved);
                 // Сохранённая карточка становится сценарием для режима действий (ТЗ, сценарий 3).
                 Scenario base = scenarios.require(saved.scenarioId());
@@ -180,7 +180,7 @@ public class CardFillService {
         return new CardDraft(draft.id(), draft.sessionId(), draft.scenarioId(), draft.number(), draft.startedAt(),
                 draft.savedAt(), draft.deadlineAt(), draft.state(), draft.callerText(), draft.phones(), draft.caller(),
                 draft.address(), draft.flags(), draft.incidentTypeIds(), draft.surveyAnswers(), draft.description(),
-                draft.services(), assessor.hints(draft, scenario));
+                draft.services(), assessor.hints(draft, scenario), draft.scenarioTitle());
     }
 
     private static void requireActive(SessionState state) {

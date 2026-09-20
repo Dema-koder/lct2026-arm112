@@ -109,6 +109,7 @@ export type TimelineEntry = {
 };
 
 export type IncidentCard = {
+  scenarioTitle: string | null;
   id: string;
   sessionId: string;
   number: string;
@@ -196,6 +197,7 @@ export type CardDraft = {
   description: string;
   services: DraftService[];
   hints: Hint[];
+  scenarioTitle: string | null;
 };
 
 export type CardDraftPatch = Partial<{
@@ -224,6 +226,8 @@ export type AssessmentIssue = {
   actual?: unknown;
 };
 
+export type CriterionScore = { code: string; score: number | null; comment: string | null };
+
 export type Assessment = {
   id: string;
   sessionId: string;
@@ -245,6 +249,8 @@ export type Assessment = {
   teacherTotalScore: number | null;
   teacherComment: string | null;
   teacherAssessedAt: string | null;
+  aiCriteria: CriterionScore[];
+  teacherCriteria: CriterionScore[];
 };
 
 export type ResultItem = {
@@ -279,6 +285,7 @@ export type Group = { id: string; name: string; teacherId: string; teacherName: 
 
 export type Scenario = {
   id: string;
+  title: string;
   source: "TICKET" | "GENERATED" | "TRAINEE_MADE";
   category: string;
   difficulty: number;
@@ -298,10 +305,11 @@ export type Scenario = {
   createdAt: string;
 };
 
-export type ScenarioListItem = Pick<Scenario, "id" | "source" | "category" | "difficulty" | "callerText" | "rawAddress" | "expectedIncidentTypes" | "referenceConfirmed">;
+export type ScenarioListItem = Pick<Scenario, "id" | "title" | "source" | "category" | "difficulty" | "callerText" | "rawAddress" | "expectedAddress" | "expectedIncidentTypes" | "expectedServices" | "referenceConfirmed" | "createdAt">;
 
 export type ScenarioUpsert = {
   id?: string | null;
+  title: string;
   category: string;
   difficulty: number;
   callerText: string;
@@ -430,6 +438,10 @@ export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: strin
 
 // ------------------------------------------------------------------ transport
 
+/** Глобальный обработчик 401: регистрируется корнем приложения и выбрасывает на экран входа. */
+let unauthorizedHandler: ((reason: string) => void) | null = null;
+export const onUnauthorized = (handler: ((reason: string) => void) | null) => { unauthorizedHandler = handler; };
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -462,6 +474,10 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
   }
   if (!response.ok) {
     const error = (data as { error?: { code?: string; message?: string; details?: Record<string, unknown> } } | null)?.error;
+    if (response.status === 401 && !path.startsWith("/auth/login") && unauthorizedHandler) {
+      // токен отозван (блокировка, смена роли/пароля, восстановление копии) — сессия завершена
+      unauthorizedHandler(error?.message ?? "Сессия завершена — войдите заново");
+    }
     throw new ApiError(response.status, error?.code ?? "REQUEST_FAILED",
       error?.message ?? `Ошибка HTTP ${response.status}`, error?.details);
   }
@@ -562,8 +578,10 @@ export const api = {
       return response.blob();
     },
     session: (token: string, sessionId: string) => request<SessionDetail>(`/teacher/sessions/${sessionId}`, {}, token),
-    assess: (token: string, sessionId: string, total: number, comment: string) =>
-      request<Assessment>(`/teacher/sessions/${sessionId}/assessment`, { method: "PUT", body: json({ total, comment: comment || null }) }, token),
+    assess: (token: string, sessionId: string, total: number | null, comment: string, criteria: CriterionScore[] = []) =>
+      request<Assessment>(`/teacher/sessions/${sessionId}/assessment`, {
+        method: "PUT", body: json({ total, comment: comment || null, criteria }),
+      }, token),
     materials: (token: string) => request<Material[]>("/teacher/materials", {}, token),
     uploadMaterial: (token: string, file: File, title: string, groupIds: string[]) => {
       const form = new FormData();

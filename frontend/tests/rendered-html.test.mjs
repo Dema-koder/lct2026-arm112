@@ -44,9 +44,11 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(api, /\/teacher\/lessons/);
   assert.match(api, /\/admin\/users/);
 
-  // три роли — три рабочих места
+  // три роли — три рабочих места; отозванный токен сразу выбрасывает на вход
   assert.match(page, /case "TEACHER":/);
   assert.match(page, /case "ADMIN":/);
+  assert.match(api, /export const onUnauthorized/);
+  assert.match(page, /onUnauthorized\(/);
 
   // экран ДДС: журнал, статусы, таймеры для всех активных статусов, своя плитка службы
   assert.match(dds, /Поиск происшествий/);
@@ -64,6 +66,8 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
 
   // преподаватель: виды занятий и публикация зачёта; администратор: подтверждение восстановления
   assert.match(teacher, /Опубликовать результаты/);
+  assert.match(teacher, /Оценка преподавателя по критериям/);
+  assert.match(teacher, /scenarioTitle/);
   assert.match(teacher, /EXAM/);
   assert.match(admin, /RESTORE/);
 });

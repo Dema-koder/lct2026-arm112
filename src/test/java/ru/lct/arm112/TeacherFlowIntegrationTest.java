@@ -67,6 +67,37 @@ class TeacherFlowIntegrationTest extends ApiTestSupport {
         assertThat(json(assessed).get("source").asText()).isEqualTo("TEACHER");
         assertThat(json(assessed).get("totalScore").asDouble()).isEqualTo(88.5);
         assertThat(json(assessed).get("aiTotalScore").asDouble()).isGreaterThan(0);
+        assertThat(json(assessed).get("aiCriteria").size()).isEqualTo(5);
+        assertThat(detail.get("drafts").get(0).get("scenarioTitle").asText()).isNotBlank();
+
+        // оценка по критериям: итог пересчитывается по весам режима (адрес 40, тип 20, службы 20, время 15, грамотность 5)
+        HttpResponse<String> byCriteria = put("/api/v1/teacher/sessions/" + sessionA + "/assessment",
+                "{\"comment\":\"Тип определён не точно\",\"criteria\":["
+                        + "{\"code\":\"address\",\"score\":100,\"comment\":null},"
+                        + "{\"code\":\"classification\",\"score\":80,\"comment\":\"нужен тип «сигнализация»\"},"
+                        + "{\"code\":\"services\",\"score\":100,\"comment\":null},"
+                        + "{\"code\":\"timing\",\"score\":100,\"comment\":null},"
+                        + "{\"code\":\"language\",\"score\":100,\"comment\":null}]}", teacher);
+        assertThat(byCriteria.statusCode()).as(byCriteria.body()).isEqualTo(200);
+        assertThat(json(byCriteria).get("totalScore").asDouble()).isEqualTo(96.0);
+        assertThat(json(byCriteria).get("classificationScore").asDouble()).isEqualTo(80.0);
+        assertThat(json(byCriteria).get("teacherCriteria").size()).isEqualTo(5);
+        HttpResponse<String> badCriterion = put("/api/v1/teacher/sessions/" + sessionA + "/assessment",
+                "{\"criteria\":[{\"code\":\"actions\",\"score\":50,\"comment\":null}]}", teacher);
+        assertThat(badCriterion.statusCode()).isEqualTo(422);
+        // возвращаем итог 88.5 для последующих проверок
+        put("/api/v1/teacher/sessions/" + sessionA + "/assessment",
+                "{\"total\":88.5,\"comment\":\"Адрес верный, описание можно короче\"}", teacher);
+
+        // название сценария редактируется преподавателем и видно в списке
+        JsonNode ticket = json(get("/api/v1/teacher/scenarios/ticket-01-1", teacher));
+        assertThat(ticket.get("title").asText()).contains("Пожар: мусор");
+        HttpResponse<String> renamed = put("/api/v1/teacher/scenarios/ticket-01-1",
+                "{\"title\":\"Пожар в депо у Киевской\",\"category\":\"FIRE\",\"difficulty\":4,\"callerText\":\""
+                        + ticket.get("callerText").asText() + "\",\"expectedIncidentTypes\":[\"fire.garbage\"],\"outboundCallRequired\":true}", teacher);
+        assertThat(renamed.statusCode()).as(renamed.body()).isEqualTo(200);
+        assertThat(json(renamed).get("title").asText()).isEqualTo("Пожар в депо у Киевской");
+        assertThat(json(get("/api/v1/teacher/scenarios?category=FIRE", teacher)).toString()).contains("Пожар в депо у Киевской");
 
         String assessmentId = json(assessed).get("id").asText();
         assertThat(get("/api/v1/assessments/" + assessmentId, tokenA).statusCode()).isEqualTo(403);

@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, type CardSource, type Group, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
-import { actionLabels, categoryLabels, dateTime, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
-import { ErrorBanner, Notice, useAction, useClock, useNotice, useSocket } from "../common";
+import { api, type CardSource, type CriterionScore, type Group, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
+import { actionLabels, categoryLabels, criterionLabels, criteriaForMode, dateTime, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
+import { ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
+import { ScenarioCard } from "./Scenarios";
 import { AssessmentView } from "../trainee/Results";
 
 /** Занятия преподавателя: список, создание, монитор, отчёт, оценка. */
@@ -73,8 +74,11 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
   const [category, setCategory] = useState("");
   const [chosenScenarios, setChosenScenarios] = useState<string[]>([]);
   const [chosenTrainees, setChosenTrainees] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [working, run] = useAction(setError);
+  const typeLabel = useIncidentTypeLabels(token);
 
   useEffect(() => {
     api.teacher.groups(token).then((g) => { setGroups(g); if (g[0]) setGroupId(g[0].id); }).catch((e) => setError(e.message));
@@ -88,6 +92,11 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
 
   const group = groups.find((g) => g.id === groupId);
   const members = group?.members ?? [];
+  const visibleScenarios = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = q ? scenarios.filter((s) => [s.title, s.callerText, s.rawAddress ?? ""].some((v) => v.toLowerCase().includes(q))) : scenarios;
+    return [...list].sort((a, b) => Number(b.referenceConfirmed) - Number(a.referenceConfirmed) || a.title.localeCompare(b.title, "ru"));
+  }, [scenarios, search]);
   const toggle = (list: string[], id: string, set: (v: string[]) => void) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
@@ -120,7 +129,10 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
         <label><span>Режим</span>
           <select value={mode} onChange={(e) => setMode(e.target.value as LessonMode)}>
             {(["CARD_FILL", "CARD_ACTIONS"] as LessonMode[]).map((m) => <option key={m} value={m}>{modeLabels[m]}</option>)}
-          </select></label>
+          </select>
+          <small>{mode === "CARD_FILL"
+            ? "вводные выдаются по одной: следующая — после сохранения текущей (учебное упрощение, в боевом АРМ — журнал и вызовы)"
+            : "карточки приходят по одной: следующая — после закрытия текущей"}</small></label>
         {mode === "CARD_ACTIONS" && (
           <label><span>Источник карточек</span>
             <select value={cardSource} onChange={(e) => setCardSource(e.target.value as CardSource)}>
@@ -134,15 +146,21 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
           <option value="">все категории</option>
           {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <small>выбрано: {chosenScenarios.length}</small>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="поиск по названию, вводной, адресу" />
+        <small>выбрано: {chosenScenarios.length} из {visibleScenarios.length}</small>
       </div>
-      <div className="check-list">
-        {scenarios.map((s) => (
-          <label key={s.id} className={chosenScenarios.includes(s.id) ? "on" : ""}>
-            <input type="checkbox" checked={chosenScenarios.includes(s.id)} onChange={() => toggle(chosenScenarios, s.id, setChosenScenarios)} />
-            <b>{s.id}</b> <em>{categoryLabels[s.category] ?? s.category} · сложность {s.difficulty}{s.referenceConfirmed ? " · эталон ✓" : ""}</em>
-            <span>{s.callerText}</span>
-          </label>
+      <div className="check-list scenarios">
+        {visibleScenarios.map((s) => (
+          <div key={s.id} className={`scenario-row ${chosenScenarios.includes(s.id) ? "on" : ""}`}>
+            <label>
+              <input type="checkbox" checked={chosenScenarios.includes(s.id)} onChange={() => toggle(chosenScenarios, s.id, setChosenScenarios)} />
+              <b>{s.title}</b>
+              <em>{s.expectedIncidentTypes.map(typeLabel).join(", ") || categoryLabels[s.category] || s.category} · сложность {s.difficulty}{s.referenceConfirmed ? " · эталон ✓" : ""}</em>
+              <span>{s.callerText}</span>
+            </label>
+            <button type="button" className="expand" aria-label="Подробнее" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>{expanded === s.id ? "⌃" : "⌄"}</button>
+            {expanded === s.id && <ScenarioCard scenario={s} typeLabel={typeLabel} />}
+          </div>
         ))}
       </div>
 
@@ -323,28 +341,65 @@ function ReportCharts({ report }: { report: LessonReport }) {
   );
 }
 
+type CriterionDraft = { score: string; comment: string };
+
 function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string; sessionId: string; onBack: () => void; lessonKind: LessonKind }) {
   const [detail, setDetail] = useState<SessionDetail | null>(null);
-  const [total, setTotal] = useState("");
   const [comment, setComment] = useState("");
+  const [criteria, setCriteria] = useState<Record<string, CriterionDraft>>({});
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
+  const typeLabel = useIncidentTypeLabels(token);
 
   const load = useCallback(async () => {
     const d = await api.teacher.session(token, sessionId);
     setDetail(d);
-    if (d.assessment?.teacherTotalScore !== null && d.assessment?.teacherTotalScore !== undefined) setTotal(String(d.assessment.teacherTotalScore));
     if (d.assessment?.teacherComment) setComment(d.assessment.teacherComment);
+    const drafts: Record<string, CriterionDraft> = {};
+    for (const c of d.assessment?.teacherCriteria ?? []) {
+      drafts[c.code] = { score: c.score === null ? "" : String(c.score), comment: c.comment ?? "" };
+    }
+    setCriteria(drafts);
   }, [token, sessionId]);
   useEffect(() => { void run(load); }, [load, run]);
 
   if (!detail) return <div className="boot-screen">Загрузка…</div>;
+  const mode = detail.assessment?.mode ?? detail.session.mode ?? "CARD_FILL";
+  const codes = criteriaForMode(mode);
+  const aiScore = (code: string) => detail.assessment?.aiCriteria.find((c) => c.code === code)?.score ?? null;
+  const setCriterion = (code: string, patch: Partial<CriterionDraft>) =>
+    setCriteria({ ...criteria, [code]: { ...(criteria[code] ?? { score: "", comment: "" }), ...patch } });
+  // предпросмотр итога по весам: балл преподавателя там, где введён, иначе балл ИИ
+  const previewTotal = () => {
+    let sum = 0, weights = 0;
+    for (const { code, weight } of codes) {
+      const draft = criteria[code];
+      const value = draft && draft.score !== "" ? Number(draft.score) : aiScore(code);
+      if (value === null || Number.isNaN(value)) continue;
+      sum += value * weight;
+      weights += weight;
+    }
+    return weights ? Math.round((sum / weights) * 10) / 10 : null;
+  };
+  const invalid = codes.some(({ code }) => {
+    const v = criteria[code]?.score ?? "";
+    return v !== "" && (Number.isNaN(Number(v)) || Number(v) < 0 || Number(v) > 100);
+  });
+  const anyScore = codes.some(({ code }) => (criteria[code]?.score ?? "") !== "");
   const assess = () => run(async () => {
-    await api.teacher.assess(token, sessionId, Number(total), comment);
-    setNotice("Оценка сохранена — она стала итоговой");
+    const payload: CriterionScore[] = codes
+      .filter(({ code }) => criteria[code] && (criteria[code].score !== "" || criteria[code].comment.trim() !== ""))
+      .map(({ code }) => ({ code, score: criteria[code].score === "" ? null : Number(criteria[code].score), comment: criteria[code].comment.trim() || null }));
+    await api.teacher.assess(token, sessionId, anyScore ? null : detail.assessment?.totalScore ?? null, comment, payload);
+    setNotice("Оценка сохранена — итог пересчитан по критериям");
     await load();
   });
+  const fmtAddress = (a: SessionDetail["drafts"][number]["address"]) => {
+    const formal = [a.locality, a.street, a.house && `д. ${a.house}`, a.building && `к. ${a.building}`, a.apartment && `кв. ${a.apartment}`].filter(Boolean).join(", ");
+    if (formal) return a.descriptive ? `${formal} (ориентир: ${a.descriptive})` : formal;
+    return a.descriptive ? `не формализован; ориентир: ${a.descriptive}` : "не указан";
+  };
 
   return (
     <section className="panel-page">
@@ -356,16 +411,16 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
 
       {detail.drafts.map((d) => (
         <div key={d.id} className="review-card">
-          <b>Карточка {d.number.replace(/\D/g, "").slice(-8)} · {d.state === "SAVED" ? `сохранена ${dateTime(d.savedAt)}` : "не сохранена"}</b>
+          <b>{d.scenarioTitle ?? "Карточка"} · № {d.number.replace(/\D/g, "").slice(-8)} · {d.state === "SAVED" ? `сохранена ${dateTime(d.savedAt)}` : "не сохранена"}</b>
           <p><em>Вводная:</em> {d.callerText}</p>
-          <p><em>Адрес:</em> {[d.address.locality, d.address.street, d.address.house && `д. ${d.address.house}`, d.address.building && `к. ${d.address.building}`, d.address.apartment && `кв. ${d.address.apartment}`].filter(Boolean).join(", ") || "—"}{d.address.descriptive ? ` (${d.address.descriptive})` : ""}</p>
-          <p><em>Типы:</em> {d.incidentTypeIds.join(", ") || "—"} · <em>Службы:</em> {d.services.map((s) => s.label).join(", ") || "—"}</p>
+          <p><em>Адрес:</em> {fmtAddress(d.address)}</p>
+          <p><em>Типы:</em> {d.incidentTypeIds.map(typeLabel).join(", ") || "—"} · <em>Службы:</em> {d.services.map((s) => s.label).join(", ") || "—"}</p>
           <p><em>Описание:</em> {d.description || "—"}</p>
         </div>
       ))}
       {detail.cards.map((c) => (
         <div key={c.id} className="review-card">
-          <b>Карточка {c.number.replace(/\D/g, "").slice(-8)} · {statusLabels[c.status] ?? c.status}{c.sla.acceptanceOverdue ? " · просрочено принятие" : ""}{c.sla.processingOverdue ? " · просрочена отработка" : ""}</b>
+          <b>{c.scenarioTitle ?? "Карточка"} · № {c.number.replace(/\D/g, "").slice(-8)} · {statusLabels[c.status] ?? c.status}{c.sla.acceptanceOverdue ? " · просрочено принятие" : ""}{c.sla.processingOverdue ? " · просрочена отработка" : ""}</b>
           <p><em>{c.incidentType.label}</em> · {c.address.raw}</p>
           <ul className="review-timeline">
             {c.timeline.map((t) => <li key={t.id}><time>{dateTime(t.occurredAt)}</time> <span>{t.actorLabel}</span> <b>{actionLabels[t.action] ?? t.action}</b> {t.comment && <i>❯ {t.comment}</i>}</li>)}
@@ -377,11 +432,28 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
       {detail.assessment ? (
         <>
           <AssessmentView assessment={detail.assessment} title="Оценка системы и итог" />
-          <div className="form-grid teacher-assess">
-            <label><span>Оценка преподавателя (0–100)</span><input type="number" min={0} max={100} step={0.5} value={total} onChange={(e) => setTotal(e.target.value)} /></label>
-            <label className="wide"><span>Комментарий обучающемуся</span><input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="что было верно, что исправить" /></label>
-            <div className="dialog-actions"><button className="primary" disabled={working || total === "" || Number(total) < 0 || Number(total) > 100} onClick={assess}>Сохранить оценку</button></div>
-          </div>
+          <div className="panel-head"><b>Оценка преподавателя по критериям</b><small className="muted">пустой балл — остаётся балл системы; итог считается по весам режима</small></div>
+          <table className="data-table criteria">
+            <thead><tr><th>Критерий</th><th>Вес</th><th>Балл системы</th><th>Балл преподавателя</th><th>Комментарий обучающемуся</th></tr></thead>
+            <tbody>
+              {codes.map(({ code, weight }) => (
+                <tr key={code}>
+                  <td><b>{criterionLabels[code] ?? code}</b></td>
+                  <td>{weight}%</td>
+                  <td>{score(aiScore(code))}</td>
+                  <td><input type="number" min={0} max={100} step={0.5} className="w-xs" value={criteria[code]?.score ?? ""} onChange={(e) => setCriterion(code, { score: e.target.value })} /></td>
+                  <td><input value={criteria[code]?.comment ?? ""} onChange={(e) => setCriterion(code, { comment: e.target.value })} placeholder="что верно, что исправить" /></td>
+                </tr>
+              ))}
+              <tr className="total-row">
+                <td colSpan={2}><b>Итог</b></td>
+                <td>{score(detail.assessment.aiTotalScore)}</td>
+                <td><b>{anyScore ? score(previewTotal()) : score(detail.assessment.totalScore)}</b></td>
+                <td><input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="общий комментарий" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="dialog-actions"><button className="primary" disabled={working || invalid} onClick={assess}>Сохранить оценку</button></div>
         </>
       ) : (
         <p className="muted">Обучающийся ещё не завершил занятие — оценить можно после завершения.</p>
