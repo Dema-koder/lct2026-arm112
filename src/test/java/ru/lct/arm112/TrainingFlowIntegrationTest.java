@@ -29,6 +29,9 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
         assertThat(contract.body()).contains("X-Contract-Version");
 
         String teacher = login("teacher", "teacher");
+        String admin = login("admin", "admin");
+        assertThat(put("/api/v1/admin/settings", "{\"simulation.card_open_ms\":\"20\",\"simulation.card_arrival_ms\":\"500\"}", admin).statusCode())
+                .isEqualTo(200);
         String token = login("trainee", "trainee");
         String traineeId = userId(token);
 
@@ -42,17 +45,31 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
         assertThat(json(context).get("workstation").get("number").asText()).isEqualTo("12");
         String sessionId = session.get("id").asText();
 
-        // Первая карточка уже в журнале, вторая ждёт своей очереди (многозадачность Q&A §7).
+        // Первая карточка уже в журнале, вторая придёт позже по независимому расписанию.
         HttpResponse<String> cards = get("/api/v1/cards?sessionId=" + sessionId, token);
         assertThat(json(cards).get("items").size()).isEqualTo(1);
         assertThat(session.get("pendingScenarios").asInt()).isEqualTo(1);
         String cardId = json(cards).get("items").get(0).get("id").asText();
 
         HttpResponse<String> opened = get("/api/v1/cards/" + cardId, token);
+        assertThat(json(opened).get("status").asText()).isEqualTo("RECEIVED");
+        assertThat(json(opened).get("opening").get("readyAt").isNull()).isFalse();
+        assertThat(json(opened).get("allowedActions")).isEmpty();
+        Thread.sleep(30);
+        opened = get("/api/v1/cards/" + cardId, token);
         assertThat(json(opened).get("status").asText()).isEqualTo("RECEIVED_BY_SERVICE");
         assertThat(json(opened).get("ownServiceCode").asText()).isEqualTo("101");
         // Пожар: мусор — по ЕКП оповещается больше одной службы, панель как в оригинале.
         assertThat(json(opened).get("assignedServices").size()).isGreaterThan(3);
+        JsonNode serviceProgress = json(opened).get("serviceProgress");
+        assertThat(serviceProgress).isNotNull();
+        var foreign = new java.util.ArrayList<JsonNode>();
+        serviceProgress.forEach(item -> {
+            if (item.get("simulated").asBoolean()) foreign.add(item);
+        });
+        assertThat(foreign).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(foreign.get(0).get("arrivedAt").asText())
+                .isEqualTo(foreign.get(1).get("arrivedAt").asText());
 
         // Открытая, но не принятая карточка остаётся под 30-секундным нормативом.
         trainingEngine.forceAcceptanceDeadline(UUID.fromString(cardId), Instant.now().minusSeconds(1));
@@ -88,6 +105,11 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
         assertThat(json(post("/api/v1/outbound-calls/" + callId + "/end", null, token, key())).get("state").asText())
                 .isEqualTo("ENDED");
 
+        // Новая карточка пришла, пока первая ещё находится в работе.
+        HttpResponse<String> concurrentCards = get("/api/v1/cards?sessionId=" + sessionId, token);
+        assertThat(json(concurrentCards).get("items").size()).isEqualTo(2);
+        assertThat(json(concurrentCards).get("items").toString()).contains("RESPONSE_STARTED");
+
         // Статусы только последовательно (памятка ДДС).
         HttpResponse<String> tooEarly = post("/api/v1/cards/" + cardId + "/reaction-events",
                 "{\"action\":\"COMPLETE\",\"comment\":\"Информация передана, работы завершены\"}", token, key());
@@ -99,7 +121,7 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
                 "{\"action\":\"COMPLETE\",\"comment\":\"Информация передана, пожар ликвидирован, работы завершены\"}", token, key());
         assertThat(json(completed).get("status").asText()).isEqualTo("COMPLETED");
 
-        // После завершения первой карточки пришла вторая.
+        // Вторая карточка уже ждёт в журнале, завершение первой её не создаёт.
         HttpResponse<String> cards2 = get("/api/v1/cards?sessionId=" + sessionId, token);
         assertThat(json(cards2).get("items").size()).isEqualTo(2);
         String second = json(cards2).get("items").get(0).get("id").asText();
@@ -108,6 +130,8 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
         HttpResponse<String> notYet = post("/api/v1/training-sessions/" + sessionId + "/submit", null, token, key());
         assertThat(notYet.statusCode()).isEqualTo(422);
 
+        get("/api/v1/cards/" + second, token);
+        Thread.sleep(30);
         get("/api/v1/cards/" + second, token);
         HttpResponse<String> declined = post("/api/v1/cards/" + second + "/acceptance",
                 "{\"action\":\"DECLINE\",\"reasonCode\":\"NOT_COMPETENCE\",\"comment\":\"Частный дом вне зоны обслуживания, передано в отдел контроля\"}",
@@ -148,5 +172,15 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
         HttpResponse<String> results = get("/api/v1/trainee/results", token);
         assertThat(results.statusCode()).isEqualTo(200);
         assertThat(results.body()).contains(sessionId);
+
+        // При трёх сценариях вторая и третья карточки планируются одной пачкой.
+        startLesson(teacher, "TRAINING", "CARD_ACTIONS",
+                "\"ticket-01-1\",\"ticket-02-1\",\"ticket-03-1\"", "\"" + traineeId + "\"");
+        String burstSessionId = json(get("/api/v1/trainee/context", token))
+                .get("activeSession").get("id").asText();
+        TrainingStateStore.TrainingSnapshot burst = stateStore.load(UUID.fromString(burstSessionId)).orElseThrow();
+        assertThat(burst.pendingScenarioIds()).hasSize(2);
+        assertThat(new java.util.HashSet<>(burst.scheduledScenarioAt().values())).hasSize(1);
+        trainingEngine.forceComplete(UUID.fromString(burstSessionId));
     }
 }

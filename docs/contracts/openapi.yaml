@@ -284,7 +284,7 @@ paths:
         - {$ref: '#/components/parameters/CardId'}
       responses:
         '200':
-          description: Карточка ДДС. Первое открытие обучающимся переводит её в «Получена службой»
+          description: Карточка ДДС. Первый запрос обучающегося запускает задержку открытия; после readyAt следующий запрос переводит карточку в «Получена службой».
           content:
             application/json:
               schema: {$ref: '#/components/schemas/IncidentCard'}
@@ -1237,7 +1237,7 @@ components:
     IncidentCard:
       type: object
       additionalProperties: false
-      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls, hints, ownServiceCode]
+      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls, hints, ownServiceCode, opening, serviceProgress]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1275,6 +1275,35 @@ components:
           type: array
           items: {$ref: '#/components/schemas/Hint'}
         ownServiceCode: {type: string, description: "Код службы обучающегося (плитка, которую он ведёт)"}
+        opening: {$ref: '#/components/schemas/CardOpening'}
+        serviceProgress:
+          type: array
+          description: Независимые состояния всех назначенных служб; сторонние службы меняются автоматически и параллельно.
+          items: {$ref: '#/components/schemas/ServiceProgress'}
+    CardOpening:
+      type: object
+      additionalProperties: false
+      required: [startedAt, readyAt, openedAt, remainingMs]
+      properties:
+        startedAt: {type: [string, 'null'], format: date-time}
+        readyAt: {type: [string, 'null'], format: date-time}
+        openedAt: {type: [string, 'null'], format: date-time}
+        remainingMs: {type: integer, format: int64, minimum: 0}
+    ServiceProgress:
+      type: object
+      additionalProperties: false
+      required: [service, status, statusChangedAt, openedAt, acceptedAt, responseStartedAt, arrivedAt, workStartedAt, completedAt, simulated]
+      properties:
+        service: {$ref: '#/components/schemas/DictionaryItem'}
+        status: {$ref: '#/components/schemas/CardStatus'}
+        statusChangedAt: {type: string, format: date-time}
+        openedAt: {type: [string, 'null'], format: date-time}
+        acceptedAt: {type: [string, 'null'], format: date-time}
+        responseStartedAt: {type: [string, 'null'], format: date-time}
+        arrivedAt: {type: [string, 'null'], format: date-time}
+        workStartedAt: {type: [string, 'null'], format: date-time}
+        completedAt: {type: [string, 'null'], format: date-time}
+        simulated: {type: boolean, description: true для автоматически управляемой сторонней службы}
     CardSla:
       type: object
       additionalProperties: false
@@ -1862,6 +1891,9 @@ components:
       properties:
         audit.retention_days: {type: string, description: "≥ 180"}
         telephony.ringing_ms: {type: string}
+        simulation.card_open_ms: {type: string}
+        simulation.card_arrival_ms: {type: string}
+        simulation.service_time_scale_percent: {type: string}
         telephony.connect_ms: {type: string}
         telephony.acknowledge_ms: {type: string}
         sla.acceptance_seconds: {type: string}
@@ -1931,7 +1963,7 @@ components:
         eventId: {type: string, format: uuid}
         type:
           type: string
-          enum: [card.created, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
+          enum: [card.created, card.opening_started, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
         occurredAt: {type: string, format: date-time}
         serverTime: {type: string, format: date-time}
         sessionId: {type: [string, 'null'], format: uuid, description: "null у служебных событий пользователю"}
