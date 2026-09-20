@@ -66,6 +66,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
                     return false;
                 }
                 attributes.put("subject", consumed.subject());
+                attributes.put("role", consumed.role());
                 return true;
             }
 

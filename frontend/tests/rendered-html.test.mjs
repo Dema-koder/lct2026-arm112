@@ -14,29 +14,56 @@ async function render() {
   );
 }
 
-test("renders the ARM-112 application shell", async () => {
+const src = (path) => readFile(new URL(path, import.meta.url), "utf8");
+
+test("renders the application shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /<html lang="ru">/i);
-  assert.match(html, /<title>АРМ ДДС — учебный тренажёр 112<\/title>/i);
+  assert.match(html, /<title>Учебный тренажёр 112<\/title>/i);
   assert.match(html, /Подключение к учебному серверу/);
 });
 
-test("keeps the UI aligned with backend contract v0.2", async () => {
-  const [api, page] = await Promise.all([
-    readFile(new URL("../lib/api.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+test("keeps the UI aligned with backend contract v0.3", async () => {
+  const [api, dds, fill, teacher, admin, page] = await Promise.all([
+    src("../lib/api.ts"),
+    src("../app/components/dds/DdsWorkspace.tsx"),
+    src("../app/components/fill/FillWorkspace.tsx"),
+    src("../app/components/teacher/Lessons.tsx"),
+    src("../app/components/admin/AdminShell.tsx"),
+    src("../app/page.tsx"),
   ]);
 
-  assert.match(api, /headers\.set\("X-Contract-Version", "0\.2"\)/);
+  assert.match(api, /CONTRACT_VERSION = "0\.3"/);
   assert.match(api, /\/auth\/login/);
   assert.match(api, /\/outbound-calls/);
-  assert.match(page, /Поиск происшествий/);
-  assert.match(page, /Начало реагирования/);
-  assert.match(page, /Завершить занятие/);
-  assert.match(page, /\["RECEIVED", "RECEIVED_BY_SERVICE"\]\.includes\(card\.status\)/);
-  assert.match(page, /\["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"\]\.includes\(card\.status\)/);
+  assert.match(api, /\/card-drafts/);
+  assert.match(api, /\/teacher\/lessons/);
+  assert.match(api, /\/admin\/users/);
+
+  // три роли — три рабочих места
+  assert.match(page, /case "TEACHER":/);
+  assert.match(page, /case "ADMIN":/);
+
+  // экран ДДС: журнал, статусы, таймеры для всех активных статусов, своя плитка службы
+  assert.match(dds, /Поиск происшествий/);
+  assert.match(dds, /Начало реагирования/);
+  assert.match(dds, /Завершить занятие/);
+  assert.match(dds, /\["RECEIVED", "RECEIVED_BY_SERVICE"\]\.includes\(card\.status\)/);
+  assert.match(dds, /\["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"\]\.includes\(card\.status\)/);
+  assert.match(dds, /ownServiceCode/);
+
+  // экран оператора 112: описательный адрес, «что случилось», счётчик 0 / 1999, единственная кнопка «сохранить»
+  assert.match(fill, /Описательный адрес/);
+  assert.match(fill, /Что случилось\?/);
+  assert.match(fill, /\/ 1999/);
+  assert.match(fill, /className="save-button"/);
+
+  // преподаватель: виды занятий и публикация зачёта; администратор: подтверждение восстановления
+  assert.match(teacher, /Опубликовать результаты/);
+  assert.match(teacher, /EXAM/);
+  assert.match(admin, /RESTORE/);
 });

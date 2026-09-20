@@ -1,0 +1,182 @@
+/* =====================================================================
+   Общие панели преподавателя / администратора / результатов — тот же стиль,
+   что у журнала: серо-синяя палитра, кнопка только там, где без неё нельзя.
+   ===================================================================== */
+.top-nav { position: absolute; left: 12px; top: 0; height: 34px; display: flex; gap: 2px; }
+.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; }
+.top-nav button.active { border-bottom-color: var(--blue); color: #111; font-weight: bold; }
+.top-nav button:hover { background: #e9ecee; }
+
+.waiting-screen { min-height: calc(100vh - 34px); display: grid; place-items: center; align-content: center; gap: 8px; color: #eef4f6; text-align: center; }
+.waiting-screen b { font-size: 20px; }
+
+.panel-page { min-height: calc(100vh - 34px); padding: 14px 18px 60px; color: #172026; background: #eef0f1; }
+.panel-head { display: flex; align-items: center; gap: 12px; min-height: 40px; margin: 8px 0 8px; }
+.panel-head > b { font-size: 16px; }
+.panel-head select, .panel-head input { height: 28px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; }
+.panel-head .spacer, .spacer { flex: 1; }
+.panel-head small, .muted { color: #6d797f; }
+.inline-error { color: #8f2f22; }
+.primary-button { height: 30px; padding: 0 14px; color: white; border: 0; background: var(--blue); }
+.primary-button:hover { background: var(--blue-dark); }
+.danger-button { height: 30px; padding: 0 14px; color: white; border: 0; background: #a93f31; }
+.ghost { height: 28px; padding: 0 8px; color: var(--blue-dark); border: 0; background: transparent; text-decoration: underline; }
+.ghost.danger { color: #8f2f22; }
+.rating-chip { padding: 4px 10px; background: #dce1e3; }
+.rating-chip strong { font-size: 15px; }
+
+.data-table { width: 100%; border-collapse: collapse; background: white; }
+.data-table th { padding: 6px 8px; text-align: left; font-size: 10px; font-weight: normal; color: #d8e0e3; background: var(--steel-800); }
+.data-table td { padding: 7px 8px; border-bottom: 1px solid #d7dcde; vertical-align: middle; }
+.data-table tr.clickable { cursor: pointer; }
+.data-table tr.clickable:hover td { background: #e4ebef; }
+.data-table tr.inactive td { color: #98a3a8; }
+.data-table tr.overdue .status-cell { background: #b03f2e; color: white; font-weight: bold; }
+.data-table td.ellipsis { max-width: 320px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.data-table select { height: 26px; border: 1px solid #b1babf; background: white; }
+.data-table.audit code { font-size: 11px; }
+.row-actions { white-space: nowrap; }
+.state-pill { padding: 2px 8px; font-size: 11px; color: white; background: #8e9ca3; }
+.state-pill.active { background: #2f9a5a; }
+.state-pill.completed { background: var(--steel-900); }
+.state-pill.draft { background: #8e9ca3; }
+
+.form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; padding: 12px; margin-bottom: 8px; background: white; border: 1px solid #d7dcde; }
+.form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.form-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.form-grid.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.form-grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.form-grid label.wide { grid-column: 1 / -1; }
+.form-grid label.check { flex-direction: row; align-items: center; gap: 8px; }
+.form-grid label > span { font-size: 11px; color: #56656c; }
+.form-grid label small { font-size: 10px; color: #6d797f; }
+.form-grid input, .form-grid select, .form-grid textarea { height: 30px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; outline-color: var(--blue); }
+.form-grid textarea { height: 72px; padding: 6px 8px; resize: vertical; }
+.form-grid .dialog-actions { grid-column: 1 / -1; margin-top: 4px; }
+.form-grid.teacher-assess { grid-template-columns: 200px 1fr; }
+label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #56656c; }
+
+.check-list { display: grid; gap: 4px; max-height: 320px; overflow: auto; padding: 8px; margin-bottom: 8px; background: white; border: 1px solid #d7dcde; }
+.check-list label { display: grid; grid-template-columns: 20px 130px 1fr; gap: 8px; align-items: center; padding: 5px 6px; cursor: pointer; }
+.check-list label:hover { background: #e4ebef; }
+.check-list label.on { background: #d9ecf7; }
+.check-list label em { font-style: normal; font-size: 11px; color: #6d797f; }
+.check-list label span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.check-list.compact label { grid-template-columns: 20px 80px 1fr; }
+.check-list.compact .ghost { justify-self: start; }
+
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.charts figure { margin: 0; padding: 8px; background: white; border: 1px solid #d7dcde; }
+.charts figcaption { margin-bottom: 4px; font-size: 11px; color: #56656c; }
+.charts svg { width: 100%; height: auto; }
+
+.review-card { padding: 10px 12px; margin-bottom: 8px; background: white; border-left: 4px solid var(--blue); }
+.review-card p { margin: 4px 0; }
+.review-card em { font-style: normal; color: #56656c; }
+.review-timeline { margin: 6px 0 0; padding-left: 0; list-style: none; }
+.review-timeline li { display: flex; gap: 8px; padding: 2px 0; font-size: 12px; }
+.review-timeline time { color: #6d797f; }
+.review-timeline i { color: #24313a; }
+
+.assessment-card { margin: 10px 0; background: white; border: 1px solid #d7dcde; }
+.assessment-card > header { display: flex; align-items: center; justify-content: space-between; height: 38px; padding-left: 12px; color: white; background: #344249; }
+.assessment-card > header button { width: 38px; height: 38px; color: white; border: 0; background: transparent; font-size: 20px; }
+.assessment-body { padding: 14px; }
+.assessment-issue.critical { background: #f0c9c4; font-weight: bold; }
+.assessment-details { margin-top: 8px; color: #56656c; }
+.assessment-details p { margin: 4px 0; font-size: 12px; }
+.recommendations { margin: 12px 0 0; padding-left: 18px; }
+.recommendations li { margin: 4px 0; }
+.teacher-comment { padding: 8px 10px; background: #d9ecf7; }
+.material-list { list-style: none; padding: 0; margin: 0; }
+.material-list li { display: flex; gap: 12px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid #d7dcde; }
+.material-list a { color: var(--blue-dark); }
+.modal.modal-wide { width: min(760px, 92vw); }
+.health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.health-grid span { display: flex; justify-content: space-between; padding: 10px; background: white; border: 1px solid #d7dcde; }
+.health-grid b.ok { color: #2f9a5a; }
+.health-grid b.bad { color: #b03f2e; }
+.log-tail { max-height: 260px; overflow: auto; padding: 10px; margin: 0; font-size: 11px; color: #dfe5e7; background: #253139; }
+.switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch span { position: absolute; inset: 0; background: #b1babf; transition: .15s; }
+.switch span::before { content: ""; position: absolute; width: 14px; height: 14px; left: 2px; top: 2px; background: white; transition: .15s; }
+.switch input:checked + span { background: #2f9a5a; }
+.switch input:checked + span::before { transform: translateX(16px); }
+.hint-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 5px; background: #fff3cd; color: #5b4a00; font-size: 12px; }
+.hint-strip span { padding: 3px 8px; background: #ffe58a; }
+.hint-line { margin: 6px 0 0; padding: 4px 8px; color: #5b4a00; background: #ffe58a; font-size: 12px; }
+.service-tiles { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
+.service-tile.foreign .tile-body { cursor: default; opacity: .78; }
+.service-tile.foreign b { font-weight: normal; }
+
+/* =====================================================================
+   Экран оператора 112 — режим заполнения карточки (card-01.png … card-09.png).
+   Оранжевый — акцент этого экрана: панель служб и «сохранить».
+   ===================================================================== */
+.fill-shell { background: #ededed; }
+.fill-card { min-height: calc(100vh - 34px); padding: 5px 5px 84px; color: #172026; background: #ededed; }
+.fill-top { display: grid; grid-template-columns: 1fr 230px 190px; gap: 5px; height: 64px; }
+.fill-phones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.phone-box { display: grid; grid-template-columns: 1fr 44px; grid-template-rows: 14px 1fr; gap: 2px 4px; padding: 4px 8px; background: #f6f6f6; border-left: 3px solid #aeb5b9; }
+.phone-box span { grid-column: 1 / -1; font-size: 10px; color: #6e797f; }
+.phone-box input { min-width: 0; height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; font-size: 14px; }
+.phone-box button { height: 26px; border: 1px solid #c9cfd2; background: #e8eaeb; font-size: 11px; }
+.phone-box button.active { background: var(--orange); color: white; border-color: var(--orange); }
+.fill-number { display: block; padding: 6px 8px; background: #f6f6f6; }
+.fill-number b { font-size: 13px; }
+.fill-number small { display: block; font-size: 10px; color: #56656c; }
+.caller-bubble { position: relative; margin: 6px 0 0; padding: 10px 14px; background: #fff8e1; border-left: 4px solid var(--orange); }
+.caller-bubble b { display: block; font-size: 11px; color: #7a4a00; }
+.caller-bubble p { margin: 4px 0; font-size: 15px; }
+.caller-bubble small { color: #6d797f; }
+.fill-columns { display: grid; grid-template-columns: 46% 54%; gap: 6px; margin-top: 6px; }
+.fill-left, .fill-right { display: grid; gap: 6px; align-content: start; }
+.fill-block { margin: 0; padding: 8px 10px 10px; border: 1px solid #d3d8db; background: #f6f6f6; }
+.fill-block legend { padding: 0 6px; font-size: 11px; color: #56656c; }
+.fill-block.hinted { border-color: #e2b400; }
+.fill-row { display: flex; gap: 6px; align-items: end; }
+.fill-row.wrap { flex-wrap: wrap; }
+.fill-block label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fill-block label > span { font-size: 10px; color: #56656c; white-space: nowrap; }
+.fill-block input, .fill-block select { height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px; }
+.fill-block label.hinted input { border-color: #e2b400; background: #fffbe6; }
+.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; }
+.counter { text-align: right; font-size: 10px; color: #6d797f; }
+.w-xs { width: 64px; } .w-s { width: 96px; } .w-m { flex: 1; min-width: 120px; } .w-l { flex: 2; min-width: 180px; } .w-full { width: 100%; }
+.flags-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.flags-bar button { height: 28px; padding: 0 10px; border: 1px solid #b1babf; background: #e8eaeb; font-size: 11px; }
+.flags-bar button.on { background: var(--blue); color: white; border-color: var(--blue); }
+.flags-bar button.red { color: #8f2f22; border-color: #d3a59f; }
+.flags-bar button.red.on { background: #b03f2e; color: white; }
+.flags-bar input { height: 28px; padding: 0 6px; border: 1px solid #c9cfd2; }
+.type-search { position: relative; }
+.type-search input { width: 100%; height: 30px; padding: 0 8px; border: 1px solid #c9cfd2; background: white; font-size: 13px; }
+.type-dropdown { position: absolute; z-index: 5; left: 0; right: 0; top: 30px; margin: 0; padding: 0; list-style: none; background: white; border: 1px solid #9aa6ac; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+.type-dropdown button { width: 100%; padding: 7px 10px; text-align: left; border: 0; background: transparent; }
+.type-dropdown button:hover { background: #d9ecf7; }
+.chips-title { display: block; margin: 8px 0 3px; font-size: 10px; color: #6d797f; }
+.type-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { height: 26px; padding: 0 10px; border: 1px solid #b1babf; background: #e8eaeb; font-size: 11px; }
+.chip.selected { background: var(--blue); color: white; border-color: var(--blue); }
+.chip:disabled { opacity: .7; }
+.survey .survey-row { display: grid; grid-template-columns: 200px 1fr; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px dashed #d3d8db; }
+.survey .survey-row > span { font-size: 12px; }
+.survey .survey-row input { width: 100%; }
+.class-line { margin: 8px 0 0; font-size: 12px; color: #24313a; }
+.service-dock.orange { background: var(--orange); border-top-color: #f7a789; }
+.service-dock.orange > button { border-right-color: rgba(255,255,255,.35); }
+.service-dock.orange .service-tile { min-width: 118px; border-right-color: rgba(255,255,255,.35); }
+.service-dock.orange .service-tile.auto { background: var(--blue); }
+.service-dock.orange .service-tile.manual { background: #7c8b93; }
+.dock-empty { align-self: center; padding: 0 12px; font-size: 11px; color: rgba(255,255,255,.85); }
+.dock-plus { width: 44px; color: white; border: 0; background: transparent; font-size: 26px; }
+.dock-plus:hover { background: rgba(255,255,255,.2); }
+.save-button { width: 150px; margin: 12px 14px; color: white; border: 1px solid white; background: transparent; font-size: 14px; text-transform: lowercase; }
+.save-button:hover { background: rgba(255,255,255,.2); }
+.dialog-actions .call-button.danger { background: #a93f31; }
+
+@media (max-width: 1250px) {
+  .fill-columns { grid-template-columns: 1fr; }
+  .form-grid, .form-grid.four, .form-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

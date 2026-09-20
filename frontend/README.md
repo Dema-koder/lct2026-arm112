@@ -12,7 +12,7 @@ docker compose up --build
 
 После этого откройте `http://localhost:3000`.
 
-Для отдельной разработки frontend потребуются Node.js 22.13+ и npm. Сначала запустите backend и PostgreSQL по инструкции [`docs/POSTGRES_DOCKER.md`](../docs/POSTGRES_DOCKER.md), затем в другом терминале:
+Для отдельной разработки frontend потребуются Node.js 22 LTS начиная с 22.13 либо Node.js 24+ и npm. Нечётные промежуточные версии Node.js не поддерживаются зависимостями сборки. Сначала запустите backend и PostgreSQL по инструкции [`docs/POSTGRES_DOCKER.md`](../docs/POSTGRES_DOCKER.md), затем в другом терминале:
 
 ```bash
 cd frontend

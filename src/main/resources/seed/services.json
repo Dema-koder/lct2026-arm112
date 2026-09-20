@@ -1,0 +1,98 @@
+[
+  {
+    "code": "101",
+    "label": "Служба 101"
+  },
+  {
+    "code": "102",
+    "label": "Служба 102"
+  },
+  {
+    "code": "103",
+    "label": "Служба 103"
+  },
+  {
+    "code": "104",
+    "label": "Служба 104"
+  },
+  {
+    "code": "ROSGVARD",
+    "label": "Росгвардия"
+  },
+  {
+    "code": "CEMP",
+    "label": "ЦЭМП"
+  },
+  {
+    "code": "CODD",
+    "label": "ЦОДД"
+  },
+  {
+    "code": "OATI",
+    "label": "ОАТИ"
+  },
+  {
+    "code": "MOSLIFT",
+    "label": "Мослифт"
+  },
+  {
+    "code": "MOSVODOKANAL",
+    "label": "Мосводоканал"
+  },
+  {
+    "code": "MOSVODOSTOK",
+    "label": "Мосводосток"
+  },
+  {
+    "code": "MOEK",
+    "label": "МОЭК"
+  },
+  {
+    "code": "OEK",
+    "label": "ОЭК"
+  },
+  {
+    "code": "METRO",
+    "label": "Метро"
+  },
+  {
+    "code": "MOSGORTRANS",
+    "label": "Мосгортранс"
+  },
+  {
+    "code": "DEP_GKH",
+    "label": "Деп. ЖКХ"
+  },
+  {
+    "code": "GOR_HOZ",
+    "label": "Гор. хозяйство"
+  },
+  {
+    "code": "MOSBEZ",
+    "label": "Мос.Без."
+  },
+  {
+    "code": "OIV_TINAO",
+    "label": "ОИВ ТиНАО"
+  },
+  {
+    "code": "OIV",
+    "label": "Терр. ОИВ"
+  },
+  {
+    "code": "MAYOR",
+    "label": "Аппарат Мэра"
+  },
+  {
+    "code": "VET",
+    "label": "Ком. ветеринарии"
+  },
+  {
+    "code": "ECO",
+    "label": "Мосэкомониторинг"
+  },
+  {
+    "code": "AUTOROADS",
+    "label": "Автодороги"
+  }
+]

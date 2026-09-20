@@ -1,0 +1,194 @@
+[
+  {
+    "id": "_default",
+    "incidentTypeId": "_default",
+    "questions": [
+      {"id": "where", "text": "Где происходит", "kind": "CHOICE", "options": [
+        {"id": "street", "label": "Улица"}, {"id": "building", "label": "Здание / объект"},
+        {"id": "transport", "label": "Транспорт"}, {"id": "apartment", "label": "Квартира"}]},
+      {"id": "victims", "text": "Есть пострадавшие", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}, {"id": "unknown", "label": "Неизвестно"}]},
+      {"id": "details", "text": "Что ещё сообщает заявитель", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "fire.garbage",
+    "incidentTypeId": "fire.garbage",
+    "questions": [
+      {"id": "what", "text": "Что горит", "kind": "CHOICE", "options": [
+        {"id": "container", "label": "Мусорный контейнер"}, {"id": "chute", "label": "Мусоропровод"},
+        {"id": "pile", "label": "Мусор на улице"}]},
+      {"id": "flame", "text": "Что видит заявитель", "kind": "CHOICE", "options": [
+        {"id": "open_flame", "label": "Открытое пламя"}, {"id": "smoke", "label": "Дым"}]},
+      {"id": "threat", "text": "Есть угроза людям / зданиям", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "details", "text": "Дополнительно", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "fire.apartment",
+    "incidentTypeId": "fire.apartment",
+    "questions": [
+      {"id": "house", "text": "Дом", "kind": "CHOICE", "options": [
+        {"id": "multi", "label": "Дом многоквартирный"}, {"id": "private", "label": "Дом частный"}]},
+      {"id": "sign", "text": "Признак", "kind": "CHOICE", "options": [
+        {"id": "open_flame", "label": "Открытое пламя / Дым (дом)"}, {"id": "burn_smell", "label": "Запах гари (дом)"}]},
+      {"id": "place", "text": "Место", "kind": "CHOICE", "options": [
+        {"id": "apartment", "label": "Квартира"}, {"id": "balcony", "label": "Балкон"},
+        {"id": "stairs", "label": "Лестничная клетка"}, {"id": "roof", "label": "Крыша"}]},
+      {"id": "people", "text": "Есть угроза людям", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Есть угроза людям"}, {"id": "no", "label": "Нет"}]},
+      {"id": "gas", "text": "Есть газификация", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Есть газификация"}, {"id": "no", "label": "Нет"}]},
+      {"id": "floor", "text": "Этаж, этажность", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "fire.smoke",
+    "incidentTypeId": "fire.smoke",
+    "questions": [
+      {"id": "source", "text": "Откуда дым", "kind": "CHOICE", "options": [
+        {"id": "chute", "label": "Мусоропровод"}, {"id": "apartment", "label": "Квартира"},
+        {"id": "basement", "label": "Подвал"}, {"id": "stairs", "label": "Подъезд"}]},
+      {"id": "flame", "text": "Открытое пламя видно", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "people", "text": "Есть угроза людям", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "floor", "text": "Этаж, этажность", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "fire.vehicle",
+    "incidentTypeId": "fire.vehicle",
+    "questions": [
+      {"id": "vehicle", "text": "Транспортное средство", "kind": "CHOICE", "options": [
+        {"id": "car", "label": "Легковой автомобиль"}, {"id": "truck", "label": "Грузовой"},
+        {"id": "bus", "label": "Автобус"}]},
+      {"id": "people", "text": "Люди внутри", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "details", "text": "Марка, цвет, госномер", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "dtp.injured",
+    "incidentTypeId": "dtp.injured",
+    "questions": [
+      {"id": "vehicles", "text": "Участники", "kind": "CHOICE", "options": [
+        {"id": "cars", "label": "Автомобили"}, {"id": "pedestrian", "label": "Наезд на пешехода"},
+        {"id": "bus", "label": "Общественный транспорт"}, {"id": "moto", "label": "Мотоцикл / самокат"}]},
+      {"id": "blocked", "text": "Есть заблокированные", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "fire", "text": "Есть возгорание / разлив топлива", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "victims", "text": "Сколько пострадавших, характер травм", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "explosion",
+    "incidentTypeId": "explosion",
+    "questions": [
+      {"id": "where", "text": "Где взрыв", "kind": "CHOICE", "options": [
+        {"id": "building", "label": "Здание / Объект"}, {"id": "transport", "label": "Транспорт"},
+        {"id": "sound", "label": "Звуки похожие на взрыв, что взорвалось сообщить не может"}]},
+      {"id": "fire", "text": "Есть возгорание", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "collapse", "text": "Есть угроза обрушения", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "damage", "text": "Какие видят разрушения", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "gas.smell",
+    "incidentTypeId": "gas.smell",
+    "questions": [
+      {"id": "where", "text": "Где запах", "kind": "CHOICE", "options": [
+        {"id": "apartment", "label": "В квартире"}, {"id": "stairs", "label": "В подъезде"},
+        {"id": "street", "label": "На улице"}]},
+      {"id": "victims", "text": "Есть пострадавшие", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "details", "text": "Дополнительно", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "fight",
+    "incidentTypeId": "fight",
+    "questions": [
+      {"id": "count", "text": "Сколько человек", "kind": "CHOICE", "options": [
+        {"id": "two", "label": "Двое"}, {"id": "group", "label": "Группа"}, {"id": "mass", "label": "Массовая"}]},
+      {"id": "weapon", "text": "Есть оружие / предметы", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "victims", "text": "Есть пострадавшие", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "details", "text": "Приметы участников", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "medical.trauma",
+    "incidentTypeId": "medical.trauma",
+    "questions": [
+      {"id": "who", "text": "Пострадавший", "kind": "CHOICE", "options": [
+        {"id": "adult", "label": "Взрослый"}, {"id": "child", "label": "Ребёнок"}, {"id": "elderly", "label": "Пожилой"}]},
+      {"id": "conscious", "text": "В сознании", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "bleeding", "text": "Есть кровотечение", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "details", "text": "Характер травмы, возраст", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "medical.illness",
+    "incidentTypeId": "medical.illness",
+    "questions": [
+      {"id": "conscious", "text": "В сознании", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}]},
+      {"id": "breathing", "text": "Дышит", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}, {"id": "hard", "label": "Затруднённо"}]},
+      {"id": "details", "text": "Жалобы, возраст, дата рождения", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "person.danger",
+    "incidentTypeId": "person.danger",
+    "questions": [
+      {"id": "what", "text": "Что случилось", "kind": "CHOICE", "options": [
+        {"id": "door", "label": "Открыть дверь"}, {"id": "lying", "label": "Лежит человек"},
+        {"id": "stuck", "label": "Застрял / заблокирован"}, {"id": "height", "label": "На высоте"}]},
+      {"id": "signs", "text": "Подаёт признаки жизни", "kind": "CHOICE", "options": [
+        {"id": "yes", "label": "Да"}, {"id": "no", "label": "Нет"}, {"id": "unknown", "label": "Неизвестно"}]},
+      {"id": "details", "text": "Дополнительно", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "person.missing",
+    "incidentTypeId": "person.missing",
+    "questions": [
+      {"id": "who", "text": "Кто пропал", "kind": "CHOICE", "options": [
+        {"id": "child", "label": "Несовершеннолетний"}, {"id": "incapable", "label": "Недееспособный"},
+        {"id": "adult", "label": "Взрослый"}]},
+      {"id": "when", "text": "Как давно", "kind": "CHOICE", "options": [
+        {"id": "hours", "label": "Менее суток"}, {"id": "days", "label": "Более суток"}]},
+      {"id": "details", "text": "Приметы, одежда, где видели последний раз", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "water.rescue",
+    "incidentTypeId": "water.rescue",
+    "questions": [
+      {"id": "what", "text": "Что происходит", "kind": "CHOICE", "options": [
+        {"id": "drowning", "label": "Тонет человек"}, {"id": "ice", "label": "На льду / льдине"},
+        {"id": "vehicle", "label": "Транспорт в воде"}]},
+      {"id": "count", "text": "Сколько человек", "kind": "TEXT", "options": []},
+      {"id": "details", "text": "Ориентиры на берегу", "kind": "TEXT", "options": []}
+    ]
+  },
+  {
+    "id": "utility.elevator",
+    "incidentTypeId": "utility.elevator",
+    "questions": [
+      {"id": "people", "text": "В лифте", "kind": "CHOICE", "options": [
+        {"id": "adult", "label": "Взрослые"}, {"id": "child", "label": "Ребёнок без взрослых"},
+        {"id": "medical", "label": "Требуется медицинская помощь"}]},
+      {"id": "details", "text": "Подъезд, этаж между которыми застрял", "kind": "TEXT", "options": []}
+    ]
+  }
+]
