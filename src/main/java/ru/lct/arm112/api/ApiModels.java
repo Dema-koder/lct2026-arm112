@@ -1,5 +1,6 @@
 package ru.lct.arm112.api;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -60,6 +61,7 @@ public final class ApiModels {
                                List<CardTimelineEntry> timeline,
                                List<OutboundCall> outboundCalls,
                                List<Hint> hints, String ownServiceCode,
+                               String scenarioTitle,
                                CardOpening opening,
                                List<ServiceProgress> serviceProgress) {}
 
@@ -132,7 +134,7 @@ public final class ApiModels {
 
     public record ScenarioCaller(String fullName, String phone) {}
 
-    public record Scenario(String id, String source, String category, @Min(1) @Max(10) int difficulty,
+    public record Scenario(String id, String title, String source, String category, @Min(1) @Max(10) int difficulty,
                            String callerText, ScenarioCaller caller, String rawAddress,
                            FormalAddress expectedAddress, List<String> expectedIncidentTypes,
                            List<String> expectedServices, boolean addressClarified,
@@ -141,11 +143,13 @@ public final class ApiModels {
                            boolean referenceConfirmed, Instant referenceConfirmedAt,
                            UUID createdBy, Instant createdAt) {}
 
-    public record ScenarioListItem(String id, String source, String category, int difficulty,
-                                   String callerText, String rawAddress,
-                                   List<String> expectedIncidentTypes, boolean referenceConfirmed) {}
+    public record ScenarioListItem(String id, String title, String source, String category, int difficulty,
+                                   String callerText, String rawAddress, FormalAddress expectedAddress,
+                                   List<String> expectedIncidentTypes, List<String> expectedServices,
+                                   boolean referenceConfirmed, Instant createdAt) {}
 
-    public record ScenarioUpsert(@Size(max = 64) String id, @NotBlank String category,
+    public record ScenarioUpsert(@Size(max = 64) String id, @NotBlank @Size(max = 200) String title,
+                                 @NotBlank String category,
                                  @Min(1) @Max(10) int difficulty,
                                  @NotBlank @Size(max = 2000) String callerText, ScenarioCaller caller,
                                  @Size(max = 1000) String rawAddress, FormalAddress expectedAddress,
@@ -161,7 +165,7 @@ public final class ApiModels {
                             String callerText, DraftPhones phones, DraftCaller caller,
                             FormalAddress address, DraftFlags flags, List<String> incidentTypeIds,
                             List<SurveyAnswer> surveyAnswers, String description,
-                            List<DraftService> services, List<Hint> hints) {}
+                            List<DraftService> services, List<Hint> hints, String scenarioTitle) {}
 
     public record DraftPhones(String ani, String provided, String onSite) {}
     public record DraftCaller(String fullName, String status) {}
@@ -193,11 +197,17 @@ public final class ApiModels {
                              Integer syntaxErrors,
                              List<AssessmentIssue> issues, List<String> recommendations,
                              String source, Double aiTotalScore, Double teacherTotalScore,
-                             String teacherComment, Instant teacherAssessedAt) {}
+                             String teacherComment, Instant teacherAssessedAt,
+                             List<CriterionScore> aiCriteria, List<CriterionScore> teacherCriteria) {}
+    /** Оценка по одному критерию: код, балл (null — оставить оценку ИИ), комментарий. */
+    public record CriterionScore(@NotBlank String code, @Min(0) @Max(100) Double score,
+                                 @Size(max = 1000) String comment) {}
     public record AssessmentIssue(String code, String severity, String message,
                                   UUID cardId, Object expected, Object actual) {}
-    public record TeacherAssessment(@NotNull @Min(0) @Max(100) Double total,
-                                    @Size(max = 2000) String comment) {}
+    /** Итог считается сервером по весам режима, если переданы критерии; иначе берётся total. */
+    public record TeacherAssessment(@Min(0) @Max(100) Double total,
+                                    @Size(max = 2000) String comment,
+                                    List<@Valid CriterionScore> criteria) {}
 
     public record ResultItem(UUID sessionId, UUID lessonId, String lessonTitle, String lessonKind,
                              String mode, Instant completedAt, boolean visible,

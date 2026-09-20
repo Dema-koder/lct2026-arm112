@@ -122,7 +122,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .card-number small { display: block; font-size: 10px; }
 .card-timer { grid-row: 1 / 3; display: grid; grid-template-columns: 1fr 1fr; align-content: center; padding: 4px 8px; color: white; background: #2f393f; }
 .card-timer b { grid-column: 1 / -1; font-size: 26px; line-height: 1; letter-spacing: .04em; }
-.card-timer > span { font-size: 9px; color: #b9c4c9; }
+.card-timer > span { font-size: 10px; color: #b9c4c9; }
 .card-timer > span:last-of-type { text-align: right; }
 .card-timer small { grid-column: 1 / -1; margin-top: 3px; font-size: 10px; color: #8fd0ef; }
 .card-timer.overdue { background: #8f2f22; }
@@ -159,7 +159,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .service-tile .tile-body { width: 100%; height: 100%; padding: 4px 12px 8px; color: white; text-align: center; border: 0; background: transparent; }
 .service-tile b, .service-tile span { display: block; }
 .service-tile b { font-size: 12px; }
-.service-tile span { margin-top: 6px; font-size: 9px; }
+.service-tile span { margin-top: 6px; font-size: 10px; }
 .tile-chevron { display: block; font-style: normal; font-size: 11px; line-height: 1; opacity: .8; }
 .tile-pencil { position: absolute; top: 2px; right: 3px; width: 20px; height: 18px; padding: 0; color: white; border: 0; background: transparent; font-size: 12px; }
 .tile-pencil:hover { background: rgba(255,255,255,.25); }

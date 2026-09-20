@@ -69,6 +69,23 @@ export const roleLabels: Record<string, string> = {
   TRAINEE: "Обучающийся",
 };
 
+export const criterionLabels: Record<string, string> = {
+  timing: "Время",
+  actions: "Действия",
+  communication: "Коммуникация",
+  language: "Грамотность",
+  address: "Адрес",
+  classification: "Тип происшествия",
+  services: "Службы",
+};
+
+/** Критерии и веса по режимам — те же, что в AssessmentWeights на сервере. */
+export function criteriaForMode(mode: string): Array<{ code: string; weight: number }> {
+  return mode === "CARD_FILL"
+    ? [{ code: "address", weight: 40 }, { code: "classification", weight: 20 }, { code: "services", weight: 20 }, { code: "timing", weight: 15 }, { code: "language", weight: 5 }]
+    : [{ code: "timing", weight: 30 }, { code: "actions", weight: 40 }, { code: "communication", weight: 15 }, { code: "language", weight: 15 }];
+}
+
 export const categoryLabels: Record<string, string> = {
   FIRE: "Пожары",
   MEDICAL: "Медицина",

@@ -646,6 +646,7 @@ public class TrainingEngine {
         card.id = UUID.randomUUID();
         card.sessionId = state.id;
         card.scenarioId = scenario.id();
+        card.scenarioTitle = scenario.title();
         card.number = "112-2026-" + String.format("%06d", (int) (Math.abs(card.id.getLeastSignificantBits()) % 1_000_000));
         card.receivedAt = receivedAt;
         card.source = "SYSTEM_112";
@@ -783,7 +784,7 @@ public class TrainingEngine {
                     card.assignedServices, card.requirements, card.callTargets,
                     List.copyOf(card.timeline), card.callIds.stream().map(state.calls::get)
                     .filter(call -> call != null).map(this::toView).toList(),
-                    hints(state, card), OWN_SERVICE_CODE,
+                    hints(state, card), OWN_SERVICE_CODE, card.scenarioTitle,
                     new CardOpening(card.openingStartedAt, card.openingReadyAt, card.openedAt, remainingMs),
                     serviceProgress(card, now));
         }
@@ -1033,7 +1034,7 @@ public class TrainingEngine {
                         card.processingOverdue, card.caller, card.address, card.description,
                         card.incidentType, card.features, card.assignedServices, card.requirements,
                         card.callTargets, List.copyOf(card.timeline), List.copyOf(card.callIds),
-                        card.expectedServices, card.expectedDecision);
+                        card.expectedServices, card.expectedDecision, card.scenarioTitle);
             }
         }).toList();
     }
@@ -1073,6 +1074,7 @@ public class TrainingEngine {
             card.timeline = new ArrayList<>(cs.timeline()); card.callIds = new ArrayList<>(cs.callIds());
             card.expectedServices = cs.expectedServices() == null ? List.of() : cs.expectedServices();
             card.expectedDecision = cs.expectedDecision();
+            card.scenarioTitle = cs.scenarioTitle();
             state.cards.put(card.id, card);
             cardIndex.put(card.id, state.id);
         }
@@ -1123,6 +1125,7 @@ public class TrainingEngine {
         UUID id;
         UUID sessionId;
         String scenarioId;
+        String scenarioTitle;
         String number;
         Instant receivedAt;
         String source;

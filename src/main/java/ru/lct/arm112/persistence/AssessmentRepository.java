@@ -4,6 +4,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import ru.lct.arm112.api.ApiModels.Assessment;
+import ru.lct.arm112.api.ApiModels.CriterionScore;
+import ru.lct.arm112.service.assessment.AssessmentWeights;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -12,7 +14,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,24 +56,37 @@ public class AssessmentRepository {
                 ai.languageScore(), ai.syntaxErrors() == null ? 0 : ai.syntaxErrors());
     }
 
-    public void setTeacher(UUID id, UUID teacherId, double total, String comment) {
+    public void setTeacher(UUID id, UUID teacherId, double total, String comment, List<CriterionScore> criteria) {
         jdbc.update("""
                 update assessment set teacher_id = ?, teacher_total = ?, teacher_comment = ?,
-                                      teacher_assessed_at = current_timestamp
+                                      teacher_payload = ?, teacher_assessed_at = current_timestamp
                  where id = ?
-                """, teacherId, total, comment, id);
+                """, teacherId, total, comment, encodeCriteria(criteria), id);
     }
 
-    /** Итоговая оценка по решению №5: преподавателя, если она есть, иначе ИИ. */
+    /**
+     * Итоговая оценка по решению №5: преподавателя, если она есть, иначе ИИ.
+     * Баллы по критериям тоже подменяются оценкой преподавателя там, где она задана;
+     * исходные баллы ИИ остаются в aiCriteria.
+     */
     public static Assessment finalOf(AssessmentRow row) {
         Assessment ai = row.ai();
         boolean teacher = row.teacherTotal() != null;
+        List<CriterionScore> teacherCriteria = row.teacherCriteria() == null ? List.of() : row.teacherCriteria();
+        Map<String, Double> overrides = new HashMap<>();
+        for (CriterionScore c : teacherCriteria) if (c.score() != null) overrides.put(c.code(), c.score());
         return new Assessment(ai.id(), ai.sessionId(), ai.state(), ai.mode(),
                 teacher ? row.teacherTotal() : ai.totalScore(),
-                ai.timingScore(), ai.actionsScore(), ai.communicationScore(), ai.languageScore(),
-                ai.addressScore(), ai.classificationScore(), ai.servicesScore(), ai.syntaxErrors(),
-                ai.issues(), ai.recommendations(), teacher ? "TEACHER" : "AI",
-                ai.totalScore(), row.teacherTotal(), row.teacherComment(), row.teacherAssessedAt());
+                overrides.getOrDefault("timing", ai.timingScore()),
+                overrides.getOrDefault("actions", ai.actionsScore()),
+                overrides.getOrDefault("communication", ai.communicationScore()),
+                overrides.getOrDefault("language", ai.languageScore()),
+                overrides.getOrDefault("address", ai.addressScore()),
+                overrides.getOrDefault("classification", ai.classificationScore()),
+                overrides.getOrDefault("services", ai.servicesScore()),
+                ai.syntaxErrors(), ai.issues(), ai.recommendations(), teacher ? "TEACHER" : "AI",
+                ai.totalScore(), row.teacherTotal(), row.teacherComment(), row.teacherAssessedAt(),
+                AssessmentWeights.aiCriteria(ai), teacherCriteria);
     }
 
     private AssessmentRow map(ResultSet rs, int row) throws SQLException {
@@ -82,7 +99,26 @@ public class AssessmentRepository {
                 rs.getObject("language_score") == null ? null : rs.getBigDecimal("language_score").doubleValue(),
                 rs.getInt("syntax_errors"), rs.getObject("teacher_id", UUID.class),
                 teacherTotal == null ? null : teacherTotal.doubleValue(), rs.getString("teacher_comment"),
+                decodeCriteria(rs.getString("teacher_payload")),
                 assessedAt == null ? null : assessedAt.toInstant(), rs.getTimestamp("created_at").toInstant());
+    }
+
+    private String encodeCriteria(List<CriterionScore> criteria) {
+        try {
+            return objectMapper.writeValueAsString(criteria == null ? List.of() : criteria);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Не удалось сохранить оценку по критериям", exception);
+        }
+    }
+
+    private List<CriterionScore> decodeCriteria(String payload) {
+        if (payload == null || payload.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(payload,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, CriterionScore.class));
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Не удалось прочитать оценку по критериям", exception);
+        }
     }
 
     private String encode(Assessment value) {
@@ -104,6 +140,7 @@ public class AssessmentRepository {
     public record AssessmentRow(UUID id, UUID sessionId, String mode, Assessment ai, double aiTotal,
                                 Double timingScore, Double languageScore, int syntaxErrors,
                                 UUID teacherId, Double teacherTotal, String teacherComment,
+                                List<CriterionScore> teacherCriteria,
                                 Instant teacherAssessedAt, Instant createdAt) {
         public double finalTotal() {
             return teacherTotal != null ? teacherTotal : aiTotal;

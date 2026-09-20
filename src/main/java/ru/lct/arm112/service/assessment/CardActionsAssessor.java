@@ -139,6 +139,6 @@ public class CardActionsAssessor {
         return new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_ACTIONS",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round(actions), TextUtil.round(comm),
                 TextUtil.round(lang), null, null, null, syntaxErrors, issues, recommendations,
-                "AI", TextUtil.round(total), null, null, null);
+                "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
     }
 }

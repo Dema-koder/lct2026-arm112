@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { API_BASE, WS_BASE, api } from "../../lib/api";
+import { API_BASE, WS_BASE, api, type IncidentTypeItem } from "../../lib/api";
 import { getMessage } from "../../lib/format";
 
 /** Экран входа — общий для трёх ролей, воспроизводит dds-01.png. */
-export function Login({ onLogin }: { onLogin: (token: string) => void }) {
+export function Login({ onLogin, notice }: { onLogin: (token: string) => void; notice?: string }) {
   const [username, setUsername] = useState("trainee");
   const [password, setPassword] = useState("trainee");
   const [error, setError] = useState("");
@@ -50,6 +50,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
         </label>
         <button type="submit" disabled={loading}>{loading ? "ПОДКЛЮЧЕНИЕ…" : "ВОЙТИ"}</button>
         {error && <p className="login-error">{error}</p>}
+        {!error && notice && <p className="login-notice">{notice}</p>}
         <div className="support-copy">
           Техподдержка<br />
           +7 (495) 197-89-81<br />
@@ -76,17 +77,75 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
   );
 }
 
-/** Верхняя полоса «ГБУ Система 112» + имя пользователя; одинаковая на всех экранах. */
+/** Верхняя полоса «ГБУ Система 112» + масштаб + имя пользователя; одинаковая на всех экранах. */
 export function TopStrip({ label, onLogout, nav }: { label: string; onLogout: () => void; nav?: React.ReactNode }) {
+  const [scale, setScale] = useUiScale();
   return (
     <header className="top-strip">
       <div className="product-name">ГБУ Система 112</div>
       {nav && <nav className="top-nav">{nav}</nav>}
+      <div className="scale-control" title="Масштаб интерфейса">
+        <button onClick={() => setScale(scale - 0.1)} disabled={scale <= 0.8} aria-label="Мельче">A−</button>
+        <span>{Math.round(scale * 100)}%</span>
+        <button onClick={() => setScale(scale + 0.1)} disabled={scale >= 1.6} aria-label="Крупнее">A+</button>
+      </div>
       <button className="user-chip" onClick={onLogout} title="Выйти из системы">
         {label} <b>×</b>
       </button>
     </header>
   );
+}
+
+const SCALE_KEY = "arm112-ui-scale";
+
+/** Масштаб по умолчанию: на узких экранах интерфейс АРМ с 10–12px шрифтами слишком мелкий. */
+function defaultScale() {
+  if (typeof window === "undefined") return 1;
+  const width = window.screen?.width || window.innerWidth;
+  if (width <= 1366) return 1.2;
+  if (width <= 1600) return 1.1;
+  return 1;
+}
+
+/**
+ * Масштаб интерфейса: CSS zoom на корне через переменную --ui-scale, значение запоминается в localStorage.
+ * Авто-значение зависит от ширины экрана, пользователь меняет кнопками A− / A+ в шапке.
+ */
+export function useUiScale() {
+  const [scale, setScaleState] = useState(1);
+  useEffect(() => {
+    let saved: number | null = null;
+    try {
+      const raw = localStorage.getItem(SCALE_KEY);
+      saved = raw ? Number(raw) : null;
+    } catch { saved = null; }
+    const initial = saved && saved >= 0.8 && saved <= 1.6 ? saved : defaultScale();
+    queueMicrotask(() => setScaleState(initial));
+  }, []);
+  useEffect(() => {
+    document.documentElement.style.setProperty("--ui-scale", String(scale));
+  }, [scale]);
+  const setScale = useCallback((next: number) => {
+    const clamped = Math.round(Math.max(0.8, Math.min(1.6, next)) * 10) / 10;
+    setScaleState(clamped);
+    try { localStorage.setItem(SCALE_KEY, String(clamped)); } catch { /* приватное окно */ }
+  }, []);
+  return [scale, setScale] as const;
+}
+
+let incidentTypesCache: Map<string, string> | null = null;
+
+/** Подписи типов происшествий по id — чтобы в интерфейсе не было fire.apartment. */
+export function useIncidentTypeLabels(token: string) {
+  const [labels, setLabels] = useState<Map<string, string>>(incidentTypesCache ?? new Map());
+  useEffect(() => {
+    if (incidentTypesCache) return;
+    api.incidentTypes(token).then((items: IncidentTypeItem[]) => {
+      incidentTypesCache = new Map(items.map((t) => [t.id, t.label]));
+      setLabels(incidentTypesCache);
+    }).catch(() => undefined);
+  }, [token]);
+  return useCallback((id: string) => labels.get(id) ?? id, [labels]);
 }
 
 export function ErrorBanner({ error, onClose }: { error: string; onClose: () => void }) {

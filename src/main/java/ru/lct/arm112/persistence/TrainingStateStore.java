@@ -115,7 +115,8 @@ public class TrainingStateStore {
             List<CardTimelineEntry> timeline,
             List<UUID> callIds,
             List<String> expectedServices,
-            String expectedDecision
+            String expectedDecision,
+            String scenarioTitle
     ) {}
 
     public record CallState(

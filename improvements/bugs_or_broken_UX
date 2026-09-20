@@ -1,0 +1,17 @@
+1) After loading the dump all sessions are unalived but the system didnot show the starting screen with login
+2) The teacher could only set the final mark but not add comments and grade to subcriterion, I would also need it
+3) I lack the title og the card, I see the id, but not the title that a teacher could alter any time
+4) The student that will fill the cards probably has not very similar interface in the real service, since the user will see all other cards and need to make a card whan a callis taken and etc. Now just describe what actual app does in the situation for the creation of cards user
+5) При создании сценария я вижу только id карточки, нет ни короткого описания ни разворачивания карточки для больших подробностей или описания целиком
+6) У преподавателья в интрефейсе хода тренировки видны категории выбранные пользователем на английском
+Карточка 26430731 · сохранена 20.09.2026, 13:46:52
+Вводная: В жилом доме сработала пожарная сигнализация. Дыма и возгорания нет
+
+Адрес: — (сусусус)
+
+Типы: fire.apartment, fire.alarm · Службы: Служба 102, Служба 103, Служба 104, ЦЭМП, ЦОДД, ОАТИ, Мослифт, Метро, Мосгортранс, Гор. хозяйство, Мос.Без., ОИВ ТиНАО, Терр. ОИВ, Аппарат Мэра
+
+Описание: —
+7) Добавь в описание тренировок, что сейчас они строго последовательны, но в реальной системе они не будут т ак приходить, будет доступен главный экран с возможностью выбора карточки и заполнения ее, либо же надо самому создавать карточку по описанной логике
+
+8) При маленьком дисплее все слишком маленькое, как сделать лучше и адаптивнее
