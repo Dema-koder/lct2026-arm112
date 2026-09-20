@@ -164,6 +164,9 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .tile-pencil { position: absolute; top: 2px; right: 3px; width: 20px; height: 18px; padding: 0; color: white; border: 0; background: transparent; font-size: 12px; }
 .tile-pencil:hover { background: rgba(255,255,255,.25); }
 .service-tile.active { background: #0784c6; }
+.service-tile.service-arrived { background: #126f97; }
+.service-tile.service-work_in_progress { background: #236f52; }
+.service-tile.service-completed { background: #3f7053; }
 .service-spacer { flex: 1; }
 .submit-session { height: 28px; padding: 0 14px; margin-right: 14px; color: white; border: 0; background: var(--blue); font-size: 12px; }
 .submit-session:hover { background: var(--blue-dark); }
@@ -182,6 +185,11 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .status-form .ok { color: #17713f; }
 .status-form .cancel { color: #8f2f22; }
 .status-form button:hover { background: #dfe4e6; }
+.card-opening { min-height: calc(100vh - 174px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #46545b; background: #eef1f2; }
+.card-opening b { font-size: 18px; color: #26363e; }
+.card-opening strong { font-variant-numeric: tabular-nums; color: var(--blue); }
+.card-opening-spinner { width: 34px; height: 34px; border: 4px solid #bec9ce; border-top-color: var(--blue); border-radius: 50%; animation: card-opening-spin .8s linear infinite; }
+@keyframes card-opening-spin { to { transform: rotate(360deg); } }
 
 /* Overlays */
 .error-banner { position: fixed; z-index: 40; top: 44px; left: 50%; width: min(620px, 80vw); transform: translateX(-50%); padding: 12px 44px 12px 14px; color: white; background: #9d372c; box-shadow: 0 4px 14px rgba(0,0,0,.3); }

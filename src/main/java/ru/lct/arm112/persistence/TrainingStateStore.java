@@ -9,6 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -80,6 +81,7 @@ public class TrainingStateStore {
             Instant sessionStartedAt,
             Instant sessionCompletedAt,
             List<String> pendingScenarioIds,
+            Map<String, Instant> scheduledScenarioAt,
             List<CardState> cards,
             List<CallState> calls,
             List<CardDraft> drafts
@@ -94,6 +96,9 @@ public class TrainingStateStore {
             String source,
             String senderLabel,
             String status,
+            Instant openingStartedAt,
+            Instant openingReadyAt,
+            Instant openedAt,
             Instant acceptanceDeadlineAt,
             Instant processingDeadlineAt,
             Instant acceptedAt,
