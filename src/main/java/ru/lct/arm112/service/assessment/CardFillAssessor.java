@@ -100,7 +100,7 @@ public class CardFillAssessor {
         return new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round((type + services) / 2), null,
                 TextUtil.round(lang), TextUtil.round(address), TextUtil.round(type), TextUtil.round(services),
-                syntaxErrors, issues, recommendations, "AI", TextUtil.round(total), null, null, null);
+                syntaxErrors, issues, recommendations, "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
     }
 
     /** Подсказки по ходу заполнения — только для занятий вида «тренировка». */

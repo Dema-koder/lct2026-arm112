@@ -59,16 +59,16 @@ public class ScenarioRepository {
         if (confirmed != null) {
             sql.append(confirmed ? " and reference_confirmed_at is not null" : " and reference_confirmed_at is null");
         }
-        sql.append(" order by source, id limit ").append(limit);
+        sql.append(" order by reference_confirmed_at desc nulls last, title, id limit ").append(limit);
         return jdbc.query(sql.toString(), mapper, args.toArray());
     }
 
     public void insert(Scenario scenario) {
         jdbc.update("""
-                insert into scenario (id, source, category, difficulty, payload, reference_confirmed_by,
+                insert into scenario (id, title, source, category, difficulty, payload, reference_confirmed_by,
                                       reference_confirmed_at, created_by)
-                values (?, ?, ?, ?, ?, ?, ?, ?)
-                """, scenario.id(), scenario.source(), scenario.category(), scenario.difficulty(),
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, scenario.id(), scenario.title(), scenario.source(), scenario.category(), scenario.difficulty(),
                 encode(scenario), scenario.referenceConfirmed() ? scenario.createdBy() : null,
                 scenario.referenceConfirmedAt() == null ? null : Timestamp.from(scenario.referenceConfirmedAt()),
                 scenario.createdBy());
@@ -76,9 +76,9 @@ public class ScenarioRepository {
 
     public void update(Scenario scenario) {
         jdbc.update("""
-                update scenario set category = ?, difficulty = ?, payload = ?, updated_at = current_timestamp
+                update scenario set title = ?, category = ?, difficulty = ?, payload = ?, updated_at = current_timestamp
                  where id = ?
-                """, scenario.category(), scenario.difficulty(), encode(scenario), scenario.id());
+                """, scenario.title(), scenario.category(), scenario.difficulty(), encode(scenario), scenario.id());
     }
 
     public void confirmReference(String id, UUID by) {
@@ -93,7 +93,8 @@ public class ScenarioRepository {
         Scenario payload = decode(rs.getString("payload"));
         Timestamp confirmedAt = rs.getTimestamp("reference_confirmed_at");
         Timestamp createdAt = rs.getTimestamp("created_at");
-        return new Scenario(rs.getString("id"), rs.getString("source"), rs.getString("category"),
+        String title = rs.getString("title");
+        return new Scenario(rs.getString("id"), title == null ? payload.title() : title, rs.getString("source"), rs.getString("category"),
                 rs.getInt("difficulty"), payload.callerText(), payload.caller(), payload.rawAddress(),
                 payload.expectedAddress(), nz(payload.expectedIncidentTypes()), nz(payload.expectedServices()),
                 payload.addressClarified(), payload.expectedDecision(), payload.expectedDecisionReason(),

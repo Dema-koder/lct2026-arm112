@@ -13,6 +13,7 @@ import ru.lct.arm112.persistence.UserRepository;
 import ru.lct.arm112.persistence.UserRepository.AppUser;
 import ru.lct.arm112.security.CurrentUser;
 import ru.lct.arm112.security.Role;
+import ru.lct.arm112.service.assessment.AssessmentWeights;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -238,7 +239,23 @@ public class LessonService {
         require(row.lessonId(), teacher);
         AssessmentRow assessment = assessments.findBySession(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NOT_ASSESSED", "Обучающийся ещё не завершил занятие"));
-        assessments.setTeacher(assessment.id(), teacher.id(), request.total(), request.comment());
+        List<CriterionScore> criteria = request.criteria() == null ? List.of() : request.criteria();
+        Set<String> allowed = AssessmentWeights.forMode(assessment.mode()).stream()
+                .map(AssessmentWeights.Criterion::code).collect(Collectors.toSet());
+        for (CriterionScore c : criteria) {
+            if (!allowed.contains(c.code())) throw invalid("Неизвестный критерий для режима: " + c.code());
+        }
+        boolean anyScore = criteria.stream().anyMatch(c -> c.score() != null);
+        Double total;
+        if (anyScore) {
+            // итог считается по весам режима: балл преподавателя там, где он задан, иначе ИИ
+            total = AssessmentWeights.total(assessment.ai(), criteria);
+        } else if (request.total() != null) {
+            total = request.total();
+        } else {
+            throw invalid("Укажите итоговый балл или балл хотя бы по одному критерию");
+        }
+        assessments.setTeacher(assessment.id(), teacher.id(), total, request.comment(), criteria);
         events.notifyUser(row.traineeId(), "assessment.updated", Map.of("assessmentId", assessment.id().toString()));
         return assessments.findById(assessment.id()).map(AssessmentRepository::finalOf).orElseThrow();
     }

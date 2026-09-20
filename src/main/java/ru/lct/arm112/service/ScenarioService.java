@@ -47,6 +47,7 @@ public class ScenarioService {
     @PostConstruct
     void seed() {
         if (repository.count() > 0) {
+            backfillTitles();
             learnPlaces();
             return;
         }
@@ -54,11 +55,15 @@ public class ScenarioService {
             JsonNode root = objectMapper.readTree(stream);
             int count = 0;
             for (JsonNode node : root) {
-                Scenario scenario = new Scenario(node.get("id").asText(), node.get("source").asText(),
+                List<String> types = toList(node.get("expectedIncidentTypes"));
+                FormalAddress expected = objectMapper.treeToValue(node.get("expectedAddress"), FormalAddress.class);
+                String title = node.hasNonNull("title") ? node.get("title").asText()
+                        : autoTitle(types, expected, node.get("callerText").asText());
+                Scenario scenario = new Scenario(node.get("id").asText(), title, node.get("source").asText(),
                         node.get("category").asText(), node.get("difficulty").asInt(5),
                         node.get("callerText").asText(), objectMapper.treeToValue(node.get("caller"), ScenarioCaller.class),
-                        node.get("rawAddress").asText(), objectMapper.treeToValue(node.get("expectedAddress"), FormalAddress.class),
-                        toList(node.get("expectedIncidentTypes")), toList(node.get("expectedServices")),
+                        node.get("rawAddress").asText(), expected,
+                        types, toList(node.get("expectedServices")),
                         node.path("addressClarified").asBoolean(false), null, null, true,
                         false, null, null, Instant.now());
                 repository.insert(scenario);
@@ -69,6 +74,24 @@ public class ScenarioService {
             throw new IllegalStateException("Не удалось загрузить seed/scenarios.json", exception);
         }
         learnPlaces();
+    }
+
+    /** Сценарии, засеянные до появления названий (V7): проставить название по умолчанию один раз. */
+    private void backfillTitles() {
+        int count = 0;
+        for (Scenario scenario : repository.find(null, null, null, 5000)) {
+            if (scenario.title() != null && !scenario.title().isBlank()) continue;
+            String title = autoTitle(scenario.expectedIncidentTypes(), scenario.expectedAddress(), scenario.callerText());
+            if ("TRAINEE_MADE".equals(scenario.source())) title = "Сформировано: " + title;
+            if ("GENERATED".equals(scenario.source())) title = "Сгенерировано: " + title;
+            repository.update(new Scenario(scenario.id(), title, scenario.source(), scenario.category(), scenario.difficulty(),
+                    scenario.callerText(), scenario.caller(), scenario.rawAddress(), scenario.expectedAddress(),
+                    scenario.expectedIncidentTypes(), scenario.expectedServices(), scenario.addressClarified(),
+                    scenario.expectedDecision(), scenario.expectedDecisionReason(), scenario.outboundCallRequired(),
+                    scenario.referenceConfirmed(), scenario.referenceConfirmedAt(), scenario.createdBy(), scenario.createdAt()));
+            count++;
+        }
+        if (count > 0) log.info("Проставлены названия для {} сценариев без названия", count);
     }
 
     /** Названия улиц и населённых пунктов из всех сценариев — словарь для ловли опечаток в адресах. */
@@ -148,7 +171,7 @@ public class ScenarioService {
     public Scenario saveTraineeMade(Scenario base, String callerText, FormalAddress address, List<String> types,
                                     List<String> services, UUID author) {
         String id = "trainee-" + UUID.randomUUID().toString().substring(0, 8);
-        Scenario scenario = new Scenario(id, "TRAINEE_MADE", base.category(), base.difficulty(),
+        Scenario scenario = new Scenario(id, "Сформировано: " + base.title(), "TRAINEE_MADE", base.category(), base.difficulty(),
                 callerText == null || callerText.isBlank() ? base.callerText() : callerText, base.caller(),
                 describe(address), base.expectedAddress(), base.expectedIncidentTypes().isEmpty() ? types : base.expectedIncidentTypes(),
                 base.expectedServices().isEmpty() ? services : base.expectedServices(), base.addressClarified(),
@@ -173,7 +196,9 @@ public class ScenarioService {
             Scenario situation = pool.get(random.nextInt(pool.size()));
             Scenario address = pool.get(random.nextInt(pool.size()));
             String id = "gen-" + UUID.randomUUID().toString().substring(0, 8);
-            Scenario scenario = new Scenario(id, "GENERATED", request.category(), request.difficulty(),
+            Scenario scenario = new Scenario(id,
+                    "Сгенерировано: " + autoTitle(situation.expectedIncidentTypes(), address.expectedAddress(), situation.callerText()),
+                    "GENERATED", request.category(), request.difficulty(),
                     situation.callerText(), situation.caller(), address.rawAddress(), address.expectedAddress(),
                     situation.expectedIncidentTypes(), situation.expectedServices(), address.addressClarified(),
                     "ACCEPT", null, true, false, null, actor, Instant.now());
@@ -187,7 +212,7 @@ public class ScenarioService {
         List<String> types = request.expectedIncidentTypes() == null ? List.of() : request.expectedIncidentTypes();
         List<String> services = request.expectedServices() == null || request.expectedServices().isEmpty()
                 ? references.servicesFor(types) : request.expectedServices();
-        return new Scenario(id, source, request.category(), request.difficulty(), request.callerText(),
+        return new Scenario(id, request.title().trim(), source, request.category(), request.difficulty(), request.callerText(),
                 request.caller(), request.rawAddress(), request.expectedAddress(), types, services,
                 request.expectedAddress() != null, blank(request.expectedDecision()) ? null : request.expectedDecision(),
                 request.expectedDecisionReason(), request.outboundCallRequired(), false, null, actor, createdAt);
@@ -211,7 +236,27 @@ public class ScenarioService {
     }
 
     public static ScenarioListItem toListItem(Scenario s) {
-        return new ScenarioListItem(s.id(), s.source(), s.category(), s.difficulty(), s.callerText(),
-                s.rawAddress(), s.expectedIncidentTypes(), s.referenceConfirmed());
+        return new ScenarioListItem(s.id(), s.title(), s.source(), s.category(), s.difficulty(), s.callerText(),
+                s.rawAddress(), s.expectedAddress(), s.expectedIncidentTypes(), s.expectedServices(),
+                s.referenceConfirmed(), s.createdAt());
+    }
+
+    /** Название по умолчанию: подпись типа + улица или ориентир; без типа — начало вводной. */
+    private String autoTitle(List<String> types, FormalAddress address, String callerText) {
+        String place = null;
+        if (address != null) {
+            place = address.street() != null ? address.street()
+                    : address.locality() != null && !"Москва".equals(address.locality()) ? address.locality()
+                    : address.descriptive();
+        }
+        String base;
+        if (types != null && !types.isEmpty() && references.incidentType(types.get(0)) != null) {
+            base = references.incidentType(types.get(0)).label();
+        } else {
+            String text = callerText == null ? "" : callerText.trim();
+            base = text.length() > 60 ? text.substring(0, 57).trim() + "…" : text;
+        }
+        String title = place == null || place.isBlank() ? base : base + " · " + (place.length() > 60 ? place.substring(0, 57) + "…" : place);
+        return title.length() > 200 ? title.substring(0, 200) : title;
     }
 }

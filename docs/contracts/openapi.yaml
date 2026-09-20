@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.0
+  version: 0.3.1
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -1237,7 +1237,7 @@ components:
     IncidentCard:
       type: object
       additionalProperties: false
-      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls, hints, ownServiceCode]
+      required: [id, sessionId, number, receivedAt, source, senderLabel, status, allowedActions, sla, caller, address, description, incidentType, features, assignedServices, scenarioRequirements, callTargets, timeline, outboundCalls, hints, ownServiceCode, scenarioTitle]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1275,6 +1275,7 @@ components:
           type: array
           items: {$ref: '#/components/schemas/Hint'}
         ownServiceCode: {type: string, description: "Код службы обучающегося (плитка, которую он ведёт)"}
+        scenarioTitle: {type: [string, 'null'], description: "Название сценария — для преподавателя"}
     CardSla:
       type: object
       additionalProperties: false
@@ -1471,9 +1472,10 @@ components:
     Scenario:
       type: object
       additionalProperties: false
-      required: [id, source, category, difficulty, callerText, caller, rawAddress, expectedAddress, expectedIncidentTypes, expectedServices, addressClarified, expectedDecision, expectedDecisionReason, outboundCallRequired, referenceConfirmed, referenceConfirmedAt, createdBy, createdAt]
+      required: [id, title, source, category, difficulty, callerText, caller, rawAddress, expectedAddress, expectedIncidentTypes, expectedServices, addressClarified, expectedDecision, expectedDecisionReason, outboundCallRequired, referenceConfirmed, referenceConfirmedAt, createdBy, createdAt]
       properties:
         id: {type: string}
+        title: {type: string, maxLength: 200, description: "Название для преподавателя; обучающемуся не показывается"}
         source: {$ref: '#/components/schemas/ScenarioSource'}
         category: {type: string}
         difficulty: {type: integer, minimum: 1, maximum: 10}
@@ -1498,24 +1500,31 @@ components:
     ScenarioListItem:
       type: object
       additionalProperties: false
-      required: [id, source, category, difficulty, callerText, rawAddress, expectedIncidentTypes, referenceConfirmed]
+      required: [id, title, source, category, difficulty, callerText, rawAddress, expectedAddress, expectedIncidentTypes, expectedServices, referenceConfirmed, createdAt]
       properties:
         id: {type: string}
+        title: {type: string}
         source: {$ref: '#/components/schemas/ScenarioSource'}
         category: {type: string}
         difficulty: {type: integer}
         callerText: {type: string}
         rawAddress: {type: [string, 'null']}
+        expectedAddress: {anyOf: [{$ref: '#/components/schemas/FormalAddress'}, {type: 'null'}]}
         expectedIncidentTypes:
           type: array
           items: {type: string}
+        expectedServices:
+          type: array
+          items: {type: string}
         referenceConfirmed: {type: boolean}
+        createdAt: {type: string, format: date-time}
     ScenarioUpsert:
       type: object
       additionalProperties: false
-      required: [category, difficulty, callerText]
+      required: [title, category, difficulty, callerText]
       properties:
         id: {type: [string, 'null'], maxLength: 64}
+        title: {type: string, minLength: 1, maxLength: 200}
         category: {type: string}
         difficulty: {type: integer, minimum: 1, maximum: 10}
         callerText: {type: string, maxLength: 2000}
@@ -1583,7 +1592,7 @@ components:
     CardDraft:
       type: object
       additionalProperties: false
-      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints]
+      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints, scenarioTitle]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1603,6 +1612,7 @@ components:
         description: {type: string, maxLength: 1999}
         services: {type: array, items: {$ref: '#/components/schemas/DraftService'}}
         hints: {type: array, items: {$ref: '#/components/schemas/Hint'}}
+        scenarioTitle: {type: [string, 'null'], description: "Название сценария — для преподавателя"}
     CardDraftPatch:
       type: object
       additionalProperties: false
@@ -1619,7 +1629,7 @@ components:
     Assessment:
       type: object
       additionalProperties: false
-      required: [id, sessionId, state, mode, totalScore, timingScore, actionsScore, communicationScore, languageScore, addressScore, classificationScore, servicesScore, syntaxErrors, issues, recommendations, source, aiTotalScore, teacherTotalScore, teacherComment, teacherAssessedAt]
+      required: [id, sessionId, state, mode, totalScore, timingScore, actionsScore, communicationScore, languageScore, addressScore, classificationScore, servicesScore, syntaxErrors, issues, recommendations, source, aiTotalScore, teacherTotalScore, teacherComment, teacherAssessedAt, aiCriteria, teacherCriteria]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1645,6 +1655,24 @@ components:
         teacherTotalScore: {type: [number, 'null']}
         teacherComment: {type: [string, 'null']}
         teacherAssessedAt: {type: [string, 'null'], format: date-time}
+        aiCriteria:
+          type: array
+          description: Баллы ИИ по критериям режима (исходные, до правок преподавателя)
+          items: {$ref: '#/components/schemas/CriterionScore'}
+        teacherCriteria:
+          type: array
+          description: Правки преподавателя по критериям; балл null — оставлен балл ИИ, комментарий сохранён
+          items: {$ref: '#/components/schemas/CriterionScore'}
+    CriterionScore:
+      type: object
+      additionalProperties: false
+      required: [code, score, comment]
+      properties:
+        code:
+          type: string
+          description: CARD_FILL — address, classification, services, timing, language; CARD_ACTIONS — timing, actions, communication, language
+        score: {type: [number, 'null'], minimum: 0, maximum: 100}
+        comment: {type: [string, 'null'], maxLength: 1000}
     AssessmentIssue:
       type: object
       additionalProperties: false
@@ -1659,10 +1687,13 @@ components:
     TeacherAssessment:
       type: object
       additionalProperties: false
-      required: [total]
+      description: Если переданы критерии с баллами — итог считается сервером по весам режима, total игнорируется
       properties:
-        total: {type: number, minimum: 0, maximum: 100}
+        total: {type: [number, 'null'], minimum: 0, maximum: 100}
         comment: {type: [string, 'null'], maxLength: 2000}
+        criteria:
+          type: [array, 'null']
+          items: {$ref: '#/components/schemas/CriterionScore'}
     ResultItem:
       type: object
       additionalProperties: false

@@ -180,3 +180,34 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
   .fill-columns { grid-template-columns: 1fr; }
   .form-grid, .form-grid.four, .form-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
+:root { --ui-scale: 1; }
+body { zoom: var(--ui-scale); }
+.scale-control { position: absolute; right: 250px; top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #3c4a51; }
+.scale-control button { width: 26px; height: 22px; padding: 0; border: 1px solid #b1babf; background: white; font-size: 11px; }
+.scale-control button:disabled { opacity: .4; }
+.scale-control span { min-width: 36px; text-align: center; }
+.login-notice { margin: 10px 0 0; padding: 8px 10px; color: #fff; background: rgba(12,111,164,.75); }
+
+/* --- сценарии: строки с разворачиванием (замечание 5) --- */
+.check-list.scenarios { display: block; }
+.scenario-row { position: relative; border-bottom: 1px solid #e4e8ea; }
+.scenario-row label { grid-template-columns: 20px 260px 1fr; padding-right: 36px; }
+.scenario-row.on label { background: #d9ecf7; }
+.scenario-row .expand { position: absolute; right: 4px; top: 4px; width: 26px; height: 24px; border: 0; background: transparent; color: var(--blue-dark); font-size: 14px; }
+.scenario-details { padding: 6px 12px 10px 34px; background: #f6f6f6; font-size: 12px; }
+.scenario-details p { margin: 3px 0; }
+.scenario-details em { font-style: normal; color: #56656c; }
+.data-table td.expand-cell { width: 22px; color: var(--blue-dark); }
+.data-table tr.details-row td { padding: 0; background: #f6f6f6; }
+.data-table.criteria input { width: 100%; height: 26px; padding: 0 6px; border: 1px solid #b1babf; }
+.data-table.criteria input.w-xs { width: 72px; }
+.data-table.criteria .total-row td { background: #e4ebef; }
+.criteria-notes { margin: 8px 0 0; padding-left: 18px; }
+.criteria-notes li { margin: 3px 0; }
+.criteria-notes small { color: #6d797f; }
+
+@media (max-width: 1366px) {
+  .scale-control { right: 230px; }
+}
