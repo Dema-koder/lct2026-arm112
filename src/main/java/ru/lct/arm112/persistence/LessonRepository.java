@@ -63,6 +63,12 @@ public class LessonRepository {
         return value == null ? 0 : value;
     }
 
+    public long countGroupsByTeacher(UUID teacherId) {
+        Long value = jdbc.queryForObject("select count(*) from training_group where teacher_id = ?",
+                Long.class, teacherId);
+        return value == null ? 0 : value;
+    }
+
     // ---------------------------------------------------------------- lessons
 
     public List<Lesson> findLessons(UUID teacherId, String state) {

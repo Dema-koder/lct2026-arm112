@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.ResultSetMetaData;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -27,7 +28,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -45,17 +48,22 @@ public class BackupService {
     private static final List<String> TABLES = List.of("app_user", "training_group", "app_setting", "scenario",
             "lesson", "training_session", "assessment", "training_state", "realtime_event", "material", "material_group",
             "audit_event");
-    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+    private static final String MATERIALS_PREFIX = "materials/";
+    private static final String MATERIALS_MANIFEST = MATERIALS_PREFIX + ".manifest";
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
     private final Path directory;
+    private final Path materialsDirectory;
 
     public BackupService(JdbcTemplate jdbc, ObjectMapper objectMapper,
-                         @Value("${arm112.backup.dir:./backups}") String directory) {
+                         @Value("${arm112.backup.dir:./backups}") String directory,
+                         @Value("${arm112.materials.dir:./materials-store}") String materialsDirectory) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
         this.directory = Path.of(directory);
+        this.materialsDirectory = Path.of(materialsDirectory);
     }
 
     public List<BackupInfo> list() {
@@ -92,7 +100,8 @@ public class BackupService {
     public synchronized BackupInfo create() {
         try {
             Files.createDirectories(directory);
-            String name = "arm112-" + LocalDateTime.now(ZoneOffset.UTC).format(STAMP) + ".zip";
+            String name = "arm112-" + LocalDateTime.now(ZoneOffset.UTC).format(STAMP) + "-"
+                    + UUID.randomUUID().toString().substring(0, 8) + ".zip";
             Path file = directory.resolve(name);
             try (OutputStream out = Files.newOutputStream(file); ZipOutputStream zip = new ZipOutputStream(out)) {
                 for (String table : TABLES) {
@@ -100,6 +109,7 @@ public class BackupService {
                     zip.write(objectMapper.writeValueAsBytes(export(table)));
                     zip.closeEntry();
                 }
+                appendMaterials(zip);
             }
             return new BackupInfo(name, Files.size(file), Files.getLastModifiedTime(file).toInstant());
         } catch (IOException exception) {
@@ -117,13 +127,37 @@ public class BackupService {
             throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Резервная копия не найдена");
         }
         List<ObjectNode> dumps = new ArrayList<>();
+        Map<String, byte[]> materialFiles = new LinkedHashMap<>();
+        boolean containsMaterials = false;
         try (InputStream in = Files.newInputStream(file); ZipInputStream zip = new ZipInputStream(in)) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
-                dumps.add((ObjectNode) objectMapper.readTree(zip.readAllBytes()));
+                String entryName = entry.getName();
+                if (entryName.endsWith(".json") && !entryName.contains("/")) {
+                    JsonNode parsed = objectMapper.readTree(zip.readAllBytes());
+                    if (!(parsed instanceof ObjectNode dump) || !TABLES.contains(dump.path("table").asText())) {
+                        throw new IOException("Некорректный JSON-раздел резервной копии: " + entryName);
+                    }
+                    dumps.add(dump);
+                } else if (entryName.equals(MATERIALS_MANIFEST)) {
+                    containsMaterials = true;
+                } else if (entryName.startsWith(MATERIALS_PREFIX)) {
+                    containsMaterials = true;
+                    String storedName = entryName.substring(MATERIALS_PREFIX.length());
+                    if (!safeStoredName(storedName)) {
+                        throw new IOException("Некорректное имя материала в резервной копии");
+                    }
+                    materialFiles.put(storedName, zip.readAllBytes());
+                }
             }
         } catch (IOException exception) {
             throw new IllegalStateException("Не удалось прочитать резервную копию", exception);
+        }
+        for (String table : TABLES) {
+            if (dumps.stream().noneMatch(dump -> table.equals(dump.path("table").asText()))) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "BACKUP_INVALID",
+                        "В резервной копии отсутствует таблица " + table);
+            }
         }
         // очистка в обратном порядке; циклическая связь app_user ↔ training_group разрывается через group_id
         jdbc.update("update app_user set group_id = null");
@@ -139,7 +173,85 @@ public class BackupService {
         for (Object[] pair : deferredGroups) {
             jdbc.update("update app_user set group_id = ? where id = ?", pair);
         }
+        if (containsMaterials) {
+            restoreMaterials(materialFiles);
+        }
+        rewriteMaterialPaths();
+        // Восстановление меняет состояние учётных записей: все выпущенные ранее JWT должны быть отозваны.
+        jdbc.update("update app_user set auth_version = auth_version + 1");
         log.warn("База восстановлена из резервной копии {}", fileName);
+    }
+
+    private void appendMaterials(ZipOutputStream zip) throws IOException {
+        zip.putNextEntry(new ZipEntry(MATERIALS_MANIFEST));
+        zip.closeEntry();
+        if (!Files.isDirectory(materialsDirectory)) return;
+        try (Stream<Path> files = Files.list(materialsDirectory)) {
+            for (Path material : files.filter(Files::isRegularFile).toList()) {
+                String storedName = material.getFileName().toString();
+                if (!safeStoredName(storedName)) continue;
+                zip.putNextEntry(new ZipEntry(MATERIALS_PREFIX + storedName));
+                Files.copy(material, zip);
+                zip.closeEntry();
+            }
+        }
+    }
+
+    private void restoreMaterials(Map<String, byte[]> materialFiles) {
+        Path staging = null;
+        try {
+            Path targetDirectory = materialsDirectory.toAbsolutePath().normalize();
+            Path parent = targetDirectory.getParent();
+            if (parent == null) throw new IOException("Не удалось определить каталог материалов");
+            Files.createDirectories(parent);
+            staging = Files.createTempDirectory(parent, ".arm112-materials-restore-");
+            for (Map.Entry<String, byte[]> material : materialFiles.entrySet()) {
+                Files.write(staging.resolve(material.getKey()), material.getValue());
+            }
+            Files.createDirectories(targetDirectory);
+            try (Stream<Path> existing = Files.list(targetDirectory)) {
+                for (Path path : existing.filter(Files::isRegularFile).toList()) {
+                    Files.delete(path);
+                }
+            }
+            try (Stream<Path> restored = Files.list(staging)) {
+                for (Path path : restored.filter(Files::isRegularFile).toList()) {
+                    Files.move(path, targetDirectory.resolve(path.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Не удалось восстановить файлы материалов", exception);
+        } finally {
+            if (staging != null) {
+                try (Stream<Path> leftovers = Files.list(staging)) {
+                    for (Path path : leftovers.toList()) Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                    // Временный каталог не влияет на восстановленные данные.
+                }
+                try {
+                    Files.deleteIfExists(staging);
+                } catch (IOException ignored) {
+                    // Неудачная очистка временного каталога не отменяет восстановление.
+                }
+            }
+        }
+    }
+
+    private void rewriteMaterialPaths() {
+        List<Object[]> materials = jdbc.query("select id, storage_path from material",
+                (resultSet, rowNumber) -> new Object[]{resultSet.getObject("id", UUID.class),
+                        resultSet.getString("storage_path")});
+        for (Object[] material : materials) {
+            UUID id = (UUID) material[0];
+            String storedName = Path.of((String) material[1]).getFileName().toString();
+            jdbc.update("update material set storage_path = ? where id = ?",
+                    materialsDirectory.resolve(storedName).toAbsolutePath().normalize().toString(), id);
+        }
+    }
+
+    private static boolean safeStoredName(String value) {
+        return value != null && !value.isBlank() && !value.equals(".") && !value.equals("..")
+                && !value.contains("/") && !value.contains("\\");
     }
 
     private ObjectNode export(String table) {

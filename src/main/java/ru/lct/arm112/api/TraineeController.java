@@ -5,6 +5,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.*;
 import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.persistence.LessonRepository;
@@ -225,7 +227,7 @@ public class TraineeController {
     }
 
     @GetMapping("/trainee/materials/{id}/download")
-    public ResponseEntity<byte[]> download(@PathVariable UUID id, CurrentUser actor) throws IOException {
+    public ResponseEntity<Resource> download(@PathVariable UUID id, CurrentUser actor) throws IOException {
         AppUser user = users.require(actor.id());
         MaterialRow material = materials.findById(id).orElseThrow(() -> TrainingEngine.notFound("Материал не найден"));
         boolean allowed = user.groupId() != null && materials.groupsOf(id).contains(user.groupId())
@@ -233,12 +235,16 @@ public class TraineeController {
         if (!allowed) {
             throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Материал не назначен вашей группе");
         }
-        byte[] bytes = Files.readAllBytes(Path.of(material.storagePath()));
+        Path path = Path.of(material.storagePath()).toAbsolutePath().normalize();
+        if (!Files.isRegularFile(path)) {
+            throw TrainingEngine.notFound("Файл материала не найден");
+        }
         String type = material.contentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : material.contentType();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + java.net.URLEncoder.encode(material.fileName(), java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20"))
                 .contentType(MediaType.parseMediaType(type))
-                .body(bytes);
+                .contentLength(Files.size(path))
+                .body(new FileSystemResource(path));
     }
 
     static Material toMaterial(MaterialRow row) {

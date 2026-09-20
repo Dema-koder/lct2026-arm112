@@ -10,7 +10,9 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 10001 arm112     && mkdir -p /data/backups /data/materials /data/logs     && chown -R arm112:arm112 /data
+    && useradd --system --uid 10001 arm112 \
+    && mkdir -p /data/backups /data/materials /data/logs \
+    && chown -R arm112:arm112 /data
 COPY --from=build /workspace/target/arm112-backend-*.jar app.jar
 USER arm112
 EXPOSE 8080

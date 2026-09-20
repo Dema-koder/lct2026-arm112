@@ -1,11 +1,15 @@
 package ru.lct.arm112;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.lct.arm112.persistence.AuditRepository;
 import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,6 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RolesAndAdminIntegrationTest extends ApiTestSupport {
     @Autowired
     AuditRepository auditRepository;
+
+    @Value("${arm112.materials.dir}")
+    String materialsDirectory;
 
     @Test
     void enforcesRolesAndWritesAudit() throws Exception {
@@ -62,6 +69,9 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         assertThat(audit.body()).doesNotContain("secret1");
 
         assertThat(post("/api/v1/admin/users/" + id + "/block", null, admin, null).statusCode()).isEqualTo(200);
+        assertThat(get("/api/v1/trainee/context", token).statusCode())
+                .as("старый JWT должен быть отозван сразу после блокировки")
+                .isEqualTo(401);
         HttpResponse<String> blocked = post("/api/v1/auth/login",
                 "{\"username\":\"" + loginName + "\",\"password\":\"secret1\"}", null, null);
         assertThat(blocked.statusCode()).isEqualTo(401);
@@ -73,6 +83,33 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         HttpResponse<String> health = get("/api/v1/admin/system/health", admin);
         assertThat(json(health).get("database").asText()).isEqualTo("UP");
 
+        // группу нельзя перепривязать к пользователю без роли TEACHER
+        String teacher = login("teacher", "teacher");
+        HttpResponse<String> group = post("/api/v1/admin/groups",
+                "{\"name\":\"Проверка ролей\",\"teacherId\":\"" + userId(teacher) + "\"}", admin, null);
+        assertThat(group.statusCode()).as(group.body()).isEqualTo(201);
+        String ownGroupId = json(group).get("id").asText();
+        assertThat(put("/api/v1/admin/groups/" + json(group).get("id").asText(),
+                "{\"name\":\"Проверка ролей\",\"teacherId\":\"" + id + "\"}", admin).statusCode())
+                .isEqualTo(422);
+
+        String secondTeacherLogin = "teacher-" + UUID.randomUUID().toString().substring(0, 8);
+        HttpResponse<String> secondTeacher = post("/api/v1/admin/users",
+                "{\"login\":\"" + secondTeacherLogin + "\",\"password\":\"teacher2\","
+                        + "\"displayName\":\"Второй преподаватель\",\"role\":\"TEACHER\"}", admin, null);
+        assertThat(secondTeacher.statusCode()).as(secondTeacher.body()).isEqualTo(201);
+        HttpResponse<String> foreignGroup = post("/api/v1/admin/groups",
+                "{\"name\":\"Чужая группа\",\"teacherId\":\"" + json(secondTeacher).get("id").asText() + "\"}",
+                admin, null);
+        assertThat(foreignGroup.statusCode()).as(foreignGroup.body()).isEqualTo(201);
+        assertThat(uploadMaterial(teacher, "Чужой материал", json(foreignGroup).get("id").asText()).statusCode())
+                .isEqualTo(403);
+        assertThat(uploadMaterial(teacher, "Памятка", ownGroupId).statusCode()).isEqualTo(201);
+
+        Path material = Path.of(materialsDirectory).resolve("backup-" + UUID.randomUUID() + ".txt");
+        Files.createDirectories(material.getParent());
+        Files.writeString(material, "содержимое до резервной копии");
+
         HttpResponse<String> backup = post("/api/v1/admin/backups", null, admin, null);
         assertThat(backup.statusCode()).as(backup.body()).isEqualTo(201);
         String fileName = json(backup).get("fileName").asText();
@@ -80,6 +117,7 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
 
         // изменяем данные после копии, восстанавливаем — изменение исчезает
         String afterBackup = createTrainee(admin, "5");
+        Files.writeString(material, "испорчено после резервной копии");
         assertThat(post("/api/v1/admin/backups/" + fileName + "/restore", "{\"confirm\":\"no\"}", admin, null).statusCode())
                 .isEqualTo(422);
         HttpResponse<String> restored = post("/api/v1/admin/backups/" + fileName + "/restore",
@@ -89,5 +127,6 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
                 "{\"username\":\"" + afterBackup + "\",\"password\":\"secret1\"}", null, null);
         assertThat(gone.statusCode()).isEqualTo(401);
         login(loginName, "newpass1");
+        assertThat(Files.readString(material)).isEqualTo("содержимое до резервной копии");
     }
 }

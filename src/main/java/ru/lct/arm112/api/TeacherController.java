@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -169,14 +171,33 @@ public class TeacherController {
         if (file.isEmpty()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Файл пустой");
         }
-        Files.createDirectories(materialsDir);
+        if (title == null || title.isBlank() || title.length() > 200) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "Название материала должно содержать от 1 до 200 символов");
+        }
+        List<UUID> assignedGroups = groupIds == null ? List.of()
+                : new ArrayList<>(new LinkedHashSet<>(groupIds));
+        for (UUID groupId : assignedGroups) {
+            Group group = lessons.group(groupId);
+            if (!group.teacherId().equals(actor.id())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                        "Нельзя назначить материал чужой группе");
+            }
+        }
+        Path storageRoot = materialsDir.toAbsolutePath().normalize();
+        Files.createDirectories(storageRoot);
         UUID id = UUID.randomUUID();
         String original = file.getOriginalFilename() == null ? "material" : Path.of(file.getOriginalFilename()).getFileName().toString();
-        Path target = materialsDir.resolve(id + "-" + original.replaceAll("[^\\p{L}\\p{N}._-]", "_"));
+        Path target = storageRoot.resolve(id + "-" + original.replaceAll("[^\\p{L}\\p{N}._-]", "_")).normalize();
         file.transferTo(target);
-        MaterialRow row = new MaterialRow(id, actor.id(), title.isBlank() ? original : title.trim(), original,
+        MaterialRow row = new MaterialRow(id, actor.id(), title.trim(), original,
                 file.getContentType(), file.getSize(), target.toString(), Instant.now());
-        materials.insert(row, groupIds == null ? List.of() : groupIds);
+        try {
+            materials.insert(row, assignedGroups);
+        } catch (RuntimeException exception) {
+            Files.deleteIfExists(target);
+            throw exception;
+        }
         return toMaterial(row);
     }
 

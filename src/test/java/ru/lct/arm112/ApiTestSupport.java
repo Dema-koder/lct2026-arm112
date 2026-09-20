@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -62,6 +63,25 @@ abstract class ApiTestSupport {
 
     HttpResponse<String> delete(String path, String token) throws Exception {
         return send("DELETE", path, null, token, null);
+    }
+
+    HttpResponse<String> uploadMaterial(String token, String title, String groupId) throws Exception {
+        String boundary = "arm112-" + UUID.randomUUID();
+        String body = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"title\"\r\n\r\n" + title + "\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"groupIds\"\r\n\r\n" + groupId + "\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"file\"; filename=\"guide.txt\"\r\n"
+                + "Content-Type: text/plain\r\n\r\nМатериал для проверки\r\n"
+                + "--" + boundary + "--\r\n";
+        HttpRequest request = HttpRequest.newBuilder(uri("/api/v1/teacher/materials"))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .header("X-Contract-Version", CONTRACT)
+                .header("Authorization", "Bearer " + token)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.getBytes(StandardCharsets.UTF_8)))
+                .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
     HttpResponse<String> send(String method, String path, String body, String token, String idempotencyKey) throws Exception {

@@ -15,9 +15,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -25,6 +30,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import ru.lct.arm112.persistence.UserRepository;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -32,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * RBAC по префиксам: /admin — администратор, /teacher — преподаватель, учебные пути — обучающийся
@@ -79,8 +86,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    JwtDecoder jwtDecoder(SecretKey key) {
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+    JwtDecoder jwtDecoder(SecretKey key, UserRepository users) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        OAuth2TokenValidator<Jwt> liveAccount = jwt -> {
+            try {
+                UUID userId = UUID.fromString(jwt.getSubject());
+                String tokenRole = jwt.getClaimAsString("role");
+                Number tokenVersion = jwt.getClaim("auth_version");
+                boolean valid = users.findById(userId)
+                        .filter(UserRepository.AppUser::active)
+                        .map(user -> user.role().name().equals(tokenRole) && tokenVersion != null
+                                && user.authVersion() == tokenVersion.longValue())
+                        .orElse(false);
+                return valid ? OAuth2TokenValidatorResult.success()
+                        : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token",
+                        "Учётная запись заблокирована или её роль изменилась", null));
+            } catch (RuntimeException exception) {
+                return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token",
+                        "Некорректный идентификатор пользователя", null));
+            }
+        };
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefault(), liveAccount));
+        return decoder;
     }
 
     @Bean

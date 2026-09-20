@@ -12,6 +12,7 @@ import ru.lct.arm112.api.ApiModels.User;
 import ru.lct.arm112.api.ApiModels.UserAdminView;
 import ru.lct.arm112.api.ApiModels.UserCreate;
 import ru.lct.arm112.api.ApiModels.UserUpdate;
+import ru.lct.arm112.persistence.LessonRepository;
 import ru.lct.arm112.persistence.UserRepository;
 import ru.lct.arm112.persistence.UserRepository.AppUser;
 import ru.lct.arm112.security.Role;
@@ -25,16 +26,18 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository users;
+    private final LessonRepository lessons;
     private final PasswordEncoder encoder;
     private final String adminPassword;
     private final String teacherPassword;
     private final String traineePassword;
 
-    public UserService(UserRepository users, PasswordEncoder encoder,
+    public UserService(UserRepository users, LessonRepository lessons, PasswordEncoder encoder,
                        @Value("${arm112.seed.admin-password:admin}") String adminPassword,
                        @Value("${arm112.seed.teacher-password:teacher}") String teacherPassword,
                        @Value("${arm112.seed.trainee-password:trainee}") String traineePassword) {
         this.users = users;
+        this.lessons = lessons;
         this.encoder = encoder;
         this.adminPassword = adminPassword;
         this.teacherPassword = teacherPassword;
@@ -78,6 +81,7 @@ public class UserService {
 
     public UserAdminView create(UserCreate request, UUID createdBy) {
         Role role = parseRole(request.role());
+        validateGroupAssignment(role, request.groupId());
         if (users.findByLogin(request.login()).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "LOGIN_TAKEN", "Логин уже занят");
         }
@@ -88,8 +92,14 @@ public class UserService {
     }
 
     public UserAdminView update(UUID id, UserUpdate request) {
-        require(id);
-        users.update(id, request.displayName().trim(), parseRole(request.role()),
+        AppUser existing = require(id);
+        Role role = parseRole(request.role());
+        validateGroupAssignment(role, request.groupId());
+        if (existing.role() == Role.TEACHER && role != Role.TEACHER && lessons.countGroupsByTeacher(id) > 0) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "Сначала назначьте другого преподавателя его группам");
+        }
+        users.update(id, request.displayName().trim(), role,
                 blankToNull(request.workstationNumber()), request.groupId());
         return toAdminView(require(id));
     }
@@ -125,6 +135,18 @@ public class UserService {
                     "Роль должна быть ADMIN, TEACHER или TRAINEE");
         }
         return role;
+    }
+
+    private void validateGroupAssignment(Role role, UUID groupId) {
+        if (groupId == null) return;
+        if (role != Role.TRAINEE) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "К учебной группе можно прикрепить только обучающегося");
+        }
+        if (lessons.findGroup(groupId).isEmpty()) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "Учебная группа не найдена");
+        }
     }
 
     private static String blankToNull(String value) {

@@ -66,7 +66,7 @@ public class LessonService {
     public Group createGroup(GroupUpsert request, CurrentUser actor) {
         UUID teacherId = request.teacherId() != null ? request.teacherId() : actor.id();
         AppUser teacher = users.findById(teacherId).orElseThrow(() -> TrainingEngine.notFound("Преподаватель не найден"));
-        if (teacher.role() != Role.TEACHER) {
+        if (teacher.role() != Role.TEACHER || !teacher.active()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Указанный пользователь не преподаватель");
         }
         UUID id = UUID.randomUUID();
@@ -77,6 +77,11 @@ public class LessonService {
     public Group updateGroup(UUID id, GroupUpsert request) {
         Group existing = group(id);
         UUID teacherId = request.teacherId() != null ? request.teacherId() : existing.teacherId();
+        AppUser teacher = users.findById(teacherId)
+                .orElseThrow(() -> TrainingEngine.notFound("Преподаватель не найден"));
+        if (teacher.role() != Role.TEACHER || !teacher.active()) {
+            throw invalid("Указанный пользователь не преподаватель");
+        }
         lessons.updateGroup(id, request.name().trim(), teacherId);
         return group(id);
     }
@@ -108,8 +113,9 @@ public class LessonService {
         if (!SOURCES.contains(request.cardSource())) throw invalid("Источник карточек: GENERATED, TRAINEE_MADE или MIXED");
         scenarios.requireAll(request.scenarioIds());
         List<AppUser> trainees = users.findByIds(request.traineeIds());
-        if (trainees.size() != request.traineeIds().size() || trainees.stream().anyMatch(u -> u.role() != Role.TRAINEE)) {
-            throw invalid("Среди выбранных участников есть не обучающиеся");
+        if (trainees.size() != request.traineeIds().size()
+                || trainees.stream().anyMatch(u -> u.role() != Role.TRAINEE || !u.active())) {
+            throw invalid("Среди выбранных участников есть неактивные пользователи или не обучающиеся");
         }
         if (request.groupId() != null) {
             Group group = group(request.groupId());
@@ -133,13 +139,22 @@ public class LessonService {
             throw new ApiException(HttpStatus.CONFLICT, "LESSON_NOT_DRAFT", "Занятие уже начато");
         }
         List<Scenario> lessonScenarios = scenarios.requireAll(lesson.scenarioIds());
+        List<SessionRow> lessonSessions = sessions.findByLesson(id);
+        Map<UUID, AppUser> trainees = lessonSessions.stream()
+                .map(row -> users.findById(row.traineeId()).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toMap(AppUser::id, user -> user));
+        if (trainees.size() != lessonSessions.size()
+                || trainees.values().stream().anyMatch(user -> user.role() != Role.TRAINEE || !user.active())) {
+            throw invalid("Нельзя запустить занятие: один из участников удалён, заблокирован или сменил роль");
+        }
         Instant now = Instant.now();
         lessons.setState(id, "ACTIVE", now, null);
-        for (SessionRow row : sessions.findByLesson(id)) {
-            AppUser trainee = users.findById(row.traineeId()).orElse(null);
+        for (SessionRow row : lessonSessions) {
+            AppUser trainee = trainees.get(row.traineeId());
             // у обучающегося одно активное занятие: предыдущее закрывается принудительно
             sessions.findActiveByTrainee(row.traineeId()).ifPresent(active -> engine.forceComplete(active.id()));
-            String workstation = trainee == null ? row.workstationNumber() : trainee.workstationNumber();
+            String workstation = trainee.workstationNumber();
             SessionRow started = new SessionRow(row.id(), row.lessonId(), row.traineeId(), workstation, "ACTIVE", now, null);
             sessions.setState(row.id(), "ACTIVE", null);
             Lesson current = lessons.findLesson(id).orElse(lesson);
@@ -233,7 +248,9 @@ public class LessonService {
     }
 
     private static String escape(String value) {
-        return value == null ? "" : value.replace(";", ",");
+        if (value == null) return "";
+        String safe = value.replace(";", ",").replace('\r', ' ').replace('\n', ' ');
+        return !safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0 ? "'" + safe : safe;
     }
 
     private static String nz(String value) {

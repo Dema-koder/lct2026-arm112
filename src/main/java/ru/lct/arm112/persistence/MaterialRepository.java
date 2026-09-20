@@ -3,6 +3,7 @@ package ru.lct.arm112.persistence;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -42,6 +43,7 @@ public class MaterialRepository {
                 (rs, row) -> rs.getObject("group_id", UUID.class), materialId);
     }
 
+    @Transactional
     public void insert(MaterialRow row, List<UUID> groupIds) {
         jdbc.update("""
                 insert into material (id, teacher_id, title, file_name, content_type, size_bytes, storage_path)

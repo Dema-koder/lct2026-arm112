@@ -18,7 +18,7 @@ public class UserRepository {
             rs.getObject("id", UUID.class), rs.getString("login"), rs.getString("password_hash"),
             rs.getString("display_name"), Role.parse(rs.getString("role")),
             rs.getString("workstation_number"), rs.getObject("group_id", UUID.class),
-            rs.getBoolean("active"), rs.getTimestamp("created_at").toInstant());
+            rs.getBoolean("active"), rs.getLong("auth_version"), rs.getTimestamp("created_at").toInstant());
 
     private final JdbcTemplate jdbc;
 
@@ -71,25 +71,28 @@ public class UserRepository {
     public void update(UUID id, String displayName, Role role, String workstationNumber, UUID groupId) {
         jdbc.update("""
                 update app_user set display_name = ?, role = ?, workstation_number = ?, group_id = ?,
+                                    auth_version = auth_version + 1,
                                     updated_at = current_timestamp
                  where id = ?
                 """, displayName, role.name(), workstationNumber, groupId, id);
     }
 
     public void setActive(UUID id, boolean active) {
-        jdbc.update("update app_user set active = ?, updated_at = current_timestamp where id = ?", active, id);
+        jdbc.update("update app_user set active = ?, auth_version = auth_version + 1, updated_at = current_timestamp where id = ?",
+                active, id);
     }
 
     public void setPasswordHash(UUID id, String hash) {
-        jdbc.update("update app_user set password_hash = ?, updated_at = current_timestamp where id = ?", hash, id);
+        jdbc.update("update app_user set password_hash = ?, auth_version = auth_version + 1, updated_at = current_timestamp where id = ?",
+                hash, id);
     }
 
     public record AppUser(UUID id, String login, String passwordHash, String displayName, Role role,
-                          String workstationNumber, UUID groupId, boolean active, Instant createdAt) {
+                          String workstationNumber, UUID groupId, boolean active, long authVersion, Instant createdAt) {
         public static AppUser create(String login, String hash, String displayName, Role role,
                                      String workstationNumber, UUID groupId) {
             return new AppUser(UUID.randomUUID(), login, hash, displayName, role, workstationNumber,
-                    groupId, true, Instant.now());
+                    groupId, true, 1, Instant.now());
         }
     }
 }
