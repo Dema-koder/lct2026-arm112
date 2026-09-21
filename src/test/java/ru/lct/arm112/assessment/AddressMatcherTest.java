@@ -41,6 +41,16 @@ class AddressMatcherTest {
     }
 
     @Test
+    void detailMismatchIsLabelledInRussian() {
+        FormalAddress expected = new FormalAddress("Россия", null, "Москва", null, null, null, "Берзарина", "21",
+                "1", null, null, null, null, null, null);
+        AddressMatcher.Result result = AddressMatcher.score(address("Москва", "Берзарина", "21"), expected, UUID.randomUUID());
+        assertThat(result.score()).isEqualTo(95);
+        assertThat(result.issues()).anyMatch(i -> i.code().equals("ADDRESS_DETAIL_MISMATCH")
+                && i.message().equals("Не совпадает поле адреса: корпус"));
+    }
+
+    @Test
     void languageCheckerFindsPlaceTypoAndMixedAlphabet() {
         LanguageChecker checker = new LanguageChecker();
         checker.learnPlaces(List.of("Дубнинская", "Берзарина"));

@@ -162,6 +162,51 @@ export function Notice({ text }: { text: string }) {
   return text ? <div className="notice-toast">✓ {text}</div> : null;
 }
 
+/**
+ * Звонок входящего вызова: тон 425 Гц (как в телефонной сети РФ) 1 с / пауза 4 с через WebAudio.
+ * Браузер разрешает звук после жеста пользователя — вход уже был. Выключатель хранится в localStorage.
+ */
+export function useRingTone(active: boolean) {
+  const [enabled, setEnabled] = useState(true);
+  useEffect(() => {
+    try {
+      queueMicrotask(() => setEnabled(window.localStorage.getItem("arm112-ring") !== "off"));
+    } catch { /* приватный режим — звук включён */ }
+  }, []);
+  const toggle = useCallback(() => {
+    setEnabled((value) => {
+      try { window.localStorage.setItem("arm112-ring", value ? "off" : "on"); } catch { /* ignore */ }
+      return !value;
+    });
+  }, []);
+  useEffect(() => {
+    if (!active || !enabled) return;
+    let context: AudioContext | null = null;
+    let timer: number | undefined;
+    try {
+      context = new AudioContext();
+      const ring = () => {
+        if (!context) return;
+        void context.resume();
+        const osc = context.createOscillator();
+        const gain = context.createGain();
+        osc.frequency.value = 425;
+        gain.gain.value = 0.08;
+        osc.connect(gain).connect(context.destination);
+        osc.start();
+        osc.stop(context.currentTime + 1);
+      };
+      ring();
+      timer = window.setInterval(ring, 5000);
+    } catch { /* нет WebAudio — тихо */ }
+    return () => {
+      if (timer) window.clearInterval(timer);
+      void context?.close().catch(() => undefined);
+    };
+  }, [active, enabled]);
+  return { enabled, toggle };
+}
+
 /** Секундный тик для таймеров. */
 export function useClock() {
   const [now, setNow] = useState(0);

@@ -69,9 +69,9 @@ public final class AddressMatcher {
                     "Населённый пункт не совпадает", cardId, expected.locality(), actual.locality()));
         }
         for (String[] pair : new String[][]{
-                {"building", expected.building(), actual == null ? null : actual.building()},
-                {"structure", expected.structure(), actual == null ? null : actual.structure()},
-                {"apartment", expected.apartment(), actual == null ? null : actual.apartment()}}) {
+                {"корпус", expected.building(), actual == null ? null : actual.building()},
+                {"строение", expected.structure(), actual == null ? null : actual.structure()},
+                {"квартира", expected.apartment(), actual == null ? null : actual.apartment()}}) {
             String exp = TextUtil.normalize(pair[1]);
             String act = TextUtil.normalize(pair[2]);
             if (!exp.isEmpty() && !exp.equals(act)) {

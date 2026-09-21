@@ -34,6 +34,15 @@ public class CardFillAssessor {
     }
 
     public Assessment assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
+        return assess(sessionId, drafts, scenarios, 0, 0);
+    }
+
+    /**
+     * @param missedCalls сколько раз входящий вызов не был принят за время звонка (заявитель перезвонил)
+     * @param lostCalls   сколько вызовов потеряно окончательно (заявитель не дозвонился)
+     */
+    public Assessment assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
+                             int missedCalls, int lostCalls) {
         List<AssessmentIssue> issues = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
         double address = 0, type = 0, services = 0, timing = 0, lang = 0;
@@ -89,6 +98,17 @@ public class CardFillAssessor {
         }
 
         address /= n; type /= n; services /= n; timing /= n; lang /= n;
+        // Пропущенные и потерянные вызовы бьют по времени реакции: оператор 112 обязан ответить сразу.
+        for (int i = 0; i < missedCalls; i++) {
+            issues.add(new AssessmentIssue("CALL_MISSED", "WARNING",
+                    "Входящий вызов не принят вовремя — заявитель перезванивал", null, null, null));
+        }
+        for (int i = 0; i < lostCalls; i++) {
+            issues.add(new AssessmentIssue("CALL_LOST", "CRITICAL",
+                    "Вызов потерян: заявитель не дозвонился", null, null, null));
+        }
+        timing = TextUtil.clamp(timing - 10 * missedCalls - 30 * lostCalls);
+        if (missedCalls + lostCalls > 0) recommendations.add("Отвечайте на вызов сразу — заявитель ждёт не дольше 30 секунд.");
         double total = (address * W_ADDRESS + type * W_TYPE + services * W_SERVICES + timing * W_TIME + lang * W_LANGUAGE) / 100.0;
 
         if (address < 100) recommendations.add("Сверяйте улицу и дом с уточнённым адресом: ориентир заявителя нужно привести к формализованному адресу.");

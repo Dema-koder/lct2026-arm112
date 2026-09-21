@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type IncidentTypeItem, type SurveyCard, type TraineeContext } from "../../../lib/api";
+import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type IncidentTypeItem, type JournalRow, type SurveyCard, type TraineeContext } from "../../../lib/api";
 import { countdown, dateTime, elapsed } from "../../../lib/format";
-import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useSocket } from "../common";
+import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useRingTone, useSocket } from "../common";
 import { AssessmentView } from "../trainee/Results";
+import { IncidentJournal, type JournalRowView } from "../journal/IncidentJournal";
 
 type Props = {
   token: string;
@@ -15,21 +16,27 @@ type Props = {
   label: string;
 };
 
-const ADDRESS_FIELDS: Array<[keyof FormalAddress, string, string]> = [
-  ["country", "Страна", "w-s"], ["region", "Субъект", "w-m"], ["locality", "Населённый пункт", "w-m"],
-  ["object", "Объект", "w-m"], ["okrug", "Округ", "w-s"], ["district", "Район", "w-m"],
-  ["street", "Улица", "w-l"], ["house", "Дом/Вл.", "w-xs"], ["building", "Корпус", "w-xs"],
-  ["structure", "Стр/соор.", "w-xs"], ["apartment", "Квартира/офис", "w-xs"], ["entrance", "Подъезд", "w-xs"],
-  ["floor", "Этаж", "w-xs"], ["code", "Код", "w-xs"],
+/** Строки адреса как в оригинале (card-01.png): подпись и доля ширины в строке. */
+const ADDRESS_ROWS: Array<Array<[keyof FormalAddress, string, number]>> = [
+  [["country", "Страна", 1], ["region", "Субъект", 1], ["locality", "Населённый пункт", 1]],
+  [["object", "Объект", 2], ["okrug", "Округ", 1], ["district", "Район", 1]],
+  [["street", "Улица", 2], ["house", "Дом/Вл.", 1], ["building", "Корпус", 1]],
+  [["structure", "Стр/соор.", 1], ["apartment", "Квартира/офис", 1], ["entrance", "Подъезд", 1], ["floor", "Этаж", 1], ["code", "Код", 1]],
 ];
 
 /**
- * Экран оператора 112 — режим заполнения карточки (card-01.png … card-09.png).
- * Единственная кнопка действия — «сохранить»; поля автосохраняются.
+ * Экран оператора 112: главный экран с журналом смены и входящими вызовами (dds-02.png), по принятому
+ * вызову — карточка (card-01.png … card-09.png). Единственная кнопка действия — «сохранить»; поля автосохраняются.
  */
 export function FillWorkspace({ token, context, onLogout, onReload, nav, label }: Props) {
   const session = context.activeSession!;
   const [draft, setDraft] = useState<CardDraft | null>(null);
+  const [journal, setJournal] = useState<JournalRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [viewRow, setViewRow] = useState<JournalRow | null>(null);
+  const [askedAddress, setAskedAddress] = useState(false);
+  const ringing = !draft && session.state === "ACTIVE" && !!session.incomingCall;
+  const ring = useRingTone(ringing);
   const [types, setTypes] = useState<IncidentTypeItem[]>([]);
   const [typeQuery, setTypeQuery] = useState("");
   const [survey, setSurvey] = useState<SurveyCard | null>(null);
@@ -44,21 +51,37 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   const pending = useRef<CardDraftPatch>({});
   const timer = useRef<number | undefined>(undefined);
 
-  const loadDraft = useCallback(async () => {
+  const loadJournal = useCallback(async () => {
+    try {
+      setJournal((await api.journal(token, session.id)).rows);
+    } catch { /* журнал обновится по следующему событию */ }
+  }, [token, session.id]);
+
+  /** Принять входящий вызов — по нему создаётся карточка. */
+  const answerCall = useCallback(async () => {
     try {
       const next = await api.createDraft(token, session.id);
       setDraft(next);
+      setAskedAddress(false);
       setError("");
     } catch (err) {
       if (err instanceof Error && err.message.includes("отработаны")) setDone(true);
-      else setError(err instanceof Error ? err.message : "Не удалось получить вводную");
+      else setError(err instanceof Error ? err.message : "Не удалось принять вызов");
+      await onReload();
     }
-  }, [token, session.id]);
+  }, [token, session.id, onReload]);
 
   useEffect(() => {
-    void Promise.resolve().then(loadDraft);
+    // после перезагрузки страницы открытый черновик возвращается на экран
+    void Promise.resolve().then(async () => {
+      try {
+        const open = (await api.drafts(token, session.id)).find((d) => d.state === "DRAFT");
+        if (open) setDraft(open);
+      } catch { /* нет черновика — главный экран */ }
+      await loadJournal();
+    });
     api.incidentTypes(token).then(setTypes).catch(() => undefined);
-  }, [loadDraft, token]);
+  }, [loadJournal, token, session.id]);
 
   useEffect(() => {
     const first = draft?.incidentTypeIds[0];
@@ -67,7 +90,13 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   }, [draft?.incidentTypeIds, token]);
 
   useSocket(token, async (event) => {
-    if (event.type === "training.session_state_changed" || event.type === "training.session_started") await onReload();
+    if (event.type === "training.session_state_changed" || event.type === "training.session_started") { await onReload(); return; }
+    if (event.type.startsWith("call.")) {
+      if (event.type === "call.missed") setNotice("Вызов пропущен — заявитель перезвонит");
+      if (event.type === "call.lost") setNotice("Заявитель не дозвонился — вызов потерян");
+      await onReload();
+    }
+    if (event.type === "draft.saved") await loadJournal();
   });
 
   /** Автосохранение: правки копятся и уходят одним PATCH через 500 мс. */
@@ -110,10 +139,12 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
       await onReload();
       return;
     }
+    // обратно на главный экран: сохранённая карточка появляется в журнале, следующий вызов — по очереди
     setDraft(null);
     setSurvey(null);
     setTypeQuery("");
-    await loadDraft();
+    await loadJournal();
+    await onReload();
   });
 
   const filteredTypes = useMemo(() => {
@@ -160,10 +191,64 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
     );
   }
 
+  const call = session.incomingCall;
+  const journalRows: JournalRowView[] = journal
+    .filter((r) => { const q = search.trim().toLowerCase(); return !q || [r.number, r.incidentTypeLabel, r.addressLabel ?? "", r.description].some((v) => v.toLowerCase().includes(q)); })
+    .map((r) => ({
+      id: r.id, number: r.number, receivedAt: r.receivedAt, workstationNumber: r.workstationNumber ?? "—",
+      incidentTypeLabel: r.incidentTypeLabel || "Происшествие", addressLabel: r.addressLabel ?? "", description: r.description,
+      senderLabel: "Оператор 112", statusLabel: r.status, foreign: r.kind === "BACKGROUND",
+    }));
+
   return (
-    <main className="arm-shell fill-shell">
+    <main className={`arm-shell ${draft ? "fill-shell" : ""}`}>
       <TopStrip label={label} onLogout={onLogout} nav={nav} />
-      {!draft ? <div className="boot-screen">Получение вводной…</div> : (
+      {!draft ? (
+        <>
+          {/* полоса телефона: входящий вызов принимает оператор, карточка создаётся по вызову */}
+          <div className={`phone-bar ${call ? "ringing" : ""}`}>
+            <b>☎</b>
+            {call ? (
+              <>
+                <span className="phone-bar-title">Входящий вызов{call.missedCount > 0 ? " · повторный" : ""}</span>
+                <span className="phone-bar-number">{call.phone ?? "номер не определён"}</span>
+                <span className="phone-bar-name">{call.callerName ?? ""}</span>
+                <button type="button" className="answer-button" disabled={working} onClick={() => void run(answerCall)}>принять</button>
+              </>
+            ) : (
+              <>
+                <span className="phone-bar-title">Отключение</span>
+                <span className="phone-bar-name">записи звонков　 список SMS</span>
+                {session.pendingScenarios + session.queuedCalls === 0 ? <span className="phone-bar-hint">вызовов больше не ожидается</span> : <span className="phone-bar-hint">ожидание вызова…</span>}
+              </>
+            )}
+            {session.queuedCalls > 0 && <span className="phone-bar-queue">в очереди: {session.queuedCalls}</span>}
+            <button type="button" className="ring-toggle" title={ring.enabled ? "Выключить звонок" : "Включить звонок"} onClick={ring.toggle}>{ring.enabled ? "🔔" : "🔕"}</button>
+          </div>
+          <IncidentJournal
+            rows={journalRows}
+            search={search}
+            setSearch={setSearch}
+            onOpen={(id) => setViewRow(journal.find((r) => r.id === id) ?? null)}
+            now={now}
+            workstationLabel={context.workstation.label}
+            loading={false}
+          />
+          {viewRow && (
+            <Modal title={`Происшествие ${viewRow.number.replace(/\D/g, "").slice(-8)}`} onClose={() => setViewRow(null)}>
+              <div className="journal-card-view">
+                <p><em>Создана:</em> {dateTime(viewRow.receivedAt)} · Опер., АРМ {viewRow.workstationNumber ?? "—"} · {viewRow.status}</p>
+                <p><em>Тип:</em> {viewRow.incidentTypeLabel || "—"}</p>
+                <p><em>Адрес:</em> {viewRow.addressLabel || "—"}</p>
+                <p><em>Заявитель:</em> {viewRow.callerName ?? "не указан"}</p>
+                <p><em>Описание:</em> {viewRow.description}</p>
+                <p><em>Службы:</em> {viewRow.services.join(", ") || "—"}</p>
+              </div>
+              <div className="dialog-actions"><button className="primary" onClick={() => setViewRow(null)}>Закрыть</button></div>
+            </Modal>
+          )}
+        </>
+      ) : (
         <section className="fill-card">
           {/* верхняя полоса: телефоны, номер карточки, таймер */}
           <div className="fill-top">
@@ -186,7 +271,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
             </div>
             <div className="fill-number">
               <b>Происшествие {number}</b>
-              <small>начато {dateTime(draft.startedAt)}<br />Опер., АРМ {context.workstation.number}{session.pendingScenarios > 0 ? <span title="Учебное упрощение: вводные выдаются по одной, следующая — после сохранения. В боевом АРМ оператор видит журнал и создаёт карточку по принятому вызову."> · в очереди ещё {session.pendingScenarios}</span> : ""}</small>
+              <small>начато {dateTime(draft.startedAt)}<br />Опер., АРМ {context.workstation.number}{session.queuedCalls > 0 ? <span title="Вызовы ждут в очереди — заявители дозвонятся, когда вы сохраните карточку"> · в очереди вызовов: {session.queuedCalls}</span> : ""}</small>
             </div>
             <div className={`card-timer ${overdue ? "overdue" : ""}`}>
               <b>{elapsed(draft.startedAt, now)}</b>
@@ -199,7 +284,11 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
             <div className="caller-bubble">
               <b>Заявитель сообщает:</b>
               <p>{draft.callerText}</p>
+              {askedAddress && (
+                <p className="caller-answer"><b>Адрес со слов заявителя:</b> {draft.callerAddress || "заявитель адрес назвать не может — уточните ориентиры и запишите в описательный адрес"}</p>
+              )}
               <small>{draft.caller.fullName ?? "имя не названо"}{draft.phones.ani ? ` · ${draft.phones.ani}` : ""}</small>
+              {!askedAddress && <button type="button" className="ask-button" onClick={() => setAskedAddress(true)}>уточнить адрес у заявителя</button>}
             </div>
           )}
 
@@ -220,14 +309,16 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
 
               <fieldset className={`fill-block ${hint("address.street") || hint("address.house") ? "hinted" : ""}`}>
                 <legend>Адрес</legend>
-                <div className="fill-row wrap">
-                  {ADDRESS_FIELDS.map(([key, title, width]) => (
-                    <label key={key} className={`${width} ${hint(`address.${key}`) ? "hinted" : ""}`} title={hint(`address.${key}`)}>
-                      <span>{title}</span>
-                      <input value={(draft.address[key] as string | null) ?? ""} onChange={(e) => queue({ address: { ...draft.address, [key]: e.target.value } })} />
-                    </label>
-                  ))}
-                </div>
+                {ADDRESS_ROWS.map((row, index) => (
+                  <div key={index} className="fill-row address-row">
+                    {row.map(([key, title, share]) => (
+                      <label key={key} className={`f${share} ${hint(`address.${key}`) ? "hinted" : ""}`} title={hint(`address.${key}`)}>
+                        <span>{title}</span>
+                        <input value={(draft.address[key] as string | null) ?? ""} onChange={(e) => queue({ address: { ...draft.address, [key]: e.target.value } })} />
+                      </label>
+                    ))}
+                  </div>
+                ))}
                 <label className="w-full"><span>Описательный адрес</span>
                   <input value={draft.address.descriptive ?? ""} onChange={(e) => queue({ address: { ...draft.address, descriptive: e.target.value } })} placeholder="ориентиры со слов заявителя" /></label>
                 {(hint("address.street") || hint("address.house")) && (

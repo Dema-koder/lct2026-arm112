@@ -67,7 +67,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* Journal */
 .journal { min-height: calc(100vh - 34px); }
-.journal-heading { position: relative; height: 116px; display: grid; grid-template-columns: 1fr 310px; background: #f1f2f2; }
+.journal-heading { position: relative; height: 116px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; background: #f1f2f2; }
 /* «Поиск происшествий» — плейсхолдер внутри широкого поля на всю ширину, лупа справа (кадр dds-05.png) */
 .journal-search { min-width: 0; padding: 14px 18px 10px; display: flex; flex-direction: column; justify-content: center; }
 .search-line { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; border-bottom: 1px solid #111; }
@@ -78,7 +78,9 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .search-meta small { font-size: 11px; white-space: nowrap; }
 .search-meta button { height: 25px; padding: 0 12px; border: 1px solid #9da8ad; background: #f6f7f7; color: #68777e; white-space: nowrap; }
 .digital-clock { position: relative; padding: 16px 18px; color: white; background: #2f393f; }
-.digital-clock b { display: block; font-size: 13px; text-transform: capitalize; }
+/* Дата слева, время абсолютно справа: справа резервируем место, длинная дата переносится, а не наезжает */
+.digital-clock b { display: block; padding-right: 160px; font-size: 13px; line-height: 1.2; }
+.digital-clock b::first-letter { text-transform: uppercase; }
 .digital-clock strong { position: absolute; right: 36px; top: 18px; font-size: 42px; line-height: 1; }
 .digital-clock > span { position: absolute; right: 9px; top: 18px; font-size: 17px; }
 .digital-clock small { display: block; margin-top: 10px; color: #dbe1e4; }
@@ -217,15 +219,17 @@ button:disabled { cursor: not-allowed; opacity: .58; }
    и адреса не обрезались. Состав колонок и порядок остаются как в оригинале. */
 @media (max-width: 1500px) {
   .list-area { --journal-cols: 62px 32px 42px 40px 78px 76px 64px minmax(0, 1.3fr) 40px minmax(0, 2fr) 132px; }
-  .journal-heading { grid-template-columns: 1fr 272px; }
+  .journal-heading { grid-template-columns: minmax(0, 1fr) 320px; }
   .digital-clock strong { font-size: 36px; }
+  .digital-clock b { padding-right: 140px; }
   .service-menu { width: 340px; }
 }
 
 @media (max-width: 1250px) {
   .list-area { --journal-cols: 52px 26px 36px 34px 72px 66px 58px minmax(0, 1.4fr) 34px minmax(0, 2fr) 116px; }
-  .journal-heading { grid-template-columns: 1fr 236px; }
+  .journal-heading { grid-template-columns: minmax(0, 1fr) 280px; }
   .digital-clock { padding: 14px 12px; }
+  .digital-clock b { padding-right: 120px; font-size: 12px; }
   .digital-clock strong { font-size: 30px; right: 30px; }
   .digital-clock > span { font-size: 14px; }
   .incident-row > span, .incident-row > b, .incident-row > strong { padding: 0 5px; }

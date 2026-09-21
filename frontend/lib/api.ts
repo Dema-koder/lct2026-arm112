@@ -38,6 +38,28 @@ export type TrainingSession = {
   lessonId: string;
   lessonKind: LessonKind;
   pendingScenarios: number;
+  ownServiceCode: string;
+  intensity: Intensity;
+  incomingCall: IncomingCall | null;
+  queuedCalls: number;
+};
+
+export type Intensity = "SEQUENTIAL" | "LOW" | "MEDIUM" | "HIGH";
+
+export type IncomingCall = { id: string; phone: string | null; callerName: string | null; ringingSince: string; missedCount: number };
+
+export type JournalRow = {
+  id: string;
+  kind: "OWN" | "BACKGROUND";
+  number: string;
+  receivedAt: string;
+  workstationNumber: string | null;
+  incidentTypeLabel: string;
+  addressLabel: string | null;
+  description: string;
+  callerName: string | null;
+  services: string[];
+  status: string;
 };
 
 export type TraineeContext = {
@@ -198,6 +220,7 @@ export type CardDraft = {
   services: DraftService[];
   hints: Hint[];
   scenarioTitle: string | null;
+  callerAddress: string | null;
 };
 
 export type CardDraftPatch = Partial<{
@@ -339,6 +362,8 @@ export type Lesson = {
   completedAt: string | null;
   resultsPublishedAt: string | null;
   sessionCount: number;
+  serviceCode: string;
+  intensity: Intensity;
 };
 
 export type LessonCreate = {
@@ -349,6 +374,8 @@ export type LessonCreate = {
   cardSource: CardSource;
   scenarioIds: string[];
   traineeIds: string[];
+  serviceCode: string | null;
+  intensity: Intensity;
 };
 
 export type MonitorRow = {
@@ -535,6 +562,7 @@ export const api = {
 
   // card fill
   drafts: (token: string, sessionId: string) => request<CardDraft[]>(`/card-drafts${q({ sessionId })}`, {}, token),
+  journal: (token: string, sessionId: string) => request<{ rows: JournalRow[] }>(`/training-sessions/${sessionId}/journal`, {}, token),
   createDraft: (token: string, sessionId: string) =>
     request<CardDraft>("/card-drafts", { method: "POST", body: json({ sessionId }) }, token),
   patchDraft: (token: string, draftId: string, patch: CardDraftPatch) =>

@@ -44,6 +44,20 @@ export const modeLabels: Record<string, string> = {
   CARD_ACTIONS: "Действия с карточкой",
 };
 
+/** Интенсивность потока вводных (замечания 3, 5): подпись и пояснение для формы занятия. */
+export const intensityLabels: Record<string, string> = {
+  SEQUENTIAL: "по одной",
+  LOW: "низкая",
+  MEDIUM: "средняя",
+  HIGH: "высокая",
+};
+export const intensityHints: Record<string, string> = {
+  SEQUENTIAL: "следующая вводная — после закрытия или сохранения текущей",
+  LOW: "новая вводная каждые 1,5–3 минуты, независимо от текущей",
+  MEDIUM: "новая вводная каждые 45–90 секунд, независимо от текущей",
+  HIGH: "новая вводная каждые 15–40 секунд — поток как в пиковую смену",
+};
+
 export const sourceLabels: Record<string, string> = {
   GENERATED: "Сгенерированные системой",
   TRAINEE_MADE: "Сформированные обучающимися",

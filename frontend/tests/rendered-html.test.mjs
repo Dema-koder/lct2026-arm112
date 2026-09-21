@@ -28,13 +28,14 @@ test("renders the application shell", async () => {
 });
 
 test("keeps the UI aligned with backend contract v0.3", async () => {
-  const [api, dds, fill, teacher, admin, page] = await Promise.all([
+  const [api, dds, fill, teacher, admin, page, journal] = await Promise.all([
     src("../lib/api.ts"),
     src("../app/components/dds/DdsWorkspace.tsx"),
     src("../app/components/fill/FillWorkspace.tsx"),
     src("../app/components/teacher/Lessons.tsx"),
     src("../app/components/admin/AdminShell.tsx"),
     src("../app/page.tsx"),
+    src("../app/components/journal/IncidentJournal.tsx"),
   ]);
 
   assert.match(api, /CONTRACT_VERSION = "0\.3"/);
@@ -50,13 +51,21 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(api, /export const onUnauthorized/);
   assert.match(page, /onUnauthorized\(/);
 
-  // экран ДДС: журнал, статусы, таймеры для всех активных статусов, своя плитка службы
-  assert.match(dds, /Поиск происшествий/);
+  // экран ДДС: общий журнал, статусы, таймеры для всех активных статусов, своя плитка службы
+  assert.match(journal, /Поиск происшествий/);
+  assert.match(dds, /IncidentJournal/);
   assert.match(dds, /Начало реагирования/);
   assert.match(dds, /Завершить занятие/);
   assert.match(dds, /\["RECEIVED", "RECEIVED_BY_SERVICE"\]\.includes\(card\.status\)/);
   assert.match(dds, /\["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS"\]\.includes\(card\.status\)/);
   assert.match(dds, /ownServiceCode/);
+  assert.match(dds, /"own" : "foreign"/);
+
+  // оператор 112: главный экран с журналом, входящий вызов, «уточнить адрес», журнал сессии
+  assert.match(fill, /Входящий вызов/);
+  assert.match(fill, /уточнить адрес у заявителя/);
+  assert.match(fill, /callerAddress/);
+  assert.match(api, /\/journal/);
 
   // экран оператора 112: описательный адрес, «что случилось», счётчик 0 / 1999, единственная кнопка «сохранить»
   assert.match(fill, /Описательный адрес/);
@@ -68,6 +77,9 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(teacher, /Опубликовать результаты/);
   assert.match(teacher, /Оценка преподавателя по критериям/);
   assert.match(teacher, /scenarioTitle/);
+  assert.match(teacher, /Интенсивность/);
+  assert.match(teacher, /Служба обучающегося/);
+  assert.match(teacher, /непрофильные/);
   assert.match(teacher, /EXAM/);
   assert.match(admin, /RESTORE/);
 });

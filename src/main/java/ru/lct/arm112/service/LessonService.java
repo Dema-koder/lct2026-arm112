@@ -38,10 +38,12 @@ public class LessonService {
     private final TrainingEngine engine;
     private final EventService events;
     private final RatingService ratings;
+    private final ReferenceDataService references;
 
     public LessonService(LessonRepository lessons, SessionRepository sessions, UserRepository users,
                          AssessmentRepository assessments, ScenarioService scenarios, TrainingEngine engine,
-                         EventService events, RatingService ratings) {
+                         EventService events, RatingService ratings, ReferenceDataService references) {
+        this.references = references;
         this.lessons = lessons;
         this.sessions = sessions;
         this.users = users;
@@ -113,6 +115,13 @@ public class LessonService {
         if (!MODES.contains(request.mode())) throw invalid("Режим: CARD_FILL или CARD_ACTIONS");
         if (!SOURCES.contains(request.cardSource())) throw invalid("Источник карточек: GENERATED, TRAINEE_MADE или MIXED");
         scenarios.requireAll(request.scenarioIds());
+        String intensity = request.intensity() == null ? TrainingEngine.Intensity.SEQUENTIAL.name() : request.intensity();
+        if (!TrainingEngine.Intensity.isValid(intensity)) throw invalid("Интенсивность: SEQUENTIAL, LOW, MEDIUM или HIGH");
+        String serviceCode = request.serviceCode() == null || request.serviceCode().isBlank()
+                ? TrainingEngine.OWN_SERVICE_CODE : request.serviceCode().trim();
+        if (references.allServices().stream().noneMatch(s -> s.code().equals(serviceCode))) {
+            throw invalid("Неизвестная служба: " + serviceCode);
+        }
         List<AppUser> trainees = users.findByIds(request.traineeIds());
         if (trainees.size() != request.traineeIds().size()
                 || trainees.stream().anyMatch(u -> u.role() != Role.TRAINEE || !u.active())) {
@@ -124,7 +133,8 @@ public class LessonService {
         }
         UUID id = UUID.randomUUID();
         Lesson lesson = new Lesson(id, teacher.id(), request.groupId(), null, request.title().trim(), request.kind(),
-                request.mode(), request.cardSource(), "DRAFT", request.scenarioIds(), Instant.now(), null, null, null, 0);
+                request.mode(), request.cardSource(), "DRAFT", request.scenarioIds(), Instant.now(), null, null, null, 0,
+                serviceCode, intensity);
         lessons.insertLesson(lesson);
         for (AppUser trainee : trainees) {
             sessions.insert(new SessionRow(UUID.randomUUID(), id, trainee.id(), trainee.workstationNumber(),

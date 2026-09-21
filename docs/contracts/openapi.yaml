@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.1
+  version: 0.3.2
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -238,6 +238,19 @@ paths:
               schema: {$ref: '#/components/schemas/SubmitResponse'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
+  /training-sessions/{sessionId}/journal:
+    get:
+      tags: [Training]
+      operationId: getTrainingJournal
+      description: Журнал оператора 112 — свои сохранённые карточки и фоновые карточки смены, новые сверху.
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+      responses:
+        '200':
+          description: Строки журнала
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/JournalPage'}
   /training-sessions/{sessionId}/events:
     get:
       tags: [Training]
@@ -397,7 +410,10 @@ paths:
     post:
       tags: [Drafts]
       operationId: createCardDraft
-      description: Следующая вводная из очереди занятия. Если есть незакрытый черновик — возвращается он.
+      description: |
+        Принять входящий вызов: черновик по сценарию звонящего вызова (`TrainingSession.incomingCall`).
+        Если есть незакрытый черновик — возвращается он. Если никто не звонит — `409 NO_INCOMING_CALL`;
+        если все вводные отработаны — `409 NO_MORE_SCENARIOS`.
       requestBody:
         required: true
         content:
@@ -1150,7 +1166,7 @@ components:
     TrainingSession:
       type: object
       additionalProperties: false
-      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds, draftIds, lessonId, lessonKind, pendingScenarios]
+      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds, draftIds, lessonId, lessonKind, pendingScenarios, ownServiceCode, intensity, incomingCall, queuedCalls]
       properties:
         id: {type: string, format: uuid}
         mode: {$ref: '#/components/schemas/LessonMode'}
@@ -1169,7 +1185,49 @@ components:
           items: {type: string, format: uuid}
         lessonId: {type: string, format: uuid}
         lessonKind: {$ref: '#/components/schemas/LessonKind'}
-        pendingScenarios: {type: integer, minimum: 0, description: "Сколько вводных ещё в очереди"}
+        pendingScenarios: {type: integer, minimum: 0, description: "Сколько вводных ещё не пришло"}
+        ownServiceCode: {type: string, description: "Служба, за которую играет обучающийся-диспетчер (режим действий)"}
+        intensity: {$ref: '#/components/schemas/Intensity'}
+        incomingCall: {anyOf: [{$ref: '#/components/schemas/IncomingCall'}, {type: 'null'}], description: "Вызов, который сейчас звонит оператору 112"}
+        queuedCalls: {type: integer, minimum: 0, description: "Вызовы, ожидающие в очереди АСО (режим заполнения)"}
+    Intensity:
+      type: string
+      enum: [SEQUENTIAL, LOW, MEDIUM, HIGH]
+      description: |
+        Поток вводных: SEQUENTIAL — по одной, следующая после закрытия/сохранения текущей;
+        LOW — интервал 90–180 с, MEDIUM — 45–90 с, HIGH — 15–40 с, независимо от текущей карточки.
+    IncomingCall:
+      type: object
+      additionalProperties: false
+      required: [id, phone, callerName, ringingSince, missedCount]
+      properties:
+        id: {type: string, format: uuid}
+        phone: {type: [string, 'null']}
+        callerName: {type: [string, 'null']}
+        ringingSince: {type: string, format: date-time}
+        missedCount: {type: integer, minimum: 0, description: "Сколько раз этот заявитель уже не дозвонился"}
+    JournalRow:
+      type: object
+      additionalProperties: false
+      required: [id, kind, number, receivedAt, workstationNumber, incidentTypeLabel, addressLabel, description, callerName, services, status]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [OWN, BACKGROUND], description: "OWN — карточка обучающегося, BACKGROUND — фоновая карточка смены"}
+        number: {type: string}
+        receivedAt: {type: string, format: date-time}
+        workstationNumber: {type: [string, 'null']}
+        incidentTypeLabel: {type: string}
+        addressLabel: {type: [string, 'null']}
+        description: {type: string}
+        callerName: {type: [string, 'null']}
+        services: {type: array, items: {type: string}}
+        status: {type: string}
+    JournalPage:
+      type: object
+      additionalProperties: false
+      required: [rows]
+      properties:
+        rows: {type: array, items: {$ref: '#/components/schemas/JournalRow'}}
     SessionSummary:
       type: object
       additionalProperties: false
@@ -1592,7 +1650,7 @@ components:
     CardDraft:
       type: object
       additionalProperties: false
-      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints, scenarioTitle]
+      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints, scenarioTitle, callerAddress]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1613,6 +1671,7 @@ components:
         services: {type: array, items: {$ref: '#/components/schemas/DraftService'}}
         hints: {type: array, items: {$ref: '#/components/schemas/Hint'}}
         scenarioTitle: {type: [string, 'null'], description: "Название сценария — для преподавателя"}
+        callerAddress: {type: [string, 'null'], description: "Адрес со слов заявителя — оператор «уточняет» его у заявителя"}
     CardDraftPatch:
       type: object
       additionalProperties: false
@@ -1741,7 +1800,7 @@ components:
     Lesson:
       type: object
       additionalProperties: false
-      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount]
+      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount, serviceCode, intensity]
       properties:
         id: {type: string, format: uuid}
         teacherId: {type: string, format: uuid}
@@ -1758,6 +1817,8 @@ components:
         completedAt: {type: [string, 'null'], format: date-time}
         resultsPublishedAt: {type: [string, 'null'], format: date-time}
         sessionCount: {type: integer}
+        serviceCode: {type: string, description: "Служба обучающегося в режиме действий (по умолчанию 101)"}
+        intensity: {$ref: '#/components/schemas/Intensity'}
     LessonCreate:
       type: object
       additionalProperties: false
@@ -1770,6 +1831,8 @@ components:
         cardSource: {$ref: '#/components/schemas/CardSource'}
         scenarioIds: {type: array, minItems: 1, items: {type: string}}
         traineeIds: {type: array, minItems: 1, items: {type: string, format: uuid}}
+        serviceCode: {type: [string, 'null'], description: "Код службы из справочника; пусто — 101"}
+        intensity: {anyOf: [{$ref: '#/components/schemas/Intensity'}, {type: 'null'}], description: "Пусто — SEQUENTIAL"}
     LessonMonitor:
       type: object
       additionalProperties: false
@@ -1962,7 +2025,7 @@ components:
         eventId: {type: string, format: uuid}
         type:
           type: string
-          enum: [card.created, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
+          enum: [card.created, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, call.incoming, call.answered, call.missed, call.lost, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
         occurredAt: {type: string, format: date-time}
         serverTime: {type: string, format: date-time}
         sessionId: {type: [string, 'null'], format: uuid, description: "null у служебных событий пользователю"}

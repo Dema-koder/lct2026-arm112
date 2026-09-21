@@ -82,7 +82,27 @@ public class TrainingStateStore {
             List<String> pendingScenarioIds,
             List<CardState> cards,
             List<CallState> calls,
-            List<CardDraft> drafts
+            List<CardDraft> drafts,
+            // поля потока (V8): отсутствуют в старых снимках — restore() подставляет значения по умолчанию
+            String ownServiceCode,
+            String intensity,
+            Instant nextArrivalAt,
+            List<IncomingCallState> callQueue,
+            IncomingCallState ringing,
+            List<String> lost,
+            Integer missedCalls,
+            List<JournalRow> background
+    ) {}
+
+    /** Входящий вызов оператору 112: в очереди (ringingSince == null) или звонит. */
+    public record IncomingCallState(
+            UUID id,
+            String scenarioId,
+            String phone,
+            String callerName,
+            Instant arrivedAt,
+            Instant ringingSince,
+            int missedCount
     ) {}
 
     public record CardState(

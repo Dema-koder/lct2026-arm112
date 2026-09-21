@@ -17,6 +17,7 @@ import ru.lct.arm112.persistence.SessionRepository.SessionRow;
 import ru.lct.arm112.persistence.TrainingStateStore;
 import ru.lct.arm112.persistence.TrainingStateStore.CallState;
 import ru.lct.arm112.persistence.TrainingStateStore.CardState;
+import ru.lct.arm112.persistence.TrainingStateStore.IncomingCallState;
 import ru.lct.arm112.persistence.TrainingStateStore.TrainingSnapshot;
 import ru.lct.arm112.persistence.UserRepository;
 import ru.lct.arm112.persistence.UserRepository.AppUser;
@@ -28,16 +29,20 @@ import ru.lct.arm112.service.assessment.CardFillAssessor;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -49,8 +54,49 @@ import java.util.function.Supplier;
 public class TrainingEngine {
     private static final Logger log = LoggerFactory.getLogger(TrainingEngine.class);
 
-    /** Служба, за которую играет обучающийся-диспетчер ДДС. */
+    /** Служба по умолчанию, за которую играет обучающийся-диспетчер ДДС (в занятии можно выбрать другую). */
     public static final String OWN_SERVICE_CODE = "101";
+    /** Сколько звонит входящий вызов оператору 112, прежде чем считается пропущенным. */
+    static final int RING_SECONDS = 30;
+    /** После скольких пропусков заявитель перестаёт перезванивать — вызов потерян. */
+    static final int MAX_MISSES = 2;
+    /** Через сколько секунд заявитель перезванивает после пропущенного вызова. */
+    static final int REDIAL_SECONDS = 20;
+
+    /**
+     * Интенсивность потока (замечания 3, 5): интервал между приходом вводных, число фоновых карточек
+     * в журнале оператора 112 и «сложность» сессии. SEQUENTIAL — по одной, следующая после закрытия текущей.
+     */
+    public enum Intensity {
+        SEQUENTIAL(0, 0, 3, 5),
+        LOW(90, 180, 3, 3),
+        MEDIUM(45, 90, 6, 5),
+        HIGH(15, 40, 10, 8);
+
+        final int minSeconds;
+        final int maxSeconds;
+        final int backgroundCards;
+        final int difficulty;
+
+        Intensity(int minSeconds, int maxSeconds, int backgroundCards, int difficulty) {
+            this.minSeconds = minSeconds; this.maxSeconds = maxSeconds;
+            this.backgroundCards = backgroundCards; this.difficulty = difficulty;
+        }
+
+        public static boolean isValid(String value) {
+            for (Intensity i : values()) if (i.name().equals(value)) return true;
+            return false;
+        }
+
+        static Intensity of(String value) {
+            return value == null || !isValid(value) ? SEQUENTIAL : valueOf(value);
+        }
+
+        Instant nextArrival(Instant from) {
+            if (this == SEQUENTIAL) return null;
+            return from.plusSeconds(ThreadLocalRandom.current().nextInt(minSeconds, maxSeconds + 1));
+        }
+    }
     static final CallTarget SHIFT_SUPERVISOR = new CallTarget(
             "target.shift_supervisor", "1102", "Начальник дежурной смены",
             "Пожарно-спасательный центр", "MALE");
@@ -138,12 +184,21 @@ public class TrainingEngine {
                 lesson.mode(), lesson.kind(), row.workstationNumber(), lesson.title());
         state.state = "ACTIVE";
         state.startedAt = row.startedAt() == null ? Instant.now() : row.startedAt();
+        state.ownServiceCode = lesson.serviceCode() == null ? OWN_SERVICE_CODE : lesson.serviceCode();
+        state.intensity = Intensity.of(lesson.intensity());
         for (Scenario scenario : lessonScenarios) state.pending.add(scenario.id());
         sessions.put(state.id, state);
         access.remember(state.id, state.traineeId, state.teacherId, state.lessonId);
+        Instant now = Instant.now();
         if (lesson.mode().equals("CARD_ACTIONS")) {
+            // первая карточка сразу, остальные — по интенсивности
             deliverNextCard(state);
+        } else {
+            state.background.addAll(backgroundCards(state, lessonScenarios));
+            arriveNextCall(state, now);
+            presentNextCall(state, now);
         }
+        state.nextArrivalAt = state.intensity.nextArrival(now);
         persist(state);
         events.publish(state.id, "training.session_state_changed", state.id.toString(),
                 Map.of("state", "ACTIVE", "mode", state.mode));
@@ -372,8 +427,7 @@ public class TrainingEngine {
                                 "Не все карточки завершены");
                     }
                 } else {
-                    boolean unsaved = state.drafts.values().stream().anyMatch(d -> !"SAVED".equals(d.state()));
-                    if (unsaved || !state.pending.isEmpty()) {
+                    if (!fillFlowFinished(state)) {
                         throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
                                 "Не все карточки сохранены");
                     }
@@ -389,7 +443,8 @@ public class TrainingEngine {
         Assessment assessment = state.mode.equals("CARD_ACTIONS")
                 ? actionsAssessor.assess(state.id, cardStates(state), callStates(state))
                 : fillAssessor.assess(state.id, List.copyOf(state.drafts.values()),
-                        scenarios.requireAll(state.drafts.values().stream().map(CardDraft::scenarioId).distinct().toList()));
+                        scenarios.requireAll(state.drafts.values().stream().map(CardDraft::scenarioId).distinct().toList()),
+                        state.missedCalls, state.lost.size());
         assessmentRepo.insert(assessment, state.id);
         state.state = "COMPLETED";
         state.completedAt = Instant.now();
@@ -457,7 +512,7 @@ public class TrainingEngine {
             accOverdue = state.cards.values().stream().anyMatch(c -> c.acceptanceOverdue && !TERMINAL_CARD.contains(c.status));
             procOverdue = state.cards.values().stream().anyMatch(c -> c.processingOverdue && !TERMINAL_CARD.contains(c.status));
         } else {
-            total = state.drafts.size() + state.pending.size();
+            total = state.drafts.size() + state.pending.size() + state.callQueue.size() + (state.ringing == null ? 0 : 1);
             done = (int) state.drafts.values().stream().filter(d -> "SAVED".equals(d.state())).count();
             CardDraft latest = state.drafts.values().stream().max(Comparator.comparing(CardDraft::startedAt)).orElse(null);
             current = latest == null ? null : latest.state();
@@ -506,8 +561,122 @@ public class TrainingEngine {
         draftIndex.put(draft.id(), state.id);
     }
 
-    String nextScenario(SessionState state) {
-        return state.pending.pollFirst();
+    // ---------------------------------------------------------------- поток вызовов оператора 112
+
+    /** Звонящий вызов принят: возвращает его и снимает со звонка; null — если сейчас никто не звонит. */
+    IncomingCallState answerCall(SessionState state) {
+        IncomingCallState call = state.ringing;
+        if (call == null) return null;
+        state.ringing = null;
+        events.publish(state.id, "call.answered", call.id().toString(), Map.of("callId", call.id().toString()));
+        return call;
+    }
+
+    /** Очередная вводная становится вызовом в очереди АСО. */
+    private void arriveNextCall(SessionState state, Instant now) {
+        String scenarioId = state.pending.pollFirst();
+        if (scenarioId == null) return;
+        Scenario scenario = scenarios.require(scenarioId);
+        ScenarioCaller caller = scenario.caller();
+        state.callQueue.add(new IncomingCallState(UUID.randomUUID(), scenarioId,
+                caller == null ? null : formatPhone(caller.phone()), caller == null ? null : caller.fullName(),
+                now, null, 0));
+    }
+
+    /** Оператор свободен и никто не звонит — первый дозвонившийся вызов из очереди начинает звонить. */
+    void presentNextCall(SessionState state, Instant now) {
+        if (state.ringing != null || state.callQueue.isEmpty()) return;
+        if (state.drafts.values().stream().anyMatch(d -> "DRAFT".equals(d.state()))) return;
+        IncomingCallState next = null;
+        for (IncomingCallState call : state.callQueue) {
+            if (!call.arrivedAt().isAfter(now)) { next = call; break; }
+        }
+        if (next == null) return;
+        state.callQueue.remove(next);
+        state.ringing = new IncomingCallState(next.id(), next.scenarioId(), next.phone(), next.callerName(),
+                next.arrivedAt(), now, next.missedCount());
+        events.publish(state.id, "call.incoming", next.id().toString(),
+                Map.of("callId", next.id().toString(), "missedCount", next.missedCount()));
+    }
+
+    /** Вызов звонил дольше норматива: заявитель перезвонит позже, после MAX_MISSES — не дозвонился. */
+    private void missRingingCall(SessionState state) {
+        IncomingCallState call = state.ringing;
+        if (call == null) return;
+        state.ringing = null;
+        state.missedCalls++;
+        int misses = call.missedCount() + 1;
+        if (misses >= MAX_MISSES) {
+            state.lost.add(call.scenarioId());
+            events.publish(state.id, "call.lost", call.id().toString(), Map.of("callId", call.id().toString()));
+        } else {
+            // заявитель перезвонит через REDIAL_SECONDS — до этого вызов в очереди не предъявляется
+            state.callQueue.addLast(new IncomingCallState(call.id(), call.scenarioId(), call.phone(),
+                    call.callerName(), Instant.now().plusSeconds(REDIAL_SECONDS), null, misses));
+            events.publish(state.id, "call.missed", call.id().toString(),
+                    Map.of("callId", call.id().toString(), "missedCount", misses));
+        }
+    }
+
+    /** Все вводные отработаны: очередь пуста, никто не звонит, все черновики сохранены. */
+    boolean fillFlowFinished(SessionState state) {
+        return state.pending.isEmpty() && state.callQueue.isEmpty() && state.ringing == null
+                && state.drafts.values().stream().allMatch(d -> "SAVED".equals(d.state()));
+    }
+
+    /** Журнал оператора 112: свои сохранённые карточки и фоновые карточки смены, новые сверху. */
+    public JournalPage journal(UUID sessionId, CurrentUser actor) {
+        SessionState state = requireAccessible(sessionId, actor);
+        List<JournalRow> rows = new ArrayList<>(state.background);
+        synchronized (state) {
+            for (CardDraft d : state.drafts.values()) {
+                if (!"SAVED".equals(d.state())) continue;
+                rows.add(new JournalRow(d.id(), "OWN", d.number(), d.savedAt() == null ? d.startedAt() : d.savedAt(),
+                        state.workstationNumber, typeLabels(d.incidentTypeIds()), ScenarioService.describe(d.address()),
+                        d.description(), d.caller() == null ? null : d.caller().fullName(),
+                        d.services().stream().map(DraftService::label).toList(), "Сохранена"));
+            }
+        }
+        rows.sort(Comparator.comparing(JournalRow::receivedAt).reversed());
+        return new JournalPage(rows);
+    }
+
+    private String typeLabels(List<String> ids) {
+        List<String> labels = new ArrayList<>();
+        for (String id : ids) {
+            ReferenceDataService.IncidentType type = references.incidentType(id);
+            labels.add(type == null ? id : type.label());
+        }
+        return String.join(", ", labels);
+    }
+
+    /** Фоновые карточки смены: чужие сохранённые карточки по сценариям не из занятия (подтверждённые — первыми). */
+    private List<JournalRow> backgroundCards(SessionState state, List<Scenario> lessonScenarios) {
+        int count = state.intensity.backgroundCards;
+        if (count == 0) return List.of();
+        Set<String> exclude = new HashSet<>();
+        for (Scenario s : lessonScenarios) exclude.add(s.id());
+        List<ScenarioListItem> pool = new ArrayList<>(scenarios.list(null, null, null).stream()
+                .filter(s -> !exclude.contains(s.id()) && !"TRAINEE_MADE".equals(s.source())).toList());
+        Collections.shuffle(pool, ThreadLocalRandom.current());
+        // подтверждённые эталоны предпочтительнее, но при их нехватке подходят любые билеты
+        pool.sort(Comparator.comparing((ScenarioListItem s) -> !s.referenceConfirmed()));
+        List<JournalRow> rows = new ArrayList<>();
+        for (ScenarioListItem item : pool.subList(0, Math.min(count, pool.size()))) {
+            Scenario scenario = scenarios.require(item.id());
+            UUID id = UUID.randomUUID();
+            Instant receivedAt = state.startedAt.minusSeconds(60L * ThreadLocalRandom.current().nextInt(5, 181));
+            String arm;
+            do { arm = String.valueOf(ThreadLocalRandom.current().nextInt(1, 21)); } while (arm.equals(state.workstationNumber));
+            String address = ScenarioService.describe(scenario.expectedAddress());
+            rows.add(new JournalRow(id, "BACKGROUND",
+                    "112-2026-" + String.format("%06d", (int) (Math.abs(id.getLeastSignificantBits()) % 1_000_000)),
+                    receivedAt, arm, typeLabels(scenario.expectedIncidentTypes()),
+                    address.isEmpty() ? scenario.rawAddress() : address,
+                    scenario.callerText(), scenario.caller() == null ? null : scenario.caller().fullName(),
+                    scenario.expectedServices().stream().map(c -> references.service(c).label()).toList(), "Сохранена"));
+        }
+        return rows;
     }
 
     void publishDraft(SessionState state, CardDraft draft, String type) {
@@ -519,7 +688,9 @@ public class TrainingEngine {
         synchronized (state) {
             stateStore.save(state.id, new TrainingSnapshot(state.id, state.lessonId, state.traineeId, state.mode,
                     state.lessonKind, state.workstationNumber, state.state, state.startedAt, state.completedAt,
-                    List.copyOf(state.pending), cardStates(state), callStates(state), List.copyOf(state.drafts.values())));
+                    List.copyOf(state.pending), cardStates(state), callStates(state), List.copyOf(state.drafts.values()),
+                    state.ownServiceCode, state.intensity.name(), state.nextArrivalAt, List.copyOf(state.callQueue),
+                    state.ringing, List.copyOf(state.lost), state.missedCalls, List.copyOf(state.background)));
         }
     }
 
@@ -530,7 +701,7 @@ public class TrainingEngine {
         Instant now = Instant.now();
         for (SessionState state : sessions.values()) {
             if (!state.state.equals("ACTIVE")) continue;
-            boolean changed = false;
+            boolean changed = tickFlow(state, now);
             for (MutableCard card : state.cards.values()) {
                 synchronized (card) {
                     if (!card.acceptanceOverdue
@@ -551,6 +722,63 @@ public class TrainingEngine {
             }
             if (changed) persist(state);
         }
+    }
+
+    /**
+     * Поток по интенсивности: приход очередной вводной (карточка в журнал ДДС или вызов в очередь 112),
+     * звонок следующего вызова свободному оператору, пропуск вызова, который звонил дольше норматива.
+     */
+    private boolean tickFlow(SessionState state, Instant now) {
+        synchronized (state) {
+            boolean changed = false;
+            if (state.nextArrivalAt != null && !now.isBefore(state.nextArrivalAt)) {
+                if (!state.pending.isEmpty()) {
+                    if (state.mode.equals("CARD_ACTIONS")) deliverNextCard(state);
+                    else arriveNextCall(state, now);
+                    changed = true;
+                }
+                state.nextArrivalAt = state.pending.isEmpty() ? null : state.intensity.nextArrival(now);
+            }
+            if (state.mode.equals("CARD_FILL")) {
+                if (state.ringing != null && state.ringing.ringingSince() != null
+                        && now.isAfter(state.ringing.ringingSince().plusSeconds(RING_SECONDS))) {
+                    missRingingCall(state);
+                    changed = true;
+                }
+                IncomingCallState before = state.ringing;
+                presentNextCall(state, now);
+                changed |= before != state.ringing;
+            }
+            return changed;
+        }
+    }
+
+    /** Для тестов: очередная вводная (и перезвон пропущенного вызова) приходит немедленно. */
+    public void forceArrival(UUID sessionId) {
+        SessionState state = sessions.get(sessionId);
+        if (state == null) return;
+        synchronized (state) {
+            Instant past = Instant.now().minusSeconds(1);
+            state.nextArrivalAt = past;
+            List<IncomingCallState> queued = new ArrayList<>(state.callQueue);
+            state.callQueue.clear();
+            for (IncomingCallState c : queued) {
+                state.callQueue.add(new IncomingCallState(c.id(), c.scenarioId(), c.phone(), c.callerName(), past, null, c.missedCount()));
+            }
+        }
+        detectOverdue();
+    }
+
+    /** Для тестов: звонящий вызов считается пропущенным сейчас. */
+    public void forceRingTimeout(UUID sessionId) {
+        SessionState state = sessions.get(sessionId);
+        if (state == null || state.ringing == null) return;
+        synchronized (state) {
+            IncomingCallState r = state.ringing;
+            state.ringing = new IncomingCallState(r.id(), r.scenarioId(), r.phone(), r.callerName(), r.arrivedAt(),
+                    Instant.now().minusSeconds(RING_SECONDS + 1), r.missedCount());
+        }
+        detectOverdue();
     }
 
     /** Точка отсчёта 30 секунд — появление карточки в журнале (решение №12). Для тестов. */
@@ -577,8 +805,9 @@ public class TrainingEngine {
     }
 
     private void afterCardChange(SessionState state, MutableCard card) {
-        // Многозадачность (Q&A §7): следующая карточка приходит, когда текущая доведена до конца.
-        if (TERMINAL_CARD.contains(card.status) && !state.pending.isEmpty()
+        // Режим «по одной»: следующая карточка приходит, когда текущая доведена до конца.
+        // При заданной интенсивности карточки приходят по таймеру независимо от текущей (tickFlow).
+        if (state.intensity == Intensity.SEQUENTIAL && TERMINAL_CARD.contains(card.status) && !state.pending.isEmpty()
                 && state.cards.values().stream().allMatch(c -> TERMINAL_CARD.contains(c.status))) {
             deliverNextCard(state);
         }
@@ -611,12 +840,17 @@ public class TrainingEngine {
                 ? new DictionaryItem("incident.other", "OTHER", "Происшествие")
                 : new DictionaryItem("incident." + type.id(), type.id().toUpperCase().replace('.', '_'), type.label());
         card.features = List.of();
-        List<String> serviceCodes = scenario.expectedServices().isEmpty()
-                ? List.of(OWN_SERVICE_CODE) : scenario.expectedServices();
-        card.assignedServices = serviceCodes.stream().map(references::service).toList();
+        String own = state.ownServiceCode;
+        List<String> serviceCodes = scenario.expectedServices().isEmpty() ? List.of(own) : scenario.expectedServices();
+        // Карточка пришла в эту ДДС — плитка своей службы есть всегда (первой), даже если тип непрофильный:
+        // иначе диспетчеру нечем проставить «Не принята» с основанием (замечание 7).
+        List<String> assigned = new ArrayList<>();
+        assigned.add(own);
+        for (String code : serviceCodes) if (!assigned.contains(code)) assigned.add(code);
+        card.assignedServices = assigned.stream().map(references::service).toList();
         card.expectedServices = List.copyOf(serviceCodes);
         card.expectedDecision = scenario.expectedDecision() != null ? scenario.expectedDecision()
-                : (serviceCodes.contains(OWN_SERVICE_CODE) ? "ACCEPT" : "DECLINE");
+                : (serviceCodes.contains(own) ? "ACCEPT" : "DECLINE");
         card.requirements = new ScenarioRequirements(scenario.outboundCallRequired(),
                 List.of(SHIFT_SUPERVISOR.id()), true);
         card.callTargets = List.of(SHIFT_SUPERVISOR);
@@ -725,7 +959,7 @@ public class TrainingEngine {
                     card.assignedServices, card.requirements, card.callTargets,
                     List.copyOf(card.timeline), card.callIds.stream().map(state.calls::get)
                     .filter(call -> call != null).map(this::toView).toList(),
-                    hints(state, card), OWN_SERVICE_CODE, card.scenarioTitle);
+                    hints(state, card), state.ownServiceCode, card.scenarioTitle);
         }
     }
 
@@ -735,10 +969,10 @@ public class TrainingEngine {
         List<Hint> hints = new ArrayList<>();
         boolean fresh = card.status.equals("RECEIVED") || card.status.equals("RECEIVED_BY_SERVICE");
         if (fresh && "ACCEPT".equals(card.expectedDecision)) {
-            hints.add(new Hint("acceptance", "Происшествие профильное для службы " + OWN_SERVICE_CODE + " — карточку нужно принять"));
+            hints.add(new Hint("acceptance", "Происшествие профильное для службы " + state.ownServiceCode + " — карточку нужно принять"));
         }
         if (fresh && "DECLINE".equals(card.expectedDecision)) {
-            hints.add(new Hint("acceptance", "Служба " + OWN_SERVICE_CODE + " не оповещается по этому типу — уместен статус «Не принята» с основанием"));
+            hints.add(new Hint("acceptance", "Служба " + state.ownServiceCode + " не оповещается по этому типу — уместен статус «Не принята» с основанием"));
         }
         if (card.status.equals("NOT_ACCEPTED") && "ACCEPT".equals(card.expectedDecision)) {
             hints.add(new Hint("acceptance", "Ошибочный отказ исправляется статусом «Принята»"));
@@ -779,11 +1013,15 @@ public class TrainingEngine {
     }
 
     private TrainingSession toView(SessionState state) {
-        return new TrainingSession(state.id, state.mode, state.state, state.title, 5,
+        IncomingCallState ringing = state.ringing;
+        return new TrainingSession(state.id, state.mode, state.state, state.title, state.intensity.difficulty,
                 ReferenceDataService.REFERENCE_VERSION, Instant.now(), state.startedAt, state.completedAt,
                 state.cards.values().stream().sorted(Comparator.comparing(c -> c.receivedAt)).map(c -> c.id).toList(),
                 state.drafts.values().stream().sorted(Comparator.comparing(CardDraft::startedAt)).map(CardDraft::id).toList(),
-                state.lessonId, state.lessonKind, state.pending.size());
+                state.lessonId, state.lessonKind, state.pending.size(), state.ownServiceCode, state.intensity.name(),
+                ringing == null ? null : new IncomingCall(ringing.id(), ringing.phone(), ringing.callerName(),
+                        ringing.ringingSince(), ringing.missedCount()),
+                state.callQueue.size());
     }
 
     // ---------------------------------------------------------------- access
@@ -931,6 +1169,14 @@ public class TrainingEngine {
         state.startedAt = snapshot.sessionStartedAt();
         state.completedAt = snapshot.sessionCompletedAt();
         if (snapshot.pendingScenarioIds() != null) state.pending.addAll(snapshot.pendingScenarioIds());
+        state.ownServiceCode = snapshot.ownServiceCode() == null ? OWN_SERVICE_CODE : snapshot.ownServiceCode();
+        state.intensity = Intensity.of(snapshot.intensity());
+        state.nextArrivalAt = snapshot.nextArrivalAt();
+        if (snapshot.callQueue() != null) state.callQueue.addAll(snapshot.callQueue());
+        state.ringing = snapshot.ringing();
+        if (snapshot.lost() != null) state.lost.addAll(snapshot.lost());
+        state.missedCalls = snapshot.missedCalls() == null ? 0 : snapshot.missedCalls();
+        if (snapshot.background() != null) state.background.addAll(snapshot.background());
         for (CardState cs : snapshot.cards()) {
             MutableCard card = new MutableCard();
             card.id = cs.id(); card.sessionId = cs.sessionId(); card.scenarioId = cs.scenarioId();
@@ -984,6 +1230,19 @@ public class TrainingEngine {
         final Map<UUID, MutableCard> cards = new ConcurrentHashMap<>();
         final Map<UUID, MutableCall> calls = new ConcurrentHashMap<>();
         final Map<UUID, CardDraft> drafts = new LinkedHashMap<>();
+        volatile String ownServiceCode = OWN_SERVICE_CODE;
+        volatile Intensity intensity = Intensity.SEQUENTIAL;
+        /** Когда придёт следующая вводная; null — очередь пуста или режим «по одной». */
+        volatile Instant nextArrivalAt;
+        /** Вызовы оператору 112, ожидающие в очереди АСО. */
+        final Deque<IncomingCallState> callQueue = new ArrayDeque<>();
+        /** Вызов, который сейчас звонит оператору 112. */
+        volatile IncomingCallState ringing;
+        /** Сценарии, до которых заявитель так и не дозвонился. */
+        final List<String> lost = new ArrayList<>();
+        int missedCalls;
+        /** Фоновые карточки смены в журнале оператора 112. */
+        final List<JournalRow> background = new ArrayList<>();
 
         SessionState(UUID id, UUID lessonId, UUID traineeId, UUID teacherId, String mode, String lessonKind,
                      String workstationNumber, String title) {

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.*;
 import ru.lct.arm112.security.CurrentUser;
+import ru.lct.arm112.persistence.TrainingStateStore.IncomingCallState;
 import ru.lct.arm112.service.TrainingEngine.SessionState;
 import ru.lct.arm112.service.assessment.CardFillAssessor;
 
@@ -53,7 +54,10 @@ public class CardFillService {
         }
     }
 
-    /** Следующая вводная из очереди: черновик с таймером 3 минуты. Незакрытый черновик возвращается как есть. */
+    /**
+     * Принятие входящего вызова: черновик по сценарию звонящего вызова, таймер 3 минуты.
+     * Незакрытый черновик возвращается как есть; без звонящего вызова — 409.
+     */
     public CardDraft start(UUID sessionId, CurrentUser actor) {
         SessionState state = engine.state(sessionId, actor);
         synchronized (state) {
@@ -63,11 +67,14 @@ public class CardFillService {
             }
             CardDraft open = state.drafts.values().stream().filter(d -> "DRAFT".equals(d.state())).findFirst().orElse(null);
             if (open != null) return withHints(state, open);
-            String scenarioId = engine.nextScenario(state);
-            if (scenarioId == null) {
-                throw new ApiException(HttpStatus.CONFLICT, "NO_MORE_SCENARIOS", "Все вводные занятия отработаны");
+            IncomingCallState call = engine.answerCall(state);
+            if (call == null) {
+                if (state.pending.isEmpty() && state.callQueue.isEmpty()) {
+                    throw new ApiException(HttpStatus.CONFLICT, "NO_MORE_SCENARIOS", "Все вводные занятия отработаны");
+                }
+                throw new ApiException(HttpStatus.CONFLICT, "NO_INCOMING_CALL", "Входящего вызова сейчас нет — дождитесь звонка");
             }
-            Scenario scenario = scenarios.require(scenarioId);
+            Scenario scenario = scenarios.require(call.scenarioId());
             Instant now = Instant.now();
             UUID id = UUID.randomUUID();
             ScenarioCaller caller = scenario.caller();
@@ -75,11 +82,11 @@ public class CardFillService {
                     "112-2026-" + String.format("%06d", (int) (Math.abs(id.getLeastSignificantBits()) % 1_000_000)),
                     now, null, now.plusSeconds(settings.integer(SettingsService.PROCESSING_SECONDS, 180)), "DRAFT",
                     scenario.callerText(),
-                    new DraftPhones(caller == null ? null : caller.phone(), null, null),
+                    new DraftPhones(call.phone(), null, null),
                     new DraftCaller(caller == null ? null : caller.fullName(), "заявитель"),
                     new FormalAddress("Россия", null, null, null, null, null, null, null, null, null, null, null, null, null, null),
                     new DraftFlags(false, null, false, false, false, false),
-                    List.of(), List.of(), "", List.of(), List.of(), scenario.title());
+                    List.of(), List.of(), "", List.of(), List.of(), scenario.title(), scenario.rawAddress());
             engine.registerDraft(state, draft);
             engine.publishDraft(state, draft, "draft.created");
             engine.persist(state);
@@ -111,7 +118,7 @@ public class CardFillService {
                     List.copyOf(types),
                     patch.surveyAnswers() != null ? patch.surveyAnswers() : current.surveyAnswers(),
                     patch.description() != null ? patch.description() : current.description(),
-                    services, List.of(), current.scenarioTitle());
+                    services, List.of(), current.scenarioTitle(), current.callerAddress());
             state.drafts.put(draftId, updated);
             engine.publishDraft(state, updated, "draft.updated");
             engine.persist(state);
@@ -135,7 +142,8 @@ public class CardFillService {
                 CardDraft saved = new CardDraft(current.id(), current.sessionId(), current.scenarioId(), current.number(),
                         current.startedAt(), Instant.now(), current.deadlineAt(), "SAVED", current.callerText(),
                         current.phones(), current.caller(), current.address(), current.flags(), current.incidentTypeIds(),
-                        current.surveyAnswers(), current.description(), current.services(), List.of(), current.scenarioTitle());
+                        current.surveyAnswers(), current.description(), current.services(), List.of(), current.scenarioTitle(),
+                        current.callerAddress());
                 state.drafts.put(draftId, saved);
                 // Сохранённая карточка становится сценарием для режима действий (ТЗ, сценарий 3).
                 Scenario base = scenarios.require(saved.scenarioId());
@@ -143,9 +151,11 @@ public class CardFillService {
                         saved.services().stream().map(DraftService::code).toList(), actor.id());
                 engine.publishDraft(state, saved, "draft.saved");
                 // Последняя вводная сохранена — занятие завершается само, без лишней кнопки (решение №11).
-                if (state.pending.isEmpty() && state.drafts.values().stream().allMatch(d -> "SAVED".equals(d.state()))) {
+                if (engine.fillFlowFinished(state)) {
                     engine.complete(state);
                 } else {
+                    // оператор освободился — следующий вызов из очереди звонит сразу
+                    engine.presentNextCall(state, Instant.now());
                     engine.persist(state);
                 }
                 return saved;
@@ -180,7 +190,7 @@ public class CardFillService {
         return new CardDraft(draft.id(), draft.sessionId(), draft.scenarioId(), draft.number(), draft.startedAt(),
                 draft.savedAt(), draft.deadlineAt(), draft.state(), draft.callerText(), draft.phones(), draft.caller(),
                 draft.address(), draft.flags(), draft.incidentTypeIds(), draft.surveyAnswers(), draft.description(),
-                draft.services(), assessor.hints(draft, scenario), draft.scenarioTitle());
+                draft.services(), assessor.hints(draft, scenario), draft.scenarioTitle(), draft.callerAddress());
     }
 
     private static void requireActive(SessionState state) {

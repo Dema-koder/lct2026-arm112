@@ -5,6 +5,7 @@ import { api, type Assessment, type CardListItem, type IncidentCard, type Outbou
 import { actionLabels, callLabels, countdown, dateTime, elapsed, statusLabels, timeOnly } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useSocket } from "../common";
 import { AssessmentView } from "../trainee/Results";
+import { IncidentJournal, type JournalRowView } from "../journal/IncidentJournal";
 
 function journalDeadline(card: CardListItem) {
   if (["RECEIVED", "RECEIVED_BY_SERVICE"].includes(card.status)) {
@@ -96,6 +97,10 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
     void run(() => loadCard(id));
   };
 
+  // «Завершить занятие» — когда все карточки доведены до конца и новых не будет.
+  const canSubmit = session.state === "ACTIVE" && session.pendingScenarios === 0
+    && cards.every((c) => ["NOT_ACCEPTED", "WORK_REFUSED", "COMPLETED"].includes(c.status));
+
   const refreshAfter = async (updated: IncidentCard, message: string) => {
     setCard(updated);
     setNotice(message);
@@ -148,15 +153,31 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
 
       {!card ? (
         <IncidentJournal
-          cards={filteredCards}
+          rows={filteredCards.map((item): JournalRowView => ({
+            id: item.id,
+            number: item.number,
+            receivedAt: item.receivedAt,
+            workstationNumber: context.workstation.number,
+            incidentTypeLabel: item.incidentTypeLabel,
+            addressLabel: item.addressLabel,
+            description: item.description,
+            senderLabel: item.senderLabel,
+            statusLabel: statusLabels[item.status] ?? item.status,
+            overdue: item.sla.acceptanceOverdue || item.sla.processingOverdue,
+            deadline: journalDeadline(item),
+          }))}
           search={search}
           setSearch={setSearch}
           onOpen={openCard}
           now={now}
-          context={context}
+          workstationLabel={context.workstation.label}
           loading={working}
-          onSubmit={submitSession}
-          session={session}
+          extra={(
+            <>
+              {session.intensity === "SEQUENTIAL" && session.pendingScenarios > 0 && <small>ещё карточек в очереди: {session.pendingScenarios}</small>}
+              {canSubmit && <button className="submit-session" onClick={submitSession}>Завершить занятие</button>}
+            </>
+          )}
         />
       ) : (
         <CardWorkspace
@@ -222,75 +243,6 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
         </Modal>
       )}
     </main>
-  );
-}
-
-function IncidentJournal({ cards, search, setSearch, onOpen, now, context, loading, onSubmit, session }: {
-  cards: CardListItem[];
-  search: string;
-  setSearch: (value: string) => void;
-  onOpen: (id: string) => void;
-  now: number;
-  context: TraineeContext;
-  loading: boolean;
-  onSubmit: () => void;
-  session: TraineeContext["activeSession"] & object;
-}) {
-  const current = new Date(now);
-  const canSubmit = session.state === "ACTIVE" && session.pendingScenarios === 0
-    && cards.every((c) => ["NOT_ACCEPTED", "WORK_REFUSED", "COMPLETED"].includes(c.status));
-  return (
-    <section className="journal">
-      <div className="journal-heading">
-        <div className="journal-search">
-          <div className="search-line">
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск происшествий" aria-label="Поиск происшествий" />
-            <span className="magnifier" aria-hidden="true">⌕</span>
-          </div>
-          <div className="search-meta">
-            <small>расширенный по параметрам⌄</small>
-            <button onClick={() => setSearch("")}>сбросить</button>
-          </div>
-        </div>
-        <div className="digital-clock">
-          <b>{new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(current)}</b>
-          <strong>{new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" }).format(current)}</strong>
-          <span>:{String(current.getSeconds()).padStart(2, "0")}</span>
-          <small>{context.workstation.label}</small>
-        </div>
-      </div>
-      <div className="list-area">
-        <div className="list-title">
-          <b>Список происшествий⌃</b>
-          <span>
-            {session.pendingScenarios > 0 && <small>ещё карточек в очереди: {session.pendingScenarios}</small>}
-            {canSubmit && <button className="submit-session" onClick={onSubmit}>Завершить занятие</button>}
-            ● уведомления　 <select aria-label="Фильтр"><option>выберите что показать</option></select>
-          </span>
-        </div>
-        <div className="incident-columns"><span>Связи</span><span>ЧС</span><span>Опер.</span><span>АРМ</span><span>Номер</span><span>Дата</span><span>Время</span><span>Тип происшествия</span><span>Постр.</span><span>Адрес</span><span>Статус службы</span></div>
-        {cards.length === 0 ? (
-          <div className="empty-list">{loading ? "Обновление…" : "Карточки не найдены"}</div>
-        ) : cards.map((item) => {
-          const deadline = journalDeadline(item);
-          return <button key={item.id} className={`incident-row ${item.sla.acceptanceOverdue || item.sla.processingOverdue ? "overdue" : ""}`} onClick={() => onOpen(item.id)}>
-            <span>⌄　◆　⚡</span><span>0</span><span>0</span><span>{context.workstation.number}</span><b>{item.number.replace(/\D/g, "").slice(-8)}</b>
-            <span>{new Date(item.receivedAt).toLocaleDateString("ru-RU")}</span><strong>{timeOnly(item.receivedAt)}</strong>
-            <b title={item.incidentTypeLabel}>{item.incidentTypeLabel}</b>
-            <span>Нет</span>
-            <b title={item.addressLabel}>{item.addressLabel}</b>
-            <span title={statusLabels[item.status] ?? item.status}>{statusLabels[item.status] ?? item.status}</span>
-            <em title={item.description}>
-              <span className="descr-label">Описание:</span>
-              <span className="descr-meta">{dateTime(item.receivedAt)} {item.senderLabel}　-</span>
-              <span className="descr-text">{item.description}</span>
-            </em>
-            {deadline && <i>{countdown(deadline, now)}</i>}
-          </button>;
-        })}
-        <div className="pagination">Страница: 1　 Записей на странице: 10　 <b>1–{cards.length} из {cards.length}</b>　‹　›</div>
-      </div>
-    </section>
   );
 }
 
@@ -377,10 +329,10 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
             const own = service.code === card.ownServiceCode;
             const expanded = serviceMenu === service.id;
             return (
-              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "" : "foreign"}`}>
+              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "own" : "foreign"}`}>
                 <button
                   className="tile-body"
-                  title={own ? undefined : "Статус другой службы — только просмотр"}
+                  title={own ? "Ваша служба — здесь проставляется статус реагирования" : "Статус другой службы — только просмотр"}
                   onClick={() => { if (!own) return; setServiceMenu(expanded ? null : service.id); setStatusList(false); }}
                 >
                   <i className="tile-chevron">{expanded ? "⌄" : "⌃"}</i>

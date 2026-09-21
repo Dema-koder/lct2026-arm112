@@ -106,6 +106,12 @@ public class TraineeController {
         return engine.submit(sessionId, idempotencyKey, actor);
     }
 
+    /** Журнал оператора 112: свои сохранённые карточки и фоновые карточки смены. */
+    @GetMapping("/training-sessions/{sessionId}/journal")
+    public JournalPage journal(@PathVariable UUID sessionId, CurrentUser actor) {
+        return engine.journal(sessionId, actor);
+    }
+
     @GetMapping("/training-sessions/{sessionId}/events")
     public EventPage events(@PathVariable UUID sessionId,
                             @RequestParam(defaultValue = "0") long afterSequence, CurrentUser actor) {

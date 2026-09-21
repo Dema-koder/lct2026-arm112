@@ -38,7 +38,17 @@ public final class ApiModels {
                                   @Min(1) @Max(10) int difficulty, String referenceVersion,
                                   Instant serverTime, Instant startedAt, Instant completedAt,
                                   List<UUID> cardIds, List<UUID> draftIds, UUID lessonId,
-                                  String lessonKind, int pendingScenarios) {}
+                                  String lessonKind, int pendingScenarios, String ownServiceCode,
+                                  String intensity, IncomingCall incomingCall, int queuedCalls) {}
+
+    /** Входящий вызов оператору 112: звонит, пока обучающийся не примет его (POST /card-drafts). */
+    public record IncomingCall(UUID id, String phone, String callerName, Instant ringingSince, int missedCount) {}
+
+    /** Строка журнала оператора 112: своя сохранённая карточка или фоновая карточка смены. */
+    public record JournalRow(UUID id, String kind, String number, Instant receivedAt, String workstationNumber,
+                             String incidentTypeLabel, String addressLabel, String description,
+                             String callerName, List<String> services, String status) {}
+    public record JournalPage(List<JournalRow> rows) {}
 
     public record SessionSummary(UUID id, UUID lessonId, String lessonTitle, String lessonKind,
                                  String mode, String state, Instant startedAt, Instant completedAt) {}
@@ -154,7 +164,8 @@ public final class ApiModels {
                             String callerText, DraftPhones phones, DraftCaller caller,
                             FormalAddress address, DraftFlags flags, List<String> incidentTypeIds,
                             List<SurveyAnswer> surveyAnswers, String description,
-                            List<DraftService> services, List<Hint> hints, String scenarioTitle) {}
+                            List<DraftService> services, List<Hint> hints, String scenarioTitle,
+                            String callerAddress) {}
 
     public record DraftPhones(String ani, String provided, String onSite) {}
     public record DraftCaller(String fullName, String status) {}
@@ -212,11 +223,14 @@ public final class ApiModels {
     public record Lesson(UUID id, UUID teacherId, UUID groupId, String groupName, String title,
                          String kind, String mode, String cardSource, String state,
                          List<String> scenarioIds, Instant createdAt, Instant startedAt,
-                         Instant completedAt, Instant resultsPublishedAt, int sessionCount) {}
+                         Instant completedAt, Instant resultsPublishedAt, int sessionCount,
+                         String serviceCode, String intensity) {}
 
+    /** serviceCode — служба обучающегося в режиме действий (по умолчанию 101); intensity — поток вводных. */
     public record LessonCreate(@NotBlank @Size(max = 200) String title, UUID groupId,
                                @NotBlank String kind, @NotBlank String mode, @NotBlank String cardSource,
-                               @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds) {}
+                               @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds,
+                               String serviceCode, String intensity) {}
 
     public record LessonMonitor(Lesson lesson, List<MonitorRow> sessions) {}
     public record MonitorRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,

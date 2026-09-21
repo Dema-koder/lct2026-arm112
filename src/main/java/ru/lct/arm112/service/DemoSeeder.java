@@ -44,7 +44,8 @@ public class DemoSeeder {
         var group = lessonService.createGroup(new GroupUpsert("Демо-группа", teacher.id()), actor);
         users.update(trainee.id(), trainee.displayName(), trainee.role(), trainee.workstationNumber(), group.id());
         Lesson lesson = lessonService.create(new LessonCreate("Демо: заполнение карточки", group.id(),
-                "TRAINING", "CARD_FILL", "GENERATED", List.of("ticket-01-1", "ticket-02-1"), List.of(trainee.id())), actor);
+                "TRAINING", "CARD_FILL", "GENERATED", List.of("ticket-01-1", "ticket-02-1"), List.of(trainee.id()),
+                null, "MEDIUM"), actor);
         lessonService.start(lesson.id(), actor);
         log.info("Создано демо-занятие {} для обучающегося trainee", lesson.id());
     }

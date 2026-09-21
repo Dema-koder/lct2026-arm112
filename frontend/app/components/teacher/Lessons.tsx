@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, type CardSource, type CriterionScore, type Group, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
-import { actionLabels, categoryLabels, criterionLabels, criteriaForMode, dateTime, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
+import { api, type CardSource, type CriterionScore, type Group, type Intensity, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
+import { actionLabels, categoryLabels, criterionLabels, criteriaForMode, dateTime, intensityHints, intensityLabels, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
 import { ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
 import { ScenarioCard } from "./Scenarios";
 import { AssessmentView } from "../trainee/Results";
@@ -40,17 +40,18 @@ export function Lessons({ token }: { token: string }) {
       </div>
       <table className="data-table">
         <thead>
-          <tr><th>Создано</th><th>Название</th><th>Группа</th><th>Вид</th><th>Режим</th><th>Участников</th><th>Состояние</th></tr>
+          <tr><th>Создано</th><th>Название</th><th>Группа</th><th>Вид</th><th>Режим</th><th>Поток</th><th>Участников</th><th>Состояние</th></tr>
         </thead>
         <tbody>
-          {lessons.length === 0 && <tr><td colSpan={7} className="muted">Занятий ещё нет — создайте первое</td></tr>}
+          {lessons.length === 0 && <tr><td colSpan={8} className="muted">Занятий ещё нет — создайте первое</td></tr>}
           {lessons.map((l) => (
             <tr key={l.id} className="clickable" onClick={() => setSelected(l.id)}>
               <td>{dateTime(l.createdAt)}</td>
               <td><b>{l.title}</b></td>
               <td>{l.groupName ?? "—"}</td>
               <td>{kindLabels[l.kind]}</td>
-              <td>{modeLabels[l.mode]}</td>
+              <td>{modeLabels[l.mode]}{l.mode === "CARD_ACTIONS" ? ` · служба ${l.serviceCode}` : ""}</td>
+              <td>{intensityLabels[l.intensity] ?? l.intensity}</td>
               <td>{l.sessionCount}</td>
               <td><span className={`state-pill ${l.state.toLowerCase()}`}>{lessonStateLabels[l.state]}</span></td>
             </tr>
@@ -71,6 +72,10 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
   const [kind, setKind] = useState<LessonKind>("TRAINING");
   const [mode, setMode] = useState<LessonMode>("CARD_FILL");
   const [cardSource, setCardSource] = useState<CardSource>("GENERATED");
+  const [intensity, setIntensity] = useState<Intensity>("MEDIUM");
+  const [serviceCode, setServiceCode] = useState("101");
+  const [services, setServices] = useState<Array<{ code: string; label: string }>>([]);
+  const [showForeign, setShowForeign] = useState(false);
   const [category, setCategory] = useState("");
   const [chosenScenarios, setChosenScenarios] = useState<string[]>([]);
   const [chosenTrainees, setChosenTrainees] = useState<string[]>([]);
@@ -82,6 +87,7 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
 
   useEffect(() => {
     api.teacher.groups(token).then((g) => { setGroups(g); if (g[0]) setGroupId(g[0].id); }).catch((e) => setError(e.message));
+    api.references(token).then((r) => setServices(r.services.map((s) => ({ code: s.code, label: s.label })))).catch(() => undefined);
   }, [token]);
   useEffect(() => {
     const source = cardSource === "MIXED" ? undefined : cardSource === "TRAINEE_MADE" ? "TRAINEE_MADE" : undefined;
@@ -92,18 +98,23 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
 
   const group = groups.find((g) => g.id === groupId);
   const members = group?.members ?? [];
+  // Режим действий: по умолчанию только сценарии, где выбранная служба оповещается по ЕКП;
+  // непрофильные (для отработки «Не принята») — по отдельному флажку.
+  const isForeign = useCallback((s: ScenarioListItem) => mode === "CARD_ACTIONS" && !s.expectedServices.includes(serviceCode), [mode, serviceCode]);
   const visibleScenarios = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = q ? scenarios.filter((s) => [s.title, s.callerText, s.rawAddress ?? ""].some((v) => v.toLowerCase().includes(q))) : scenarios;
+    const list = scenarios.filter((s) => (!q || [s.title, s.callerText, s.rawAddress ?? ""].some((v) => v.toLowerCase().includes(q))) && (showForeign || !isForeign(s)));
     return [...list].sort((a, b) => Number(b.referenceConfirmed) - Number(a.referenceConfirmed) || a.title.localeCompare(b.title, "ru"));
-  }, [scenarios, search]);
+  }, [scenarios, search, showForeign, isForeign]);
+  const foreignCount = useMemo(() => scenarios.filter(isForeign).length, [scenarios, isForeign]);
   const toggle = (list: string[], id: string, set: (v: string[]) => void) =>
     set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
   const submit = () => run(async () => {
     const lesson = await api.teacher.createLesson(token, {
       title: title.trim() || `${kindLabels[kind]} · ${modeLabels[mode]}`,
-      groupId: groupId || null, kind, mode, cardSource,
+      groupId: groupId || null, kind, mode, cardSource, intensity,
+      serviceCode: mode === "CARD_ACTIONS" ? serviceCode : null,
       scenarioIds: chosenScenarios, traineeIds: chosenTrainees,
     });
     onDone(lesson);
@@ -131,8 +142,20 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
             {(["CARD_FILL", "CARD_ACTIONS"] as LessonMode[]).map((m) => <option key={m} value={m}>{modeLabels[m]}</option>)}
           </select>
           <small>{mode === "CARD_FILL"
-            ? "вводные выдаются по одной: следующая — после сохранения текущей (учебное упрощение, в боевом АРМ — журнал и вызовы)"
-            : "карточки приходят по одной: следующая — после закрытия текущей"}</small></label>
+            ? "оператор 112: журнал смены, входящие вызовы, карточка по принятому вызову"
+            : "диспетчер ДДС: карточки в журнале, статусы реагирования, доклад руководителю"}</small></label>
+        <label><span>Интенсивность</span>
+          <select value={intensity} onChange={(e) => setIntensity(e.target.value as Intensity)}>
+            {(["SEQUENTIAL", "LOW", "MEDIUM", "HIGH"] as Intensity[]).map((i) => <option key={i} value={i}>{intensityLabels[i]}</option>)}
+          </select>
+          <small>{intensityHints[intensity]}</small></label>
+        {mode === "CARD_ACTIONS" && (
+          <label><span>Служба обучающегося</span>
+            <select value={serviceCode} onChange={(e) => { setServiceCode(e.target.value); setChosenScenarios([]); }}>
+              {services.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
+            </select>
+            <small>за эту службу обучающийся принимает карточки и проставляет статусы</small></label>
+        )}
         {mode === "CARD_ACTIONS" && (
           <label><span>Источник карточек</span>
             <select value={cardSource} onChange={(e) => setCardSource(e.target.value as CardSource)}>
@@ -147,6 +170,10 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
           {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="поиск по названию, вводной, адресу" />
+        {mode === "CARD_ACTIONS" && (
+          <label className="inline"><input type="checkbox" checked={showForeign} onChange={(e) => setShowForeign(e.target.checked)} />
+            <span>показать непрофильные для службы {serviceCode} ({foreignCount}) — для отработки «Не принята»</span></label>
+        )}
         <small>выбрано: {chosenScenarios.length} из {visibleScenarios.length}</small>
       </div>
       <div className="check-list scenarios">
@@ -155,7 +182,7 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
             <label>
               <input type="checkbox" checked={chosenScenarios.includes(s.id)} onChange={() => toggle(chosenScenarios, s.id, setChosenScenarios)} />
               <b>{s.title}</b>
-              <em>{s.expectedIncidentTypes.map(typeLabel).join(", ") || categoryLabels[s.category] || s.category} · сложность {s.difficulty}{s.referenceConfirmed ? " · эталон ✓" : ""}</em>
+              <em>{s.expectedIncidentTypes.map(typeLabel).join(", ") || categoryLabels[s.category] || s.category} · сложность {s.difficulty}{s.referenceConfirmed ? " · эталон ✓" : ""}{isForeign(s) ? ` · непрофильная для ${serviceCode}` : ""}</em>
               <span>{s.callerText}</span>
             </label>
             <button type="button" className="expand" aria-label="Подробнее" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>{expanded === s.id ? "⌃" : "⌄"}</button>
@@ -236,7 +263,7 @@ function LessonView({ token, lessonId, onBack }: { token: string; lessonId: stri
       <div className="panel-head">
         <button className="ghost" onClick={onBack}>‹ занятия</button>
         <b>{lesson.title}</b>
-        <span className="muted">{kindLabels[lesson.kind]} · {modeLabels[lesson.mode]} · {lesson.groupName ?? "без группы"} · <span className={`state-pill ${lesson.state.toLowerCase()}`}>{lessonStateLabels[lesson.state]}</span></span>
+        <span className="muted">{kindLabels[lesson.kind]} · {modeLabels[lesson.mode]}{lesson.mode === "CARD_ACTIONS" ? ` · служба ${lesson.serviceCode}` : ""} · поток: {intensityLabels[lesson.intensity] ?? lesson.intensity} · {lesson.groupName ?? "без группы"} · <span className={`state-pill ${lesson.state.toLowerCase()}`}>{lessonStateLabels[lesson.state]}</span></span>
         <span className="spacer" />
         {lesson.state === "DRAFT" && <button className="primary-button" disabled={working} onClick={start}>Начать</button>}
         {lesson.state === "ACTIVE" && <button className="danger-button" disabled={working} onClick={complete}>Завершить занятие</button>}
