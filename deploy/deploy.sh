@@ -41,7 +41,12 @@ rollback() {
 }
 trap rollback ERR
 
-compose pull
+# На небольшом production-сервере параллельная распаковка двух прикладных
+# образов создаёт лишний пик RAM и I/O. Загружаем их последовательно, а
+# неизменяемые инфраструктурные образы проверяем без повторной загрузки.
+compose pull backend
+compose pull frontend
+compose pull --policy missing postgres proxy
 compose up -d --remove-orphans
 
 for attempt in {1..30}; do
