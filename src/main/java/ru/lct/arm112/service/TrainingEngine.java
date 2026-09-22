@@ -846,7 +846,15 @@ public class TrainingEngine {
         // иначе диспетчеру нечем проставить «Не принята» с основанием (замечание 7).
         List<String> assigned = new ArrayList<>();
         assigned.add(own);
-        for (String code : serviceCodes) if (!assigned.contains(code)) assigned.add(code);
+        List<String> territorial = references.territorialServices(ea);
+        for (String code : serviceCodes) {
+            // колонки «Терр. ОИВ» на карточке показываются как конкретные ДДС района и округа
+            if (("OIV".equals(code) || "OIV_TINAO".equals(code)) && !territorial.isEmpty()) {
+                for (String t : territorial) if (!assigned.contains(t)) assigned.add(t);
+            } else if (!assigned.contains(code)) {
+                assigned.add(code);
+            }
+        }
         card.assignedServices = assigned.stream().map(references::service).toList();
         card.expectedServices = List.copyOf(serviceCodes);
         card.expectedDecision = scenario.expectedDecision() != null ? scenario.expectedDecision()

@@ -244,3 +244,10 @@ body { zoom: var(--ui-scale); }
 .caller-answer b { display: inline; margin-right: 4px; font-size: 12px; color: #7a4a00; }
 .ask-button { position: absolute; right: 12px; top: 10px; height: 24px; padding: 0 10px; border: 1px solid #d3a959; background: #fff; color: #7a4a00; font-size: 11px; }
 .ask-button:hover { background: #fff3cf; }
+
+/* --- справочник служб ПОВ-112 (СЛУЖБЫ 112.docx): длинные названия, список с прокруткой --- */
+.service-picker { max-height: 340px; margin-top: 10px; overflow-y: auto; border: 1px solid #d3d8db; background: white; }
+.service-option { display: block; width: 100%; padding: 7px 10px; text-align: left; border: 0; border-bottom: 1px solid #edf0f1; background: transparent; font-size: 12px; }
+.service-option:hover:not(:disabled) { background: #d9ecf7; }
+.service-option.selected { background: var(--blue); color: white; }
+.service-option:disabled { opacity: .75; }

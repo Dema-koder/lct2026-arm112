@@ -69,6 +69,52 @@ class FlowIntensityIntegrationTest extends ApiTestSupport {
         }
     }
 
+    /** Справочники ПОВ-112 (КАРТОЧКА 112.docx, СЛУЖБЫ 112.docx): список «что случилось?», опросная карта, службы. */
+    @Test
+    void cardTypesSurveyTreeAndTerritorialServices() throws Exception {
+        String teacher = login("teacher", "teacher");
+        String token = login("trainee", "trainee");
+        String traineeId = userId(token);
+
+        JsonNode types = json(get("/api/v1/references/card-types", token));
+        assertThat(types.size()).isEqualTo(51);
+        assertThat(types.toString()).contains("\"101\"", "ДТП", "Угроза взрыва/террористического акта");
+        JsonNode found = json(get("/api/v1/references/card-types?query=взрыв", token));
+        assertThat(found.size()).isEqualTo(2);
+        assertThat(found.toString()).contains("Взрыв", "Угроза взрыва/террористического акта");
+
+        JsonNode tree = json(get("/api/v1/references/survey-trees/t101", token));
+        assertThat(tree.get("label").asText()).isEqualTo("101");
+        assertThat(tree.get("questions").toString()).contains("Признак пожара (улица)", "Мачта освещения", "Проведена ли газификация");
+        assertThat(get("/api/v1/references/survey-trees/t999", token).statusCode()).isEqualTo(404);
+
+        JsonNode services = json(get("/api/v1/references/services", token));
+        assertThat(services.size()).isGreaterThan(200);
+        assertThat(services.toString()).contains("Центр организации дорожного движения", "ДДС района Щукино");
+
+        // Ответы опросной карты определяют тип ЕКП, а адрес добавляет ДДС района и префектуры округа.
+        startLessonWithFlow(teacher, "CARD_FILL", "\"ticket-01-1\"", traineeId, null, "SEQUENTIAL");
+        String sessionId = json(get("/api/v1/trainee/context", token)).get("activeSession").get("id").asText();
+        String draftId = json(post("/api/v1/card-drafts", "{\"sessionId\":\"" + sessionId + "\"}", token, null)).get("id").asText();
+        HttpResponse<String> patched = patch("/api/v1/card-drafts/" + draftId,
+                "{\"topTypeId\":\"t101\",\"surveyAnswers\":[{\"questionId\":\"where\",\"optionId\":\"street\",\"text\":null},"
+                        + "{\"questionId\":\"sign_street\",\"optionId\":\"flame\",\"text\":null},"
+                        + "{\"questionId\":\"street_object\",\"optionId\":\"garbage\",\"text\":null}],"
+                        + "\"address\":{\"country\":\"Россия\",\"locality\":\"Москва\",\"district\":\"Щукино\",\"street\":\"Берзарина\",\"house\":\"21\"}}",
+                token);
+        assertThat(patched.statusCode()).as(patched.body()).isEqualTo(200);
+        assertThat(json(patched).get("incidentTypeIds").toString()).isEqualTo("[\"fire.garbage\"]");
+        String codes = json(patched).get("services").toString();
+        assertThat(codes).contains("R_SCHUKINO", "AO_SZAO");
+
+        // трава вместо мусора — другой тип ЕКП по тому же дереву
+        assertThat(json(patch("/api/v1/card-drafts/" + draftId,
+                "{\"surveyAnswers\":[{\"questionId\":\"where\",\"optionId\":\"street\",\"text\":null},"
+                        + "{\"questionId\":\"sign_street\",\"optionId\":\"flame\",\"text\":null},"
+                        + "{\"questionId\":\"street_object\",\"optionId\":\"grass\",\"text\":null}]}", token))
+                .get("incidentTypeIds").toString()).isEqualTo("[\"fire.grass\"]");
+    }
+
     @Test
     void operator112AnswersIncomingCallsAndMissedCallIsAssessed() throws Exception {
         String teacher = login("teacher", "teacher");

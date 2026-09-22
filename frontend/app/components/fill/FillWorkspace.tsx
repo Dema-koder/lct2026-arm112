@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type IncidentTypeItem, type JournalRow, type SurveyCard, type TraineeContext } from "../../../lib/api";
+import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type JournalRow, type ServiceItem, type SurveyTree, type TopTypeItem, type TraineeContext } from "../../../lib/api";
 import { countdown, dateTime, elapsed } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useRingTone, useSocket } from "../common";
 import { AssessmentView } from "../trainee/Results";
@@ -37,9 +37,9 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   const [askedAddress, setAskedAddress] = useState(false);
   const ringing = !draft && session.state === "ACTIVE" && !!session.incomingCall;
   const ring = useRingTone(ringing);
-  const [types, setTypes] = useState<IncidentTypeItem[]>([]);
+  const [types, setTypes] = useState<TopTypeItem[]>([]);
   const [typeQuery, setTypeQuery] = useState("");
-  const [survey, setSurvey] = useState<SurveyCard | null>(null);
+  const [survey, setSurvey] = useState<SurveyTree | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
@@ -80,14 +80,15 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
       } catch { /* нет черновика — главный экран */ }
       await loadJournal();
     });
-    api.incidentTypes(token).then(setTypes).catch(() => undefined);
+    api.cardTypes(token).then(setTypes).catch(() => undefined);
   }, [loadJournal, token, session.id]);
 
+  // опросная карта — у типа верхнего уровня, как в ПОВ-112
   useEffect(() => {
-    const first = draft?.incidentTypeIds[0];
-    if (!first) { queueMicrotask(() => setSurvey(null)); return; }
-    api.surveyCard(token, first).then(setSurvey).catch(() => setSurvey(null));
-  }, [draft?.incidentTypeIds, token]);
+    const top = draft?.topTypeId;
+    if (!top) { queueMicrotask(() => setSurvey(null)); return; }
+    api.surveyTree(token, top).then(setSurvey).catch(() => setSurvey(null));
+  }, [draft?.topTypeId, token]);
 
   useSocket(token, async (event) => {
     if (event.type === "training.session_state_changed" || event.type === "training.session_started") { await onReload(); return; }
@@ -150,15 +151,13 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   const filteredTypes = useMemo(() => {
     const q = typeQuery.trim().toLowerCase().replace("ё", "е");
     if (!q) return [];
-    return types.filter((t) => t.label.toLowerCase().replace("ё", "е").includes(q) || t.id.includes(q)).slice(0, 8);
+    return types.filter((t) => t.label.toLowerCase().replace("ё", "е").includes(q)).slice(0, 10);
   }, [types, typeQuery]);
 
-  const toggleType = (id: string) => {
+  /** Выбор типа верхнего уровня: открывает опросную карту, ответы обнуляются. */
+  const chooseType = (id: string) => {
     if (!draft) return;
-    const next = draft.incidentTypeIds.includes(id)
-      ? draft.incidentTypeIds.filter((t) => t !== id)
-      : [...draft.incidentTypeIds, id];
-    queue({ incidentTypeIds: next });
+    queue({ topTypeId: id, surveyAnswers: [] });
     setTypeQuery("");
   };
 
@@ -166,6 +165,14 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
     if (!draft) return;
     const rest = draft.surveyAnswers.filter((a) => a.questionId !== questionId);
     queue({ surveyAnswers: [...rest, { questionId, optionId, text }] });
+  };
+
+  /** Вопрос показывается, если выполнено хотя бы одно условие showWhen (пусто — всегда). */
+  const visibleQuestion = (question: SurveyTree["questions"][number]) => {
+    if (!draft || question.showWhen.length === 0) return true;
+    return question.showWhen.some((cond) =>
+      Object.entries(cond).every(([qid, allowed]) =>
+        draft.surveyAnswers.some((a) => a.questionId === qid && a.optionId !== null && allowed.includes(a.optionId))));
   };
 
   const hint = (field: string) => draft?.hints.find((h) => h.field === field)?.message;
@@ -357,42 +364,39 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
               <fieldset className={`fill-block ${hint("incidentTypeIds") ? "hinted" : ""}`}>
                 <legend>Что случилось?</legend>
                 <div className="type-search">
-                  <input value={typeQuery} onChange={(e) => setTypeQuery(e.target.value)} placeholder="поиск по названию или части слова" />
+                  <input value={typeQuery} onChange={(e) => setTypeQuery(e.target.value)} placeholder="введите тип происшествия" />
                   {filteredTypes.length > 0 && (
                     <ul className="type-dropdown">
-                      {filteredTypes.map((t) => <li key={t.id}><button type="button" onClick={() => toggleType(t.id)}>{t.label}</button></li>)}
+                      {filteredTypes.map((t) => <li key={t.id}><button type="button" onClick={() => chooseType(t.id)}>{t.label}</button></li>)}
                     </ul>
                   )}
                 </div>
+                {draft.topTypeId && (
+                  <div className="type-chips">
+                    <button type="button" className="chip selected" onClick={() => queue({ topTypeId: "", surveyAnswers: [] })}>
+                      {types.find((t) => t.id === draft.topTypeId)?.label ?? draft.topTypeId} ×
+                    </button>
+                  </div>
+                )}
                 <div className="type-chips">
-                  {draft.incidentTypeIds.map((id) => {
-                    const t = types.find((x) => x.id === id);
-                    return <button type="button" key={id} className="chip selected" onClick={() => toggleType(id)}>{t?.label ?? id} ×</button>;
-                  })}
-                </div>
-                <small className="chips-title">Часто используемые</small>
-                <div className="type-chips">
-                  {types.filter((t) => t.frequent && !draft.incidentTypeIds.includes(t.id)).map((t) => (
-                    <button type="button" key={t.id} className="chip" onClick={() => toggleType(t.id)}>{t.label}</button>
+                  {types.filter((t) => t.frequent && t.id !== draft.topTypeId).map((t) => (
+                    <button type="button" key={t.id} className="chip" onClick={() => chooseType(t.id)}>{t.label}</button>
                   ))}
                 </div>
                 <small className="chips-title">Значимые типы происшествий</small>
-                <div className="type-chips">
-                  {types.filter((t) => t.significant && !draft.incidentTypeIds.includes(t.id)).map((t) => (
-                    <button type="button" key={t.id} className="chip" onClick={() => toggleType(t.id)}>{t.label}</button>
-                  ))}
-                </div>
                 {hint("incidentTypeIds") && <p className="hint-line">💡 {hint("incidentTypeIds")}</p>}
               </fieldset>
 
               {survey && survey.questions.length > 0 && (
                 <fieldset className="fill-block survey">
-                  <legend>Опросная карта: {types.find((t) => t.id === survey.incidentTypeId)?.label ?? survey.incidentTypeId}</legend>
-                  {survey.questions.map((q) => {
+                  <legend>{survey.label}</legend>
+                  {survey.questions.filter(visibleQuestion).map((q) => {
                     const current = draft.surveyAnswers.find((a) => a.questionId === q.id);
                     return (
                       <div key={q.id} className="survey-row">
-                        <span>{q.text}</span>
+                        <span title={q.synthetic ? "Ветка достроена по смыслу: скриншота этой карты заказчик не присылал" : undefined}>
+                          {q.text}{q.synthetic ? " *" : ""}
+                        </span>
                         {q.kind === "CHOICE" ? (
                           <div className="type-chips">
                             {q.options.map((o) => (
@@ -405,7 +409,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
                       </div>
                     );
                   })}
-                  <p className="class-line">Класс.: {draft.incidentTypeIds.map((id) => types.find((t) => t.id === id)?.label.toLowerCase() ?? id).join("; ")};</p>
+                  <p className="class-line">Класс.: {draft.incidentTypeIds.join("; ") || "определится по ответам"};</p>
                 </fieldset>
               )}
             </div>
@@ -440,24 +444,25 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
 
 /** Окно «+»: автоподобранные синим, остальные серым; клик по серой добавляет. */
 function AddServicesDialog({ token, draft, onClose, onAdd }: { token: string; draft: CardDraft; onClose: () => void; onAdd: (codes: string[]) => void }) {
-  const [all, setAll] = useState<Array<{ code: string; label: string }>>([]);
+  const [all, setAll] = useState<ServiceItem[]>([]);
   const [chosen, setChosen] = useState<string[]>(draft.services.filter((s) => !s.auto).map((s) => s.code));
   const [query, setQuery] = useState("");
   useEffect(() => {
-    api.references(token).then((r) => setAll(r.services.map((s) => ({ code: s.code, label: s.label })))).catch(() => undefined);
+    // полный справочник ПОВ-112: службы города, ведомства, ДДС районов, округов и поселений
+    api.serviceCatalog(token).then(setAll).catch(() => undefined);
   }, [token]);
   const auto = new Set(draft.services.filter((s) => s.auto).map((s) => s.code));
   return (
     <Modal title="Службы на вызов" onClose={onClose}>
       <input className="status-form-comment w-full" placeholder="поиск службы" value={query} onChange={(e) => setQuery(e.target.value)} />
-      <div className="type-chips" style={{ marginTop: 10 }}>
-        {all.filter((s) => !query || s.label.toLowerCase().includes(query.toLowerCase())).map((s) => {
+      <div className="service-picker">
+        {all.filter((s) => !query || [s.label, s.fullName].some((v) => v.toLowerCase().includes(query.toLowerCase()))).slice(0, 120).map((s) => {
           const isAuto = auto.has(s.code);
           const isChosen = chosen.includes(s.code);
           return (
-            <button type="button" key={s.code} className={`chip ${isAuto || isChosen ? "selected" : ""}`} disabled={isAuto}
-              title={isAuto ? "Подобрана автоматически — удалить нельзя" : undefined}
-              onClick={() => setChosen(isChosen ? chosen.filter((c) => c !== s.code) : [...chosen, s.code])}>{s.label}</button>
+            <button type="button" key={s.code} className={`service-option ${isAuto || isChosen ? "selected" : ""}`} disabled={isAuto}
+              title={isAuto ? "Подобрана автоматически — удалить нельзя" : s.fullName}
+              onClick={() => setChosen(isChosen ? chosen.filter((c) => c !== s.code) : [...chosen, s.code])}>{s.fullName}</button>
           );
         })}
       </div>

@@ -66,8 +66,11 @@ public class CardFillAssessor {
             }
             type += typeScore;
 
-            List<String> actualServices = draft.services().stream().map(DraftService::code).toList();
-            List<String> expectedServices = scenario.expectedServices();
+            // территориальные ДДС сравниваются с колонкой «Терр. ОИВ» эталона, а не буквально по коду
+            List<String> actualServices = draft.services().stream().map(DraftService::code)
+                    .map(references::matrixGroupOf).distinct().toList();
+            List<String> expectedServices = scenario.expectedServices().stream()
+                    .map(references::matrixGroupOf).distinct().toList();
             double serviceScore = expectedServices.isEmpty() ? 100 : jaccard(actualServices, expectedServices);
             for (String code : expectedServices) {
                 if (!actualServices.contains(code)) {

@@ -77,6 +77,26 @@ public class TraineeController {
         return references.search(query);
     }
 
+    /** Список «что случилось?» — типы верхнего уровня ПОВ-112. */
+    @GetMapping("/references/card-types")
+    public List<TopTypeItem> cardTypes(@RequestParam(required = false) String query) {
+        return references.searchTopTypes(query);
+    }
+
+    /** Опросная карта типа верхнего уровня с ветвлением вопросов. */
+    @GetMapping("/references/survey-trees/{topTypeId}")
+    public SurveyTree surveyTree(@PathVariable String topTypeId) {
+        SurveyTree tree = references.surveyTree(topTypeId);
+        if (tree == null) throw TrainingEngine.notFound("Опросная карта не найдена: " + topTypeId);
+        return tree;
+    }
+
+    /** Полный справочник служб ПОВ-112 с видом и территорией. */
+    @GetMapping("/references/services")
+    public List<ServiceItem> serviceCatalog() {
+        return references.serviceCatalog();
+    }
+
     @GetMapping("/references/survey-cards/{incidentTypeId}")
     public SurveyCard surveyCard(@PathVariable String incidentTypeId) {
         return references.surveyCard(incidentTypeId);

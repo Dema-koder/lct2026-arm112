@@ -221,6 +221,7 @@ export type CardDraft = {
   hints: Hint[];
   scenarioTitle: string | null;
   callerAddress: string | null;
+  topTypeId: string | null;
 };
 
 export type CardDraftPatch = Partial<{
@@ -232,11 +233,33 @@ export type CardDraftPatch = Partial<{
   surveyAnswers: SurveyAnswer[];
   description: string;
   extraServiceCodes: string[];
+  topTypeId: string;
 }>;
 
 export type IncidentTypeItem = { id: string; label: string; category: string; frequent: boolean; significant: boolean };
-export type SurveyQuestion = { id: string; text: string; kind: "CHOICE" | "TEXT"; options: DictionaryItem[] };
+/** Позиция списка «что случилось?» в ПОВ-112 (49 типов верхнего уровня + справки). */
+export type TopTypeItem = { id: string; label: string; frequent: boolean };
+export type SurveyQuestion = {
+  id: string;
+  text: string;
+  kind: "CHOICE" | "TEXT";
+  options: DictionaryItem[];
+  /** Вопрос показывается, если выполнено хотя бы одно условие: {вопрос: [допустимые ответы]}. */
+  showWhen: Array<Record<string, string[]>>;
+  /** Ветка не подтверждена скриншотами заказчика — достроена по смыслу. */
+  synthetic: boolean;
+};
+export type SurveyTree = { topTypeId: string; label: string; questions: SurveyQuestion[]; defaultType: string | null };
 export type SurveyCard = { id: string; incidentTypeId: string; questions: SurveyQuestion[] };
+export type ServiceItem = {
+  code: string;
+  label: string;
+  fullName: string;
+  kind: "EMERGENCY" | "CITY" | "DEPARTMENT" | "DISTRICT" | "OKRUG" | "SETTLEMENT" | "ROADS" | "FEDERAL" | "REGION" | "GROUP";
+  okrug: string | null;
+  district: string | null;
+  settlement: string | null;
+};
 
 // ------------------------------------------------------------------ assessment / results
 
@@ -562,6 +585,9 @@ export const api = {
 
   // card fill
   drafts: (token: string, sessionId: string) => request<CardDraft[]>(`/card-drafts${q({ sessionId })}`, {}, token),
+  cardTypes: (token: string, query?: string) => request<TopTypeItem[]>(`/references/card-types${q({ query })}`, {}, token),
+  surveyTree: (token: string, topTypeId: string) => request<SurveyTree>(`/references/survey-trees/${topTypeId}`, {}, token),
+  serviceCatalog: (token: string) => request<ServiceItem[]>("/references/services", {}, token),
   journal: (token: string, sessionId: string) => request<{ rows: JournalRow[] }>(`/training-sessions/${sessionId}/journal`, {}, token),
   createDraft: (token: string, sessionId: string) =>
     request<CardDraft>("/card-drafts", { method: "POST", body: json({ sessionId }) }, token),

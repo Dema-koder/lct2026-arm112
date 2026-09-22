@@ -165,7 +165,7 @@ public final class ApiModels {
                             FormalAddress address, DraftFlags flags, List<String> incidentTypeIds,
                             List<SurveyAnswer> surveyAnswers, String description,
                             List<DraftService> services, List<Hint> hints, String scenarioTitle,
-                            String callerAddress) {}
+                            String callerAddress, String topTypeId) {}
 
     public record DraftPhones(String ani, String provided, String onSite) {}
     public record DraftCaller(String fullName, String status) {}
@@ -178,14 +178,22 @@ public final class ApiModels {
                                  DraftFlags flags, List<String> incidentTypeIds,
                                  List<SurveyAnswer> surveyAnswers,
                                  @Size(max = 1999) String description,
-                                 List<String> extraServiceCodes) {}
+                                 List<String> extraServiceCodes, String topTypeId) {}
 
     public record CreateDraftRequest(@NotNull UUID sessionId) {}
 
     public record IncidentTypeItem(String id, String label, String category,
                                    boolean frequent, boolean significant) {}
+    /** Позиция списка «что случилось?» (КАРТОЧКА 112.docx). */
+    public record TopTypeItem(String id, String label, boolean frequent) {}
+    /** Опросная карта типа верхнего уровня: вопросы ветвятся по ответам (showWhen). */
+    public record SurveyTree(String topTypeId, String label, List<SurveyQuestion> questions, String defaultType) {}
     public record SurveyCard(String id, String incidentTypeId, List<SurveyQuestion> questions) {}
-    public record SurveyQuestion(String id, String text, String kind, List<DictionaryItem> options) {}
+    public record SurveyQuestion(String id, String text, String kind, List<DictionaryItem> options,
+                                 List<Map<String, List<String>>> showWhen, boolean synthetic) {}
+    /** Служба из справочника ПОВ-112 (СЛУЖБЫ 112.docx): вид и территория обслуживания. */
+    public record ServiceItem(String code, String label, String fullName, String kind,
+                              String okrug, String district, String settlement) {}
 
     // ---------------------------------------------------------------- assessment
 

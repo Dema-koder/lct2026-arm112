@@ -63,6 +63,10 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
 
   // оператор 112: главный экран с журналом, входящий вызов, «уточнить адрес», журнал сессии
   assert.match(fill, /Входящий вызов/);
+  assert.match(fill, /cardTypes/);
+  assert.match(fill, /surveyTree/);
+  assert.match(fill, /serviceCatalog/);
+  assert.match(api, /\/references\/card-types/);
   assert.match(fill, /уточнить адрес у заявителя/);
   assert.match(fill, /callerAddress/);
   assert.match(api, /\/journal/);
