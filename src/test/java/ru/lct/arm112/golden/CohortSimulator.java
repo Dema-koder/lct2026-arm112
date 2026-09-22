@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.service.TrainingEngine;
+import ru.lct.arm112.service.analytics.RaschService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -81,6 +82,9 @@ class CohortSimulator {
     @Autowired
     TrainingEngine trainingEngine;
 
+    @Autowired
+    RaschService rasch;
+
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     /** Способность, темп обучения и «почерк» одного синтетического обучающегося. */
@@ -103,6 +107,10 @@ class CohortSimulator {
         String teacher = login("teacher", "teacher");
 
         List<JsonNode> pool = scenarioPool(teacher);
+        // Пул намеренно ограничен: модель Раша требует не меньше 10 наблюдений на сценарий,
+        // а преподаватель и в жизни гоняет группу по ограниченному набору вводных.
+        int poolLimit = Integer.getInteger("cohort.pool", 10);
+        if (pool.size() > poolLimit) pool = pick(pool, poolLimit, new Random(seed));
         assertThat(pool.size()).as("сценариев с улицей, домом и типом").isGreaterThanOrEqualTo(cardsPerSession);
 
         List<Trainee> cohort = new ArrayList<>();
@@ -141,7 +149,118 @@ class CohortSimulator {
                 traineeCount * sessionCount, traineeCount * sessionCount * cardsPerSession,
                 spentMs, (double) spentMs / (traineeCount * sessionCount), name);
 
+        checkRaschRecovery(name, cardRows, cohort);
+
         assertThat(sessionRows).hasSize(traineeCount * sessionCount);
+    }
+
+    /**
+     * Сверка оценки Раша с истинными параметрами, с которыми генерировалась когорта.
+     *
+     * <p>На реальных данных истинной сложности не существует, поэтому проверить восстановление
+     * можно только на синтетике. Ожидается высокая ранговая корреляция, а не совпадение
+     * в логитах: «справился с карточкой» складывается из четырёх независимых испытаний
+     * со своими трудностями, поэтому эффективная сложность — монотонная функция заданной,
+     * но не равная ей.
+     */
+    private void checkRaschRecovery(String name, List<String> cardRows, List<Trainee> cohort) throws IOException {
+        java.util.Map<String, Double> trueDifficulty = new java.util.LinkedHashMap<>();
+        for (String row : cardRows) {
+            String[] parts = row.split(";");
+            trueDifficulty.put(parts[4], Double.parseDouble(parts[5].replace(',', '.')));
+        }
+
+        long startedAt = System.nanoTime();
+        RaschService.Estimate estimate = rasch.estimate();
+        long spentMs = (System.nanoTime() - startedAt) / 1_000_000;
+
+        List<String> rows = new ArrayList<>();
+        List<double[]> pairs = new ArrayList<>();
+        for (RaschService.ScenarioDifficulty s : estimate.scenarios()) {
+            Double truth = trueDifficulty.get(s.scenarioId());
+            if (truth == null) continue;
+            pairs.add(new double[]{truth, s.difficulty()});
+            rows.add(String.join(";", q(s.scenarioId()), num(truth), num(s.difficulty()),
+                    num(s.standardError()), String.valueOf(s.observations()), String.valueOf(s.passed()),
+                    String.valueOf(s.suggested())));
+        }
+        write(Path.of("benchmarks", "cohort-" + name + "-rasch.csv"),
+                "scenario_id;true_difficulty;estimated_logit;standard_error;observations;passed;suggested_1_10",
+                rows);
+
+        // вторая, независимая проверка: восстанавливается ли способность обучающихся.
+        // Истинная берётся усреднённой по занятиям — Раш даёт одно θ на всю историю.
+        java.util.Map<String, Double> trueAbility = new java.util.LinkedHashMap<>();
+        java.util.Map<String, String> loginById = new java.util.LinkedHashMap<>();
+        for (Trainee t : cohort) {
+            double mean = 0;
+            for (int i = 0; i < 3; i++) mean += t.ability() + t.learningRate() * i;
+            trueAbility.put(t.id(), Math.round(mean / 3 * 100) / 100.0);
+            loginById.put(t.id(), t.login());
+        }
+        List<String> abilityRows = new ArrayList<>();
+        List<double[]> abilityPairs = new ArrayList<>();
+        for (RaschService.TraineeAbility a : estimate.trainees()) {
+            Double truth = trueAbility.get(a.traineeId().toString());
+            if (truth == null) continue;
+            abilityPairs.add(new double[]{truth, a.ability()});
+            abilityRows.add(String.join(";", q(loginById.get(a.traineeId().toString())), num(truth),
+                    num(a.ability()), num(a.standardError()),
+                    String.valueOf(a.observations()), String.valueOf(a.passed())));
+        }
+        write(Path.of("benchmarks", "cohort-" + name + "-abilities.csv"),
+                "trainee;true_ability;estimated_logit;standard_error;observations;passed", abilityRows);
+        double rhoAbility = spearman(abilityPairs);
+
+        double rho = spearman(pairs);
+        System.out.printf(Locale.ROOT,
+                "%n=== Раш: восстановление сложности ===%nСценариев в оценке: %d из %d, итераций %d, сошлось %s, %d мс%n"
+                        + "Ранговая корреляция истинной и оценённой сложности: rho = %.3f%n"
+                        + "Обучающихся с оценкой способности: %d, rho по способности = %.3f%n",
+                estimate.scenarios().size(), trueDifficulty.size(), estimate.iterations(),
+                estimate.converged() ? "да" : "нет", spentMs, rho, estimate.trainees().size(), rhoAbility);
+
+        if (pairs.size() >= 5) {
+            assertThat(rho).as("ранговая корреляция истинной и оценённой сложности").isGreaterThan(0.5);
+        }
+        if (abilityPairs.size() >= 5) {
+            // Порог ниже, чем по сложности, и это ожидаемо: модель Раша считает способность
+            // постоянной, а в когорте она растёт от занятия к занятию. Оценённое θ — среднее
+            // по всей истории, поэтому текущую способность оно занижает у тех, кто быстро растёт.
+            assertThat(rhoAbility).as("ранговая корреляция истинной и оценённой способности").isGreaterThan(0.5);
+        }
+    }
+
+    /** Ранговая корреляция Спирмена; связанные ранги усредняются. */
+    private static double spearman(List<double[]> pairs) {
+        if (pairs.size() < 3) return Double.NaN;
+        double[] rx = ranks(pairs.stream().mapToDouble(p -> p[0]).toArray());
+        double[] ry = ranks(pairs.stream().mapToDouble(p -> p[1]).toArray());
+        double mx = java.util.Arrays.stream(rx).average().orElse(0);
+        double my = java.util.Arrays.stream(ry).average().orElse(0);
+        double cov = 0, vx = 0, vy = 0;
+        for (int i = 0; i < rx.length; i++) {
+            cov += (rx[i] - mx) * (ry[i] - my);
+            vx += (rx[i] - mx) * (rx[i] - mx);
+            vy += (ry[i] - my) * (ry[i] - my);
+        }
+        return vx == 0 || vy == 0 ? Double.NaN : cov / Math.sqrt(vx * vy);
+    }
+
+    private static double[] ranks(double[] values) {
+        Integer[] order = new Integer[values.length];
+        for (int i = 0; i < values.length; i++) order[i] = i;
+        java.util.Arrays.sort(order, (a, b) -> Double.compare(values[a], values[b]));
+        double[] result = new double[values.length];
+        int i = 0;
+        while (i < order.length) {
+            int j = i;
+            while (j + 1 < order.length && values[order[j + 1]] == values[order[i]]) j++;
+            double rank = (i + j) / 2.0 + 1;
+            for (int k = i; k <= j; k++) result[order[k]] = rank;
+            i = j + 1;
+        }
+        return result;
     }
 
     // ------------------------------------------------------------------ одно занятие

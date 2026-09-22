@@ -140,6 +140,28 @@ public class AssessmentRepository {
                 rs.getInt("total"), rs.getInt("lessons")), traineeId);
     }
 
+    /** Исходы по карточкам для матрицы «обучающийся × сценарий» (оценка сложности по Рашу). */
+    public List<CardOutcome> findCardOutcomes() {
+        return jdbc.query("""
+                select trainee_id, scenario_id, mode, address, classification, services,
+                       timing, language, actions, communication
+                  from assessment_card where scenario_id is not null
+                """, (rs, row) -> new CardOutcome(
+                rs.getObject("trainee_id", UUID.class), rs.getString("scenario_id"), rs.getString("mode"),
+                value(rs.getBigDecimal("address")), value(rs.getBigDecimal("classification")),
+                value(rs.getBigDecimal("services")), value(rs.getBigDecimal("timing")),
+                value(rs.getBigDecimal("language")), value(rs.getBigDecimal("actions")),
+                value(rs.getBigDecimal("communication"))));
+    }
+
+    public record CardOutcome(UUID traineeId, String scenarioId, String mode,
+                              Double address, Double classification, Double services,
+                              Double timing, Double language, Double actions, Double communication) {}
+
+    private static Double value(BigDecimal value) {
+        return value == null ? null : value.doubleValue();
+    }
+
     public record IssueRow(UUID id, UUID assessmentId, UUID lessonId, UUID traineeId, String mode,
                            UUID cardId, String scenarioId, String code, String severity,
                            String message, String expected, String actual, Instant createdAt) {}
