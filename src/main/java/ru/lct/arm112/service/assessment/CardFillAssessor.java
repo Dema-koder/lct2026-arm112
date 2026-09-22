@@ -28,10 +28,12 @@ public class CardFillAssessor {
 
     private final LanguageChecker language;
     private final ReferenceDataService references;
+    private final StreetDictionary streets;
 
-    public CardFillAssessor(LanguageChecker language, ReferenceDataService references) {
+    public CardFillAssessor(LanguageChecker language, ReferenceDataService references, StreetDictionary streets) {
         this.language = language;
         this.references = references;
+        this.streets = streets;
     }
 
     public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
@@ -60,7 +62,7 @@ public class CardFillAssessor {
                 continue;
             }
 
-            AddressMatcher.Result addr = AddressMatcher.score(draft.address(), scenario.expectedAddress(), draft.id());
+            AddressMatcher.Result addr = AddressMatcher.score(draft.address(), scenario.expectedAddress(), draft.id(), streets);
             address += addr.score();
             issues.addAll(addr.issues());
 

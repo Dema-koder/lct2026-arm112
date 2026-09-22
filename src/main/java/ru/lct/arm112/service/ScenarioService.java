@@ -35,9 +35,11 @@ public class ScenarioService {
     private final ObjectMapper objectMapper;
     private final ReferenceDataService references;
     private final LanguageChecker language;
+    private final AddressReferenceService addresses;
 
     public ScenarioService(ScenarioRepository repository, ObjectMapper objectMapper, ReferenceDataService references,
-                           LanguageChecker language) {
+                           LanguageChecker language, AddressReferenceService addresses) {
+        this.addresses = addresses;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.references = references;
@@ -104,6 +106,8 @@ public class ScenarioService {
             names.add(a.locality());
         }
         language.learnPlaces(names);
+        // тот же список названий — справочник существующих улиц для сверки адреса
+        addresses.learn(names);
     }
 
     private static List<String> toList(JsonNode node) {

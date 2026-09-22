@@ -16,7 +16,12 @@ public final class AddressMatcher {
 
     public record Result(double score, List<AssessmentIssue> issues) {}
 
+    /** Сверка без справочника улиц — старое поведение, только по расстоянию. */
     public static Result score(FormalAddress actual, FormalAddress expected, UUID cardId) {
+        return score(actual, expected, cardId, StreetDictionary.EMPTY);
+    }
+
+    public static Result score(FormalAddress actual, FormalAddress expected, UUID cardId, StreetDictionary streets) {
         List<AssessmentIssue> issues = new ArrayList<>();
         if (expected == null) {
             return new Result(100, issues);
@@ -37,14 +42,24 @@ public final class AddressMatcher {
             } else if (!actStreet.equals(expStreet)) {
                 int distance = TextUtil.levenshtein(actStreet, expStreet);
                 boolean contains = actStreet.contains(expStreet) || expStreet.contains(actStreet);
-                if (distance <= 2 && !contains) {
-                    // почти правильно — это и есть опечатка в названии улицы
+                if (contains) {
+                    // введена часть названия — адрес опознаётся, но записан неполно
+                    score -= 5;
+                } else if (streets.exists(actStreet)) {
+                    // Названа реально существующая улица, но не та. Тяжелее опечатки: расчёт
+                    // уедет по действительному адресу в другом районе, и ошибка не всплывёт
+                    // при проверке. Различить это по расстоянию нельзя — «Белозерская»
+                    // и «Беломорская» отличаются на два символа, как обычная опечатка.
+                    score -= 60;
+                    issues.add(new AssessmentIssue("ADDRESS_STREET_WRONG", "CRITICAL",
+                            "Указана другая существующая улица: расчёт уедет по неверному адресу",
+                            cardId, expected.street(), actual.street()));
+                } else if (distance <= 2) {
+                    // несуществующее название, похожее на эталон — это и есть опечатка
                     score -= 40;
                     issues.add(new AssessmentIssue("ADDRESS_STREET_MISMATCH", "CRITICAL",
                             "Опечатка в названии улицы: службы могут выехать не по тому адресу",
                             cardId, expected.street(), actual.street()));
-                } else if (contains) {
-                    score -= 5;
                 } else {
                     score -= 60;
                     issues.add(new AssessmentIssue("ADDRESS_STREET_WRONG", "CRITICAL",

@@ -4,8 +4,11 @@ import org.junit.jupiter.api.Test;
 import ru.lct.arm112.api.ApiModels.FormalAddress;
 import ru.lct.arm112.service.assessment.AddressMatcher;
 import ru.lct.arm112.service.assessment.LanguageChecker;
+import ru.lct.arm112.service.assessment.StreetDictionary;
+import ru.lct.arm112.service.assessment.TextUtil;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,6 +25,42 @@ class AddressMatcherTest {
                 address("Москва", "Дубининская", "12"), address("Москва", "Дубнинская", "12"), UUID.randomUUID());
         assertThat(result.score()).isLessThan(70);
         assertThat(result.issues()).anyMatch(i -> i.code().equals("ADDRESS_STREET_MISMATCH") && i.severity().equals("CRITICAL"));
+    }
+
+    /**
+     * Ключевое различие, ради которого заведён справочник: «Белозерская» и «Беломорская» —
+     * обе реальные улицы Москвы на расстоянии Левенштейна 2. Без справочника это неотличимо
+     * от опечатки, а последствия разные: расчёт уедет по действительному адресу в другой район.
+     */
+    @Test
+    void existingOtherStreetIsHeavierThanTypo() {
+        StreetDictionary moscow = name -> Set.of("белозерская", "беломорская").contains(name);
+
+        AddressMatcher.Result other = AddressMatcher.score(
+                address("Москва", "Белозерская", "10"), address("Москва", "Беломорская", "10"),
+                UUID.randomUUID(), moscow);
+        assertThat(other.score()).isEqualTo(40);
+        assertThat(other.issues()).anyMatch(i -> i.code().equals("ADDRESS_STREET_WRONG"));
+
+        AddressMatcher.Result typo = AddressMatcher.score(
+                address("Москва", "Беломарская", "10"), address("Москва", "Беломорская", "10"),
+                UUID.randomUUID(), moscow);
+        assertThat(typo.score()).isEqualTo(60);
+        assertThat(typo.issues()).anyMatch(i -> i.code().equals("ADDRESS_STREET_MISMATCH"));
+    }
+
+    /** Без справочника поведение прежнее — обе ситуации считаются опечаткой. */
+    @Test
+    void withoutDictionaryBothLookLikeTypo() {
+        AddressMatcher.Result result = AddressMatcher.score(
+                address("Москва", "Белозерская", "10"), address("Москва", "Беломорская", "10"), UUID.randomUUID());
+        assertThat(result.score()).isEqualTo(60);
+        assertThat(result.issues()).anyMatch(i -> i.code().equals("ADDRESS_STREET_MISMATCH"));
+    }
+
+    @Test
+    void normalizationStripsStreetType() {
+        assertThat(TextUtil.normalize("ул. Берзарина")).isEqualTo("берзарина");
     }
 
     @Test
