@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.UUID;
 import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 
@@ -126,11 +127,23 @@ public class CardActionsAssessor {
                     if (".!?".indexOf(comment.charAt(comment.length() - 1)) < 0) allText.append('.');
                 }
                 boolean mustComment = !entry.action().equals("ACCEPT");
-                if (mustComment && comment.length() < 15) {
-                    c -= 30;
-                    issues.add(new AssessmentIssue("COMMENT_INCOMPLETE", "WARNING",
-                            "Неполный комментарий к статусу «" + entry.action() + "»: нет основания или результата",
-                            card.id(), null, comment));
+                if (mustComment) {
+                    if (comment.length() < MIN_COMMENT) {
+                        c -= 30;
+                        issues.add(new AssessmentIssue("COMMENT_INCOMPLETE", "WARNING",
+                                "Неполный комментарий к статусу «" + entry.action() + "»: нет основания или результата",
+                                card.id(), null, comment));
+                    } else {
+                        // Комментарий достаточной длины ещё не значит содержательный: «передано в работу»
+                        // проходит по длине, но не отвечает на вопросы памятки ДДС — что сделано,
+                        // кому передано и на каком основании.
+                        for (String missing : missingSlots(entry, comment)) {
+                            c -= 15;
+                            issues.add(new AssessmentIssue("COMMENT_INCOMPLETE", "WARNING",
+                                    "Комментарий к статусу «" + entry.action() + "»: " + missing,
+                                    card.id(), null, comment));
+                        }
+                    }
                 }
             }
             comm += TextUtil.clamp(c);
@@ -156,6 +169,35 @@ public class CardActionsAssessor {
                 TextUtil.round(lang), null, null, null, syntaxErrors, issues, recommendations,
                 "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
         return new AssessmentResult(assessment, List.copyOf(breakdown));
+    }
+
+    /** Ниже этой длины комментарий считается отпиской без разбора слотов. */
+    private static final int MIN_COMMENT = 15;
+    /** Что сделано. */
+    private static final Pattern ACTION = Pattern.compile(
+            "(?iu)(передан|направл|выехал|выезжа|прибыл|устранен|ликвидирован|оказан|доставлен|"
+            + "зарегистрирован|отказан|принят|выполнен|проведен|проведён|обнаружен|локализован)");
+    /** Кому или чем: служба, подразделение, силы и средства. */
+    private static final Pattern ADDRESSEE = Pattern.compile(
+            "(?iu)(служб|дежурн|диспетчер|руководител|бригад|расчет|расчёт|наряд|подразделен|"
+            + "отдел|участков|скор|полиц|пожарн|спасател|дпс|ддс|мчс|экипаж)");
+    /** На каком основании — словами; код причины засчитывается отдельно. */
+    private static final Pattern REASON = Pattern.compile(
+            "(?iu)(так как|потому|по причине|в связи|не в компетенц|компетенц|дубл|ошибочн|"
+            + "принадлежност|территор|отсутств|нет сил|нет свободн)");
+    /** Статусы, для которых памятка ДДС требует основание, а не только результат. */
+    private static final Set<String> NEEDS_REASON = Set.of("DECLINE", "REFUSE_WORK");
+
+    /** Какие смысловые слоты в комментарии не заполнены. */
+    private static List<String> missingSlots(CardTimelineEntry entry, String comment) {
+        List<String> missing = new ArrayList<>();
+        if (!ACTION.matcher(comment).find()) missing.add("не сказано, что сделано");
+        if (!ADDRESSEE.matcher(comment).find()) missing.add("не указано, кому передано или какие силы задействованы");
+        if (NEEDS_REASON.contains(entry.action())
+                && entry.reasonCode() == null && !REASON.matcher(comment).find()) {
+            missing.add("не указано основание");
+        }
+        return missing;
     }
 
     /** Строка разбора по карточке ДДС: применимые критерии плюс счётчики замечаний. */

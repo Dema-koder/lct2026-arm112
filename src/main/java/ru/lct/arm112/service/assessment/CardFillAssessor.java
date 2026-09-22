@@ -66,11 +66,17 @@ public class CardFillAssessor {
             address += addr.score();
             issues.addAll(addr.issues());
 
-            double typeScore = jaccard(draft.incidentTypeIds(), scenario.expectedIncidentTypes());
+            TypeMatch match = matchTypes(draft.incidentTypeIds(), scenario.expectedIncidentTypes());
+            double typeScore = match.score();
             if (scenario.expectedIncidentTypes().isEmpty()) typeScore = draft.incidentTypeIds().isEmpty() ? 0 : 100;
             if (typeScore < 100 && !scenario.expectedIncidentTypes().isEmpty()) {
-                issues.add(new AssessmentIssue("INCIDENT_TYPE_MISMATCH", typeScore == 0 ? "CRITICAL" : "WARNING",
-                        typeScore == 0 ? "Тип происшествия определён неверно" : "Тип происшествия определён не полностью",
+                // Severity определяется точным попаданием, а не баллом: тип, угаданный только
+                // категорией, остаётся неверным — по нему поедет другой состав служб.
+                issues.add(new AssessmentIssue("INCIDENT_TYPE_MISMATCH", match.exact() ? "WARNING" : "CRITICAL",
+                        !match.exact() && match.sameCategory()
+                                ? "Тип происшествия определён неверно, хотя категория выбрана правильно"
+                                : match.exact() ? "Тип происшествия определён не полностью"
+                                : "Тип происшествия определён неверно",
                         draft.id(), labels(scenario.expectedIncidentTypes()), labels(draft.incidentTypeIds())));
             }
             type += typeScore;
@@ -171,6 +177,53 @@ public class CardFillAssessor {
             hints.add(new Hint("incidentTypeIds", "Выберите тип происшествия — без него не подберутся службы"));
         }
         return hints;
+    }
+
+    /** Зачёт за ошибку внутри категории классификатора: тип неверен, но направление угадано. */
+    private static final double SAME_CATEGORY_CREDIT = 0.5;
+
+    private record TypeMatch(double score, boolean exact, boolean sameCategory) {}
+
+    /**
+     * Совпадение набора типов с эталоном.
+     *
+     * <p>Жаккар по идентификаторам даёт ноль и за «задымление вместо пожара мусора», и за
+     * «травма вместо пожара», хотя это ошибки разного веса. Здесь числитель считается мягко:
+     * точное совпадение — единица, совпадение только по категории классификатора —
+     * {@value #SAME_CATEGORY_CREDIT}. Знаменатель прежний, поэтому там, где категория
+     * не совпадает, результат в точности равен прежнему Жаккару.
+     */
+    private TypeMatch matchTypes(List<String> actual, List<String> expected) {
+        if (actual.isEmpty() && expected.isEmpty()) return new TypeMatch(100, true, true);
+        Set<String> union = new java.util.LinkedHashSet<>(actual);
+        union.addAll(expected);
+        if (union.isEmpty()) return new TypeMatch(100, true, true);
+
+        Set<String> exact = new HashSet<>(actual);
+        exact.retainAll(expected);
+        double similarity = exact.size();
+
+        List<String> restActual = actual.stream().filter(id -> !exact.contains(id)).toList();
+        List<String> restExpected = new ArrayList<>(expected.stream().filter(id -> !exact.contains(id)).toList());
+        boolean sameCategory = false;
+        for (String a : restActual) {
+            String categoryA = categoryOf(a);
+            if (categoryA == null) continue;
+            for (java.util.Iterator<String> it = restExpected.iterator(); it.hasNext(); ) {
+                if (categoryA.equals(categoryOf(it.next()))) {
+                    similarity += SAME_CATEGORY_CREDIT;
+                    sameCategory = true;
+                    it.remove();
+                    break;
+                }
+            }
+        }
+        return new TypeMatch(100.0 * similarity / union.size(), !exact.isEmpty(), sameCategory);
+    }
+
+    private String categoryOf(String typeId) {
+        ReferenceDataService.IncidentType type = references.incidentType(typeId);
+        return type == null ? null : type.category();
     }
 
     private static double jaccard(List<String> a, List<String> b) {
