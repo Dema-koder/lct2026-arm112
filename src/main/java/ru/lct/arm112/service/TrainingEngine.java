@@ -588,6 +588,21 @@ public class TrainingEngine {
                 now, null, 0));
     }
 
+    /**
+     * Карточка сохранена, оператор освободился.
+     *
+     * <p>В режиме «по одной» таймер прихода вводных выключен ({@link Intensity#nextArrival} отдаёт null),
+     * поэтому очередную вводную нужно завести здесь — иначе после первой сохранённой карточки занятие
+     * с несколькими вводными встаёт навсегда. Симметрично {@code afterCardChange} в режиме ДДС.
+     */
+    void afterDraftSaved(SessionState state, Instant now) {
+        if (state.intensity == Intensity.SEQUENTIAL && state.ringing == null && state.callQueue.isEmpty()
+                && state.drafts.values().stream().noneMatch(d -> "DRAFT".equals(d.state()))) {
+            arriveNextCall(state, now);
+        }
+        presentNextCall(state, now);
+    }
+
     /** Оператор свободен и никто не звонит — первый дозвонившийся вызов из очереди начинает звонить. */
     void presentNextCall(SessionState state, Instant now) {
         if (state.ringing != null || state.callQueue.isEmpty()) return;

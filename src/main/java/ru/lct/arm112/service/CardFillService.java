@@ -168,8 +168,8 @@ public class CardFillService {
                 if (engine.fillFlowFinished(state)) {
                     engine.complete(state);
                 } else {
-                    // оператор освободился — следующий вызов из очереди звонит сразу
-                    engine.presentNextCall(state, Instant.now());
+                    // оператор освободился — следующая вводная приходит и дозванивается сразу
+                    engine.afterDraftSaved(state, Instant.now());
                     engine.persist(state);
                 }
                 return saved;

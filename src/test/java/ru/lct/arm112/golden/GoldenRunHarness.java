@@ -129,7 +129,7 @@ class GoldenRunHarness {
         String traineeId = json(get("/api/v1/auth/me", token)).get("id").asText();
         HttpResponse<String> lesson = post("/api/v1/teacher/lessons",
                 "{\"title\":\"Эталон " + id + "\",\"kind\":\"" + kind + "\",\"mode\":\"" + mode
-                        + "\",\"cardSource\":\"GENERATED\",\"scenarioIds\":[\"" + scenarioId + "\"],\"traineeIds\":[\""
+                        + "\",\"cardSource\":\"GENERATED\",\"scenarioIds\":[" + scenarioIds(run) + "],\"traineeIds\":[\""
                         + traineeId + "\"]}", teacher, null);
         String lessonId = json(lesson).get("id").asText();
         post("/api/v1/teacher/lessons/" + lessonId + "/start", null, teacher, null);
@@ -141,12 +141,18 @@ class GoldenRunHarness {
         long assessMs;
         long t1 = System.nanoTime();
         if ("CARD_FILL".equals(mode)) {
-            String draftId = fill(run, token, sessionId);
+            int cards = 1 + run.path("extraScenarios").size();
+            long lastSave = 0;
+            for (int i = 0; i < cards; i++) {
+                String draftId = fill(run, token, sessionId, i == 0);
+                if (i == cards - 1) workMs = ms(t1);
+                long t2 = System.nanoTime();
+                HttpResponse<String> saved = post("/api/v1/card-drafts/" + draftId + "/save", null, token, key());
+                assertThat(saved.statusCode()).as("save " + id + " #" + (i + 1) + ": " + saved.body()).isEqualTo(200);
+                lastSave = ms(t2);
+            }
             workMs = ms(t1);
-            long t2 = System.nanoTime();
-            HttpResponse<String> saved = post("/api/v1/card-drafts/" + draftId + "/save", null, token, key());
-            assertThat(saved.statusCode()).as("save " + id + ": " + saved.body()).isEqualTo(200);
-            assessMs = ms(t2);
+            assessMs = lastSave;
         } else {
             act(run, token, sessionId);
             workMs = ms(t1);
@@ -168,8 +174,8 @@ class GoldenRunHarness {
     }
 
     /** Режим оператора 112: принять вызов, заполнить поля. Сохранение — снаружи, оно считается отдельно. */
-    private String fill(JsonNode run, String token, String sessionId) throws Exception {
-        if (run.path("missRingingCall").asBoolean(false)) {
+    private String fill(JsonNode run, String token, String sessionId, boolean first) throws Exception {
+        if (first && run.path("missRingingCall").asBoolean(false)) {
             trainingEngine.forceRingTimeout(UUID.fromString(sessionId));
             trainingEngine.forceArrival(UUID.fromString(sessionId));
         }
@@ -182,7 +188,10 @@ class GoldenRunHarness {
             trainingEngine.forceDraftStartedAt(UUID.fromString(draftId), Instant.now().minusSeconds(shift));
         }
 
-        JsonNode f = run.get("fill");
+        // поля берутся по сценарию пришедшей вводной: очередь занятия задаёт порядок, а не список в прогоне
+        String arrived = json(created).get("scenarioId").asText();
+        JsonNode f = run.path("perScenarioFill").path(arrived);
+        if (f.isMissingNode()) f = run.get("fill");
         String body = "{\"address\":" + f.get("address").toString()
                 + ",\"incidentTypeIds\":" + f.get("incidentTypeIds").toString()
                 + ",\"description\":" + objectMapper.writeValueAsString(f.get("description").asText()) + "}";
@@ -334,6 +343,14 @@ class GoldenRunHarness {
     }
 
     // ------------------------------------------------------------------ HTTP
+
+    /** Сценарии занятия: основной плюс дополнительные, если прогон проверяет несколько вводных. */
+    private static String scenarioIds(JsonNode run) {
+        List<String> ids = new ArrayList<>();
+        ids.add("\"" + run.get("scenario").asText() + "\"");
+        run.path("extraScenarios").forEach(node -> ids.add("\"" + node.asText() + "\""));
+        return String.join(",", ids);
+    }
 
     private int results(String runId) {
         return Math.abs(runId.hashCode()) % 10;
