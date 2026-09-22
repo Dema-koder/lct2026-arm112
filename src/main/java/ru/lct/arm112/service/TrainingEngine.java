@@ -26,6 +26,7 @@ import ru.lct.arm112.security.Role;
 import ru.lct.arm112.service.assessment.CardActionsAssessor;
 import ru.lct.arm112.service.assessment.CardFillAssessor;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -565,6 +566,48 @@ public class TrainingEngine {
     void registerDraft(SessionState state, CardDraft draft) {
         state.drafts.put(draft.id(), draft);
         draftIndex.put(draft.id(), state.id);
+        state.trajectories.put(draft.id(), new TrainingStateStore.DraftTrajectory(
+                draft.id(), null, null, 0, 0, 0, draft.startedAt()));
+    }
+
+    /** Пауза, начиная с которой считается, что обучающийся не работал с карточкой. */
+    static final int IDLE_SECONDS = 20;
+
+    /**
+     * Отметить правку черновика: какие поля изменились и когда.
+     *
+     * <p>Без этого время внутри карточки не восстановить: известно только «сохранено минус
+     * начато», то есть что обучающийся не уложился, но не где именно встал.
+     */
+    void trackDraftChange(SessionState state, CardDraft before, CardDraft after, List<String> changedFields) {
+        Instant now = Instant.now();
+        TrainingStateStore.DraftTrajectory t = state.trajectories.get(after.id());
+        if (t == null) {
+            t = new TrainingStateStore.DraftTrajectory(after.id(), null, null, 0, 0, 0, after.startedAt());
+        }
+        Instant firstAddress = t.firstAddressAt();
+        if (firstAddress == null && after.address() != null && !isBlank(after.address().street())) {
+            firstAddress = now;
+        }
+        Instant firstType = t.firstTypeAt();
+        if (firstType == null && !after.incidentTypeIds().isEmpty()) firstType = now;
+
+        int typeChanges = t.typeChanges();
+        if (firstType != null && t.firstTypeAt() != null
+                && !after.incidentTypeIds().equals(before.incidentTypeIds())) {
+            typeChanges++;
+        }
+        long idle = t.idleSeconds();
+        if (t.lastUpdateAt() != null) {
+            long pause = Duration.between(t.lastUpdateAt(), now).toSeconds();
+            if (pause > IDLE_SECONDS) idle += pause;
+        }
+        state.trajectories.put(after.id(), new TrainingStateStore.DraftTrajectory(
+                after.id(), firstAddress, firstType, typeChanges, t.updates() + 1, idle, now));
+
+        events.publish(state.id, "draft.updated", after.id().toString(),
+                Map.of("draftId", after.id().toString(), "state", after.state(),
+                        "changedFields", changedFields));
     }
 
     // ---------------------------------------------------------------- поток вызовов оператора 112
@@ -711,7 +754,8 @@ public class TrainingEngine {
                     state.lessonKind, state.workstationNumber, state.state, state.startedAt, state.completedAt,
                     List.copyOf(state.pending), cardStates(state), callStates(state), List.copyOf(state.drafts.values()),
                     state.ownServiceCode, state.intensity.name(), state.nextArrivalAt, List.copyOf(state.callQueue),
-                    state.ringing, List.copyOf(state.lost), state.missedCalls, List.copyOf(state.background)));
+                    state.ringing, List.copyOf(state.lost), state.missedCalls, List.copyOf(state.background),
+                    List.copyOf(state.trajectories.values())));
         }
     }
 
@@ -1223,6 +1267,9 @@ public class TrainingEngine {
         if (snapshot.lost() != null) state.lost.addAll(snapshot.lost());
         state.missedCalls = snapshot.missedCalls() == null ? 0 : snapshot.missedCalls();
         if (snapshot.background() != null) state.background.addAll(snapshot.background());
+        if (snapshot.trajectories() != null) {
+            snapshot.trajectories().forEach(t -> state.trajectories.put(t.draftId(), t));
+        }
         for (CardState cs : snapshot.cards()) {
             MutableCard card = new MutableCard();
             card.id = cs.id(); card.sessionId = cs.sessionId(); card.scenarioId = cs.scenarioId();
@@ -1276,6 +1323,8 @@ public class TrainingEngine {
         final Map<UUID, MutableCard> cards = new ConcurrentHashMap<>();
         final Map<UUID, MutableCall> calls = new ConcurrentHashMap<>();
         final Map<UUID, CardDraft> drafts = new LinkedHashMap<>();
+        /** Как заполнялся каждый черновик: отметки первого адреса, первого типа, паузы. */
+        final Map<UUID, TrainingStateStore.DraftTrajectory> trajectories = new LinkedHashMap<>();
         volatile String ownServiceCode = OWN_SERVICE_CODE;
         volatile Intensity intensity = Intensity.SEQUENTIAL;
         /** Когда придёт следующая вводная; null — очередь пуста или режим «по одной». */

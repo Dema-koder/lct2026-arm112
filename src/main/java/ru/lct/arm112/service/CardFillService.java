@@ -134,10 +134,29 @@ public class CardFillService {
                     patch.description() != null ? patch.description() : current.description(),
                     services, List.of(), current.scenarioTitle(), current.callerAddress(), topTypeId);
             state.drafts.put(draftId, updated);
-            engine.publishDraft(state, updated, "draft.updated");
+            engine.trackDraftChange(state, current, updated, changedFields(current, updated));
             engine.persist(state);
             return withHints(state, updated);
         }
+    }
+
+    /**
+     * Какие поля карточки изменила эта правка.
+     *
+     * <p>Имя поля уходит в событие {@code draft.updated}: по нему восстанавливается
+     * порядок заполнения — сначала адрес и тип или сразу описание.
+     */
+    private static List<String> changedFields(CardDraft before, CardDraft after) {
+        List<String> changed = new ArrayList<>();
+        if (!java.util.Objects.equals(before.address(), after.address())) changed.add("address");
+        if (!before.incidentTypeIds().equals(after.incidentTypeIds())) changed.add("incidentTypeIds");
+        if (!java.util.Objects.equals(before.description(), after.description())) changed.add("description");
+        if (!java.util.Objects.equals(before.phones(), after.phones())) changed.add("phones");
+        if (!java.util.Objects.equals(before.caller(), after.caller())) changed.add("caller");
+        if (!java.util.Objects.equals(before.flags(), after.flags())) changed.add("flags");
+        if (!before.surveyAnswers().equals(after.surveyAnswers())) changed.add("surveyAnswers");
+        if (!before.services().equals(after.services())) changed.add("services");
+        return changed;
     }
 
     public CardDraft save(UUID draftId, String idempotencyKey, CurrentUser actor) {

@@ -91,7 +91,9 @@ public class TrainingStateStore {
             IncomingCallState ringing,
             List<String> lost,
             Integer missedCalls,
-            List<JournalRow> background
+            List<JournalRow> background,
+            // траектория заполнения (V11): в старых снимках отсутствует — restore() подставляет пустой список
+            List<DraftTrajectory> trajectories
     ) {}
 
     /** Входящий вызов оператору 112: в очереди (ringingSince == null) или звонит. */
@@ -132,6 +134,30 @@ public class TrainingStateStore {
             List<String> expectedServices,
             String expectedDecision,
             String scenarioTitle
+    ) {}
+
+    /**
+     * Как заполнялся черновик, а не только сколько это заняло всего.
+     *
+     * <p>Сессионного времени «сохранено минус начато» мало: оно говорит, что обучающийся
+     * не уложился, но не говорит где именно. Эти отметки отвечают на вопрос «на чём встал» —
+     * на поиске адреса, на выборе типа или на колебаниях между типами.
+     *
+     * @param firstAddressAt когда впервые введена улица
+     * @param firstTypeAt    когда впервые выбран тип происшествия
+     * @param typeChanges    сколько раз набор типов менялся после первого выбора
+     * @param updates        сколько всего правок пришло по черновику
+     * @param idleSeconds    суммарные паузы без правок дольше порога
+     * @param lastUpdateAt   отметка предыдущей правки — по ней считается пауза
+     */
+    public record DraftTrajectory(
+            UUID draftId,
+            Instant firstAddressAt,
+            Instant firstTypeAt,
+            int typeChanges,
+            int updates,
+            long idleSeconds,
+            Instant lastUpdateAt
     ) {}
 
     public record CallState(
