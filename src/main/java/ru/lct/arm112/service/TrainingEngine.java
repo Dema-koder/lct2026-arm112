@@ -781,6 +781,23 @@ public class TrainingEngine {
         detectOverdue();
     }
 
+    /** Для тестов: черновик начат раньше — проверка норматива 3 минуты без реального ожидания. */
+    public void forceDraftStartedAt(UUID draftId, Instant startedAt) {
+        UUID sessionId = draftIndex.get(draftId);
+        if (sessionId == null) return;
+        SessionState state = sessions.get(sessionId);
+        if (state == null) return;
+        synchronized (state) {
+            CardDraft draft = state.drafts.get(draftId);
+            if (draft == null) return;
+            state.drafts.put(draftId, new CardDraft(draft.id(), draft.sessionId(), draft.scenarioId(), draft.number(),
+                    startedAt, draft.savedAt(), draft.deadlineAt(), draft.state(), draft.callerText(), draft.phones(),
+                    draft.caller(), draft.address(), draft.flags(), draft.incidentTypeIds(), draft.surveyAnswers(),
+                    draft.description(), draft.services(), draft.hints(), draft.scenarioTitle(), draft.callerAddress(),
+                    draft.topTypeId()));
+        }
+    }
+
     /** Точка отсчёта 30 секунд — появление карточки в журнале (решение №12). Для тестов. */
     public void forceAcceptanceDeadline(UUID cardId, Instant deadline) {
         UUID sessionId = cardIndex.get(cardId);
