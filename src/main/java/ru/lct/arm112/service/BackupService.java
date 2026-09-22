@@ -46,7 +46,8 @@ public class BackupService {
     private static final Logger log = LoggerFactory.getLogger(BackupService.class);
     /** Порядок вставки: родители раньше детей. app_user.group_id проставляется после training_group. */
     private static final List<String> TABLES = List.of("app_user", "training_group", "app_setting", "scenario",
-            "lesson", "training_session", "assessment", "assessment_issue", "training_state", "realtime_event",
+            "lesson", "training_session", "assessment", "assessment_issue", "assessment_card",
+            "training_state", "realtime_event",
             "material", "material_group", "audit_event");
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
     private static final String MATERIALS_PREFIX = "materials/";

@@ -440,7 +440,7 @@ public class TrainingEngine {
 
     /** Оценка ИИ, запись в таблицу, закрытие сессии и — если все сессии занятия закрыты — занятия. */
     Assessment complete(SessionState state) {
-        Assessment assessment = state.mode.equals("CARD_ACTIONS")
+        ru.lct.arm112.service.assessment.AssessmentResult result = state.mode.equals("CARD_ACTIONS")
                 ? actionsAssessor.assess(state.id, cardStates(state), callStates(state))
                 : fillAssessor.assess(state.id, List.copyOf(state.drafts.values()),
                         scenarios.requireAll(state.drafts.values().stream().map(CardDraft::scenarioId).distinct().toList()),
@@ -450,7 +450,8 @@ public class TrainingEngine {
         Map<UUID, String> cardScenarios = new LinkedHashMap<>();
         state.cards.values().forEach(card -> cardScenarios.put(card.id, card.scenarioId));
         state.drafts.values().forEach(draft -> cardScenarios.put(draft.id(), draft.scenarioId()));
-        assessmentRepo.insert(assessment, state.id, state.lessonId, state.traineeId, cardScenarios);
+        Assessment assessment = result.assessment();
+        assessmentRepo.insert(result, state.id, state.lessonId, state.traineeId, cardScenarios);
         state.state = "COMPLETED";
         state.completedAt = Instant.now();
         sessionRepo.setState(state.id, "COMPLETED", state.completedAt);

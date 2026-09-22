@@ -7,10 +7,13 @@ import ru.lct.arm112.api.ApiModels.CardTimelineEntry;
 import ru.lct.arm112.persistence.TrainingStateStore.CallState;
 import ru.lct.arm112.persistence.TrainingStateStore.CardState;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 
 /**
  * Оценка режима действий с карточкой: время 30, действия 40, коммуникация 15, грамотность 15.
@@ -28,8 +31,9 @@ public class CardActionsAssessor {
         this.language = language;
     }
 
-    public Assessment assess(UUID sessionId, List<CardState> cards, List<CallState> calls) {
+    public AssessmentResult assess(UUID sessionId, List<CardState> cards, List<CallState> calls) {
         List<AssessmentIssue> issues = new ArrayList<>();
+        List<CardBreakdown> breakdown = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
         double timing = 0, actions = 0, comm = 0, lang = 0;
         int syntaxErrors = 0;
@@ -48,7 +52,8 @@ public class CardActionsAssessor {
                 issues.add(new AssessmentIssue("PROCESSING_OVERDUE", "WARNING",
                         "Превышен норматив 3 минуты на отработку карточки", card.id(), 180, null));
             }
-            timing += TextUtil.clamp(t);
+            double cardTiming = TextUtil.clamp(t);
+            timing += cardTiming;
 
             // --- действия: корректность решения и полнота цепочки
             double a = 100;
@@ -99,6 +104,7 @@ public class CardActionsAssessor {
                 actions += 0;
                 comm += 0;
                 lang += 0;
+                breakdown.add(breakdownOf(card, issues, cardTiming, 0.0, 0.0, 0.0));
                 continue;
             }
             actions += TextUtil.clamp(a);
@@ -133,6 +139,8 @@ public class CardActionsAssessor {
             syntaxErrors += lr.errors();
             lang += lr.score();
             lr.findings().forEach(f -> issues.add(new AssessmentIssue("LANGUAGE", "INFO", f, card.id(), null, null)));
+
+            breakdown.add(breakdownOf(card, issues, cardTiming, TextUtil.clamp(a), TextUtil.clamp(c), lr.score()));
         }
 
         timing /= n; actions /= n; comm /= n; lang /= n;
@@ -143,9 +151,27 @@ public class CardActionsAssessor {
         if (comm < 100) recommendations.add("Комментарий к статусу должен содержать основание и результат: кому передано, что сделано.");
         if (syntaxErrors > 0) recommendations.add("Следите за грамотностью комментариев — их читает следующий диспетчер.");
 
-        return new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_ACTIONS",
+        Assessment assessment = new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_ACTIONS",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round(actions), TextUtil.round(comm),
                 TextUtil.round(lang), null, null, null, syntaxErrors, issues, recommendations,
                 "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
+        return new AssessmentResult(assessment, List.copyOf(breakdown));
+    }
+
+    /** Строка разбора по карточке ДДС: применимые критерии плюс счётчики замечаний. */
+    private static CardBreakdown breakdownOf(CardState card, List<AssessmentIssue> issues, double timing,
+                                             double actions, double communication, double language) {
+        List<AssessmentIssue> own = issues.stream().filter(i -> card.id().equals(i.cardId())).toList();
+        Long spent = card.acceptedAt() == null ? null
+                : Duration.between(card.acceptedAt(), lastTouch(card)).toSeconds();
+        return new CardBreakdown(card.id(), card.scenarioId(), null, null, null, timing, language,
+                actions, communication, spent, own.size(),
+                (int) own.stream().filter(i -> "CRITICAL".equals(i.severity())).count());
+    }
+
+    /** Момент последнего действия по карточке — по нему считается, сколько заняла отработка. */
+    private static Instant lastTouch(CardState card) {
+        return card.timeline().stream().map(CardTimelineEntry::occurredAt)
+                .max(Instant::compareTo).orElse(card.acceptedAt());
     }
 }

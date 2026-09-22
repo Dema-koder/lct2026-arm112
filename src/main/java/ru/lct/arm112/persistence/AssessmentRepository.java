@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import ru.lct.arm112.api.ApiModels.Assessment;
 import ru.lct.arm112.api.ApiModels.AssessmentIssue;
 import ru.lct.arm112.api.ApiModels.CriterionScore;
+import ru.lct.arm112.service.assessment.AssessmentResult;
+import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 import ru.lct.arm112.service.assessment.AssessmentWeights;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -59,8 +61,9 @@ public class AssessmentRepository {
      * @param cardScenarios карточка или черновик → сценарий: у замечания есть только cardId,
      *                      а разрез «ошибки по сценариям» нужен в отчёте занятия
      */
-    public void insert(Assessment ai, UUID sessionId, UUID lessonId, UUID traineeId,
+    public void insert(AssessmentResult result, UUID sessionId, UUID lessonId, UUID traineeId,
                        Map<UUID, String> cardScenarios) {
+        Assessment ai = result.assessment();
         long startedAt = System.nanoTime();
         jdbc.update("""
                 insert into assessment (id, session_id, mode, ai_payload, ai_total, timing_score, language_score, syntax_errors)
@@ -81,10 +84,25 @@ public class AssessmentRepository {
                     text(issue.expected()), text(issue.actual())}).toList());
         }
 
+        List<CardBreakdown> cards = result.cards();
+        if (!cards.isEmpty()) {
+            jdbc.batchUpdate("""
+                    insert into assessment_card (id, assessment_id, session_id, lesson_id, trainee_id, mode,
+                                                 card_id, scenario_id, address, classification, services, timing,
+                                                 language, actions, communication, spent_seconds, issues, critical_issues)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, cards.stream().map(card -> new Object[]{
+                    UUID.randomUUID(), ai.id(), sessionId, lessonId, traineeId, ai.mode(),
+                    card.cardId(), card.scenarioId() != null ? card.scenarioId() : cardScenarios.get(card.cardId()),
+                    card.address(), card.classification(), card.services(), card.timing(), card.language(),
+                    card.actions(), card.communication(), card.spentSeconds(),
+                    card.issues(), card.criticalIssues()}).toList());
+        }
+
         long spentMs = (System.nanoTime() - startedAt) / 1_000_000;
         // Одна строка на завершённую сессию: по ней собирается статистика оценки без разбора JSON.
-        log.info("assessment saved: session={} mode={} total={} issues={} critical={} syntaxErrors={} spentMs={}",
-                sessionId, ai.mode(), ai.totalScore(), issues.size(),
+        log.info("assessment saved: session={} mode={} total={} cards={} issues={} critical={} syntaxErrors={} spentMs={}",
+                sessionId, ai.mode(), ai.totalScore(), cards.size(), issues.size(),
                 issues.stream().filter(i -> "CRITICAL".equals(i.severity())).count(),
                 ai.syntaxErrors() == null ? 0 : ai.syntaxErrors(), spentMs);
     }

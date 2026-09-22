@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 
 /**
  * Оценка режима заполнения карточки: адрес 40, тип 20, службы 20, время 15, грамотность 5.
@@ -33,7 +34,7 @@ public class CardFillAssessor {
         this.references = references;
     }
 
-    public Assessment assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
         return assess(sessionId, drafts, scenarios, 0, 0);
     }
 
@@ -41,9 +42,10 @@ public class CardFillAssessor {
      * @param missedCalls сколько раз входящий вызов не был принят за время звонка (заявитель перезвонил)
      * @param lostCalls   сколько вызовов потеряно окончательно (заявитель не дозвонился)
      */
-    public Assessment assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
-                             int missedCalls, int lostCalls) {
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
+                                   int missedCalls, int lostCalls) {
         List<AssessmentIssue> issues = new ArrayList<>();
+        List<CardBreakdown> breakdown = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
         double address = 0, type = 0, services = 0, timing = 0, lang = 0;
         int syntaxErrors = 0;
@@ -51,7 +53,12 @@ public class CardFillAssessor {
 
         for (CardDraft draft : drafts) {
             Scenario scenario = scenarios.stream().filter(s -> s.id().equals(draft.scenarioId())).findFirst().orElse(null);
-            if (scenario == null) { address += 100; type += 100; services += 100; timing += 100; lang += 100; continue; }
+            if (scenario == null) {
+                address += 100; type += 100; services += 100; timing += 100; lang += 100;
+                breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), 100.0, 100.0, 100.0, 100.0, 100.0,
+                        null, null, null, 0, 0));
+                continue;
+            }
 
             AddressMatcher.Result addr = AddressMatcher.score(draft.address(), scenario.expectedAddress(), draft.id());
             address += addr.score();
@@ -80,8 +87,11 @@ public class CardFillAssessor {
             }
             services += serviceScore;
 
+            double cardTiming;
+            Long spentSeconds = null;
             if (draft.savedAt() != null && draft.startedAt() != null) {
                 Duration spent = Duration.between(draft.startedAt(), draft.savedAt());
+                spentSeconds = spent.toSeconds();
                 double t = spent.compareTo(NORM) <= 0 ? 100
                         : TextUtil.clamp(100 - 100.0 * (spent.toSeconds() - NORM.toSeconds()) / NORM.toSeconds());
                 if (t < 100) {
@@ -89,8 +99,10 @@ public class CardFillAssessor {
                             "Карточка заполнялась дольше норматива 3 минуты", draft.id(), 180, spent.toSeconds()));
                 }
                 timing += t;
+                cardTiming = t;
             } else {
                 timing += 0;
+                cardTiming = 0;
                 issues.add(new AssessmentIssue("CARD_NOT_SAVED", "CRITICAL", "Карточка не сохранена", draft.id(), null, null));
             }
 
@@ -98,6 +110,12 @@ public class CardFillAssessor {
             syntaxErrors += lr.errors();
             lang += lr.score();
             lr.findings().forEach(f -> issues.add(new AssessmentIssue("LANGUAGE", "INFO", f, draft.id(), null, null)));
+
+            List<AssessmentIssue> cardIssues = issues.stream()
+                    .filter(i -> draft.id().equals(i.cardId())).toList();
+            breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), addr.score(), typeScore, serviceScore,
+                    cardTiming, lr.score(), null, null, spentSeconds, cardIssues.size(),
+                    (int) cardIssues.stream().filter(i -> "CRITICAL".equals(i.severity())).count()));
         }
 
         address /= n; type /= n; services /= n; timing /= n; lang /= n;
@@ -120,10 +138,11 @@ public class CardFillAssessor {
         if (timing < 100) recommendations.add("Укладывайтесь в 3 минуты на карточку: сначала адрес и тип, подробности — в описание.");
         if (syntaxErrors > 0) recommendations.add("Проверяйте набор: опечатка в названии улицы отправит службы не по тому адресу.");
 
-        return new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
+        Assessment assessment = new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round((type + services) / 2), null,
                 TextUtil.round(lang), TextUtil.round(address), TextUtil.round(type), TextUtil.round(services),
                 syntaxErrors, issues, recommendations, "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
+        return new AssessmentResult(assessment, List.copyOf(breakdown));
     }
 
     /** Подсказки по ходу заполнения — только для занятий вида «тренировка». */
