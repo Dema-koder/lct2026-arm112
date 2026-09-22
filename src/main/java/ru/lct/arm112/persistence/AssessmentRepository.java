@@ -176,6 +176,15 @@ public class AssessmentRepository {
         return result.length() > 2000 ? result.substring(0, 2000) : result;
     }
 
+    /** Оценки, которые преподаватель правил по критериям — вход для калибровки. */
+    public List<AssessmentRow> findTeacherAssessed(String mode) {
+        return jdbc.query("""
+                select * from assessment
+                 where mode = ? and teacher_assessed_at is not null and teacher_payload is not null
+                 order by teacher_assessed_at
+                """, mapper, mode);
+    }
+
     public void setTeacher(UUID id, UUID teacherId, double total, String comment, List<CriterionScore> criteria) {
         jdbc.update("""
                 update assessment set teacher_id = ?, teacher_total = ?, teacher_comment = ?,

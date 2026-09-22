@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.service.TrainingEngine;
+import ru.lct.arm112.service.analytics.CalibrationService;
 import ru.lct.arm112.service.analytics.RaschService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -85,7 +86,25 @@ class CohortSimulator {
     @Autowired
     RaschService rasch;
 
+    @Autowired
+    CalibrationService calibration;
+
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+
+    /**
+     * Политика синтетического преподавателя: во сколько раз он растягивает шкалу ИИ
+     * и на сколько сдвигает. Значения выдуманы — проверяется, восстановит ли их калибровка,
+     * а не то, насколько они похожи на настоящего преподавателя.
+     *
+     * <p>Смысл заложенного: по адресу преподаватель строже (сдвиг вниз), по грамотности
+     * мягче (сдвиг вверх), по остальным критериям близок к ИИ.
+     */
+    private static final java.util.Map<String, double[]> TEACHER_POLICY = java.util.Map.of(
+            "address", new double[]{0.9, -8},
+            "classification", new double[]{1.0, 0},
+            "services", new double[]{1.0, 2},
+            "timing", new double[]{0.8, 5},
+            "language", new double[]{1.1, 6});
 
     /** Способность, темп обучения и «почерк» одного синтетического обучающегося. */
     private record Trainee(String login, String token, String id, double ability, double learningRate) {}
@@ -150,6 +169,7 @@ class CohortSimulator {
                 spentMs, (double) spentMs / (traineeCount * sessionCount), name);
 
         checkRaschRecovery(name, cardRows, cohort);
+        checkCalibrationRecovery(name, teacher, random);
 
         assertThat(sessionRows).hasSize(traineeCount * sessionCount);
     }
@@ -228,6 +248,82 @@ class CohortSimulator {
             // постоянной, а в когорте она растёт от занятия к занятию. Оценённое θ — среднее
             // по всей истории, поэтому текущую способность оно занижает у тех, кто быстро растёт.
             assertThat(rhoAbility).as("ранговая корреляция истинной и оценённой способности").isGreaterThan(0.5);
+        }
+    }
+
+    /**
+     * Синтетический преподаватель правит часть оценок по известной политике,
+     * затем проверяется, восстанавливает ли её калибровка.
+     *
+     * <p><b>Что именно это проверяет.</b> Только конвейер: доходят ли правки до БД,
+     * считаются ли коэффициенты, падает ли отклонение. Сама политика выдумана, поэтому
+     * о справедливости оценки отсюда ничего не следует — реальные преподаватели дадут
+     * другие коэффициенты, и калибровку придётся переобучить.
+     */
+    private void checkCalibrationRecovery(String name, String teacherToken, Random random) throws Exception {
+        List<String> rows = new ArrayList<>();
+        int assessed = 0;
+        for (JsonNode lesson : json(get("/api/v1/teacher/lessons", teacherToken))) {
+            if (!"COMPLETED".equals(lesson.get("state").asText())) continue;
+            JsonNode report = json(get("/api/v1/teacher/lessons/" + lesson.get("id").asText() + "/report", teacherToken));
+            for (JsonNode row : report.get("rows")) {
+                if (!row.hasNonNull("aiTotal")) continue;
+                String sessionId = row.get("sessionId").asText();
+                JsonNode detail = json(get("/api/v1/teacher/sessions/" + sessionId, teacherToken));
+                JsonNode ai = detail.path("assessment");
+                if (ai.isMissingNode() || ai.isNull()) continue;
+
+                List<String> criteria = new ArrayList<>();
+                for (JsonNode c : ai.get("aiCriteria")) {
+                    if (c.get("score").isNull()) continue;
+                    String code = c.get("code").asText();
+                    double[] policy = TEACHER_POLICY.get(code);
+                    if (policy == null) continue;
+                    // преподаватель не линейка: к политике добавляется собственный разброс
+                    double score = policy[0] * c.get("score").asDouble() + policy[1] + random.nextGaussian() * 2.5;
+                    score = Math.max(0, Math.min(100, Math.round(score * 10) / 10.0));
+                    criteria.add("{\"code\":\"" + code + "\",\"score\":" + score + "}");
+                    rows.add(String.join(";", q(code), num(c.get("score").asDouble()), num(score)));
+                }
+                if (criteria.isEmpty()) continue;
+                HttpResponse<String> saved = put("/api/v1/teacher/sessions/" + sessionId + "/assessment",
+                        "{\"criteria\":[" + String.join(",", criteria) + "]}", teacherToken);
+                assertThat(saved.statusCode()).as("оценка преподавателя: " + saved.body()).isEqualTo(200);
+                assessed++;
+            }
+        }
+        write(Path.of("benchmarks", "cohort-" + name + "-teacher-pairs.csv"),
+                "criterion;ai_score;teacher_score", rows);
+
+        long startedAt = System.nanoTime();
+        CalibrationService.Calibration result = calibration.calibrate("CARD_FILL");
+        long spentMs = (System.nanoTime() - startedAt) / 1_000_000;
+
+        List<String> calibrationRows = new ArrayList<>();
+        System.out.printf(Locale.ROOT, "%n=== Калибровка по преподавателю ===%n"
+                + "Оценок с правками: %d, критериев откалибровано: %d, %d мс%n"
+                + "%-16s %8s %8s %10s %10s %10s %8s%n",
+                assessed, result.criteria().size(), spentMs,
+                "критерий", "накл.", "сдвиг", "истин.накл", "истин.сдв", "MAE до→после", "польза");
+        for (CalibrationService.CriterionCalibration c : result.criteria()) {
+            double[] truth = TEACHER_POLICY.get(c.code());
+            System.out.printf(Locale.ROOT, "%-16s %8.2f %8.2f %10.2f %10.2f %5.1f→%-5.1f %7.0f%%%n",
+                    c.code(), c.slope(), c.intercept(), truth[0], truth[1],
+                    c.maeBefore(), c.maeAfter(), c.improvement());
+            calibrationRows.add(String.join(";", q(c.code()), num(c.slope()), num(c.intercept()),
+                    num(truth[0]), num(truth[1]), num(c.maeBefore()), num(c.maeAfter()),
+                    num(c.improvement()), String.valueOf(c.pairs())));
+        }
+        result.skipped().forEach(skip -> System.out.println("  пропущено — " + skip));
+        write(Path.of("benchmarks", "cohort-" + name + "-calibration.csv"),
+                "criterion;slope;intercept;true_slope;true_intercept;mae_before;mae_after;improvement_pct;pairs",
+                calibrationRows);
+
+        if (!result.criteria().isEmpty()) {
+            // Требование METRICS.md §5.7: калибровка обязана снижать отклонение, иначе она бесполезна
+            assertThat(result.criteria()).allSatisfy(c ->
+                    assertThat(c.maeAfter()).as("MAE после калибровки, критерий " + c.code())
+                            .isLessThan(c.maeBefore()));
         }
     }
 
@@ -487,6 +583,10 @@ class CohortSimulator {
 
     private HttpResponse<String> post(String path, String body, String token, String key) throws Exception {
         return send("POST", path, body, token, key);
+    }
+
+    private HttpResponse<String> put(String path, String body, String token) throws Exception {
+        return send("PUT", path, body, token, null);
     }
 
     private HttpResponse<String> patch(String path, String body, String token) throws Exception {

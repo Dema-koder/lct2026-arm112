@@ -49,6 +49,11 @@ public class BackupService {
             "lesson", "training_session", "assessment", "assessment_issue", "assessment_card",
             "training_state", "realtime_event",
             "material", "material_group", "audit_event");
+    /** Список таблиц копии — открыт для проверки соответствия схеме (см. BackupTablesTest). */
+    public static List<String> tables() {
+        return TABLES;
+    }
+
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
     private static final String MATERIALS_PREFIX = "materials/";
     private static final String MATERIALS_MANIFEST = MATERIALS_PREFIX + ".manifest";
