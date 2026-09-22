@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
+import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.service.TrainingEngine;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -66,6 +67,9 @@ class GoldenRunHarness {
 
     @Autowired
     TrainingEngine trainingEngine;
+
+    @Autowired
+    AssessmentRepository assessmentRepository;
 
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     private final AtomicInteger httpCalls = new AtomicInteger();
@@ -157,7 +161,10 @@ class GoldenRunHarness {
         JsonNode assessment = assessmentOf(token, sessionId);
         long fetchMs = ms(t3);
 
-        return compare(run, assessment, ms(runStart), setupMs, workMs, assessMs, fetchMs);
+        // Замечания должны лечь в assessment_issue: на них держатся агрегаты дашбордов.
+        int dbIssues = assessmentRepository.findIssues(UUID.fromString(assessment.get("id").asText())).size();
+
+        return compare(run, assessment, dbIssues, ms(runStart), setupMs, workMs, assessMs, fetchMs);
     }
 
     /** Режим оператора 112: принять вызов, заполнить поля. Сохранение — снаружи, оно считается отдельно. */
@@ -239,7 +246,7 @@ class GoldenRunHarness {
 
     // ------------------------------------------------------------------ сравнение с эталоном
 
-    private GoldenResult compare(JsonNode run, JsonNode assessment, long runMs, long setupMs,
+    private GoldenResult compare(JsonNode run, JsonNode assessment, int dbIssues, long runMs, long setupMs,
                                  long workMs, long assessMs, long fetchMs) {
         JsonNode expected = run.get("expected");
         double expectedTotal = expected.get("total").asDouble();
@@ -271,6 +278,9 @@ class GoldenRunHarness {
         if (maxDelta > 0.5) problems.add("критерии");
         if (!missing.isEmpty()) problems.add("нет замечаний: " + String.join(",", missing));
         if (!unexpected.isEmpty()) problems.add("лишние замечания: " + String.join(",", unexpected));
+        if (dbIssues != assessment.get("issues").size()) {
+            problems.add("в БД " + dbIssues + " замечаний вместо " + assessment.get("issues").size());
+        }
         String status = problems.isEmpty() ? "OK" : "MISMATCH(" + String.join("; ", problems) + ")";
 
         return new GoldenResult(run.get("id").asText(), run.get("name").asText(), run.get("mode").asText(),
@@ -278,7 +288,7 @@ class GoldenRunHarness {
                 expectedTotal, actualTotal, format(expectedCriteria), format(actualCriteria), maxDelta,
                 String.join(",", expectedIssues), String.join(",", actualIssues),
                 String.join(",", missing), String.join(",", unexpected),
-                assessment.path("syntaxErrors").asInt(0), status,
+                assessment.path("syntaxErrors").asInt(0), dbIssues, status,
                 runMs, setupMs, workMs, assessMs, fetchMs, httpCalls.get());
     }
 

@@ -27,7 +27,7 @@ final class GoldenCsv {
             "expected_total", "actual_total", "total_delta",
             "expected_criteria", "actual_criteria", "criteria_delta_max",
             "expected_issues", "actual_issues", "missing_issues", "unexpected_issues",
-            "syntax_errors", "status",
+            "syntax_errors", "db_issues", "status",
             "run_ms", "setup_ms", "work_ms", "assess_ms", "fetch_ms",
             "http_calls", "commit", "recorded_at");
 
@@ -45,7 +45,7 @@ final class GoldenCsv {
                 num(r.expectedTotal()), num(r.actualTotal()), num(r.totalDelta()),
                 q(r.expectedCriteria()), q(r.actualCriteria()), num(r.maxCriterionDelta()),
                 q(r.expectedIssues()), q(r.actualIssues()), q(r.missingIssues()), q(r.unexpectedIssues()),
-                String.valueOf(r.syntaxErrors()), q(r.status()),
+                String.valueOf(r.syntaxErrors()), String.valueOf(r.dbIssues()), q(r.status()),
                 String.valueOf(r.runMs()), String.valueOf(r.setupMs()), String.valueOf(r.workMs()),
                 String.valueOf(r.assessMs()), String.valueOf(r.fetchMs()),
                 String.valueOf(r.httpCalls()), q(commit), q(Instant.now().toString())));

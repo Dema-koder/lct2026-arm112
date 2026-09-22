@@ -445,7 +445,12 @@ public class TrainingEngine {
                 : fillAssessor.assess(state.id, List.copyOf(state.drafts.values()),
                         scenarios.requireAll(state.drafts.values().stream().map(CardDraft::scenarioId).distinct().toList()),
                         state.missedCalls, state.lost.size());
-        assessmentRepo.insert(assessment, state.id);
+        // Привязка карточки (в режиме 112 — черновика) к сценарию: у замечания есть только cardId,
+        // а отчёт занятия показывает ошибки в разрезе сценариев.
+        Map<UUID, String> cardScenarios = new LinkedHashMap<>();
+        state.cards.values().forEach(card -> cardScenarios.put(card.id, card.scenarioId));
+        state.drafts.values().forEach(draft -> cardScenarios.put(draft.id(), draft.scenarioId()));
+        assessmentRepo.insert(assessment, state.id, state.lessonId, state.traineeId, cardScenarios);
         state.state = "COMPLETED";
         state.completedAt = Instant.now();
         sessionRepo.setState(state.id, "COMPLETED", state.completedAt);

@@ -22,6 +22,8 @@ record GoldenResult(
         String missingIssues,
         String unexpectedIssues,
         int syntaxErrors,
+        /** Сколько замечаний реально записано в assessment_issue. */
+        int dbIssues,
         String status,
         long runMs,
         /** Логин, создание и старт занятия. */
