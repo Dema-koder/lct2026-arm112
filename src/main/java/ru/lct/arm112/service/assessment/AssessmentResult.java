@@ -33,6 +33,14 @@ public record AssessmentResult(Assessment assessment, List<CardBreakdown> cards)
             Double communication,
             /** Сколько секунд заняла работа с карточкой; null — если карточку не закрыли. */
             Long spentSeconds,
+            /** Через сколько секунд после начала введена улица; null — если не вводилась. */
+            Long secondsToAddress,
+            /** Через сколько секунд выбран тип происшествия. */
+            Long secondsToType,
+            /** Сколько раз набор типов менялся после первого выбора. */
+            Integer typeChanges,
+            /** Суммарные паузы без правок дольше порога. */
+            Long idleSeconds,
             int issues,
             int criticalIssues) {}
 }

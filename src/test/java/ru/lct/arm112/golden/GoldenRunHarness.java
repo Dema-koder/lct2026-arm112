@@ -224,6 +224,11 @@ class GoldenRunHarness {
                         "{\"action\":\"" + action + "\"}", token, key());
             }
         }
+        int spacing = run.path("timelineSpacingSeconds").asInt(0);
+        if (spacing > 0) {
+            // прогон проставляет статусы за миллисекунды; без этого любая работа выглядит прокликиванием
+            trainingEngine.forceTimelineSpacing(UUID.fromString(cardId), spacing);
+        }
     }
 
     /** Обязательный доклад руководителю: дождаться, пока симулятор телефонии дойдёт до «принято». */

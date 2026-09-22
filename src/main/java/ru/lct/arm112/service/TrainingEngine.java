@@ -442,10 +442,11 @@ public class TrainingEngine {
     /** Оценка ИИ, запись в таблицу, закрытие сессии и — если все сессии занятия закрыты — занятия. */
     Assessment complete(SessionState state) {
         ru.lct.arm112.service.assessment.AssessmentResult result = state.mode.equals("CARD_ACTIONS")
-                ? actionsAssessor.assess(state.id, cardStates(state), callStates(state))
+                ? actionsAssessor.assess(state.id, cardStates(state), callStates(state),
+                        settings.integer(SettingsService.MIN_REACTION_SECONDS, 5))
                 : fillAssessor.assess(state.id, List.copyOf(state.drafts.values()),
                         scenarios.requireAll(state.drafts.values().stream().map(CardDraft::scenarioId).distinct().toList()),
-                        state.missedCalls, state.lost.size());
+                        state.missedCalls, state.lost.size(), Map.copyOf(state.trajectories));
         // Привязка карточки (в режиме 112 — черновика) к сценарию: у замечания есть только cardId,
         // а отчёт занятия показывает ошибки в разрезе сценариев.
         Map<UUID, String> cardScenarios = new LinkedHashMap<>();
@@ -860,6 +861,35 @@ public class TrainingEngine {
                     draft.caller(), draft.address(), draft.flags(), draft.incidentTypeIds(), draft.surveyAnswers(),
                     draft.description(), draft.services(), draft.hints(), draft.scenarioTitle(), draft.callerAddress(),
                     draft.topTypeId()));
+        }
+    }
+
+    /**
+     * Для тестов: развести отметки таймлайна во времени, как при настоящей работе.
+     *
+     * <p>Прогон проставляет статусы за миллисекунды, и без этого любой прогон выглядит
+     * прокликиванием. Сдвигаются и отметки, и момент принятия, иначе поедет норматив отработки.
+     */
+    public void forceTimelineSpacing(UUID cardId, int secondsPerStep) {
+        UUID sessionId = cardIndex.get(cardId);
+        if (sessionId == null) return;
+        SessionState state = sessions.get(sessionId);
+        if (state == null) return;
+        MutableCard card = state.cards.get(cardId);
+        if (card == null) return;
+        synchronized (card) {
+            int count = card.timeline.size();
+            Instant now = Instant.now();
+            List<CardTimelineEntry> spaced = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                CardTimelineEntry e = card.timeline.get(i);
+                Instant at = now.minusSeconds((long) (count - 1 - i) * secondsPerStep);
+                spaced.add(new CardTimelineEntry(e.id(), e.action(), e.resultingStatus(), e.reasonCode(),
+                        e.comment(), at, e.actorLabel(), e.actorRole()));
+                if ("ACCEPT".equals(e.action())) card.acceptedAt = at;
+            }
+            card.timeline.clear();
+            card.timeline.addAll(spaced);
         }
     }
 

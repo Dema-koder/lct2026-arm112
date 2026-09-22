@@ -8,6 +8,7 @@ import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.service.TrainingEngine;
 import ru.lct.arm112.service.analytics.CalibrationService;
 import ru.lct.arm112.service.analytics.RaschService;
+import ru.lct.arm112.service.analytics.TimingAnalyticsService;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -88,6 +89,9 @@ class CohortSimulator {
 
     @Autowired
     CalibrationService calibration;
+
+    @Autowired
+    TimingAnalyticsService timings;
 
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
@@ -170,6 +174,7 @@ class CohortSimulator {
 
         checkRaschRecovery(name, cardRows, cohort);
         checkCalibrationRecovery(name, teacher, random);
+        reportTimings(name, admin, cohort);
 
         assertThat(sessionRows).hasSize(traineeCount * sessionCount);
     }
@@ -325,6 +330,63 @@ class CohortSimulator {
                     assertThat(c.maeAfter()).as("MAE после калибровки, критерий " + c.code())
                             .isLessThan(c.maeBefore()));
         }
+    }
+
+    /**
+     * Временной разбор по группе: проверяется, что траектория доходит до БД
+     * и что перцентили считаются, а на малых группах — не считаются.
+     *
+     * <p><b>Чего эта проверка не показывает.</b> Симулятор шлёт одну правку на карточку,
+     * в которой сразу и адрес, и тип, и описание. Поэтому «время до адреса» совпадает
+     * со временем на карточку, а смены типа и паузы всегда нулевые: их нечему породить.
+     * Проверяется конвейер — правка доходит до БД, запросы считаются, перцентиль
+     * не выдаётся на малой группе, — но не осмысленность самих величин.
+     * Для неё симулятор должен заполнять карточку по шагам с настоящими задержками.
+     */
+    private void reportTimings(String name, String adminToken, List<Trainee> cohort) throws Exception {
+        // всех синтетических обучающихся в одну группу — иначе не с чем сравнивать
+        String teacherId = json(get("/api/v1/auth/me", loginTeacher())).get("id").asText();
+        HttpResponse<String> created = post("/api/v1/admin/groups",
+                "{\"name\":\"Синтетическая когорта " + name + "\",\"teacherId\":\"" + teacherId + "\"}",
+                adminToken, null);
+        assertThat(created.statusCode()).as(created.body()).isEqualTo(201);
+        String groupId = json(created).get("id").asText();
+        for (int i = 0; i < cohort.size(); i++) {
+            Trainee t = cohort.get(i);
+            HttpResponse<String> updated = put("/api/v1/admin/users/" + t.id(),
+                    "{\"displayName\":\"Симуляция " + (i + 1) + "\",\"role\":\"TRAINEE\""
+                            + ",\"workstationNumber\":\"" + (i % 30 + 1) + "\",\"groupId\":\"" + groupId + "\"}",
+                    adminToken);
+            assertThat(updated.statusCode()).as(updated.body()).isEqualTo(200);
+        }
+
+        List<String> rows = new ArrayList<>();
+        Trainee sample = cohort.get(0);
+        List<TimingAnalyticsService.TimingMetric> metrics =
+                timings.forTrainee(UUID.fromString(sample.id()), UUID.fromString(groupId));
+        System.out.printf(Locale.ROOT, "%n=== Время внутри карточки: %s ===%n%-26s %10s %12s %12s%n",
+                sample.login(), "показатель", "у него", "медиана гр.", "перцентиль");
+        for (TimingAnalyticsService.TimingMetric m : metrics) {
+            System.out.printf(Locale.ROOT, "%-26s %10s %12s %12s%n", m.label(),
+                    m.value() == null ? "—" : m.value(),
+                    m.groupMedian() == null ? "—" : m.groupMedian(),
+                    m.percentile() == null ? "мало данных" : m.percentile() + " %");
+            rows.add(String.join(";", q(m.code()), q(m.label()),
+                    m.value() == null ? "" : num(m.value()),
+                    m.groupMedian() == null ? "" : num(m.groupMedian()),
+                    m.percentile() == null ? "" : String.valueOf(m.percentile()),
+                    q(m.hint())));
+        }
+        write(Path.of("benchmarks", "cohort-" + name + "-timings.csv"),
+                "code;label;value;group_median;percentile;hint", rows);
+
+        assertThat(metrics).as("временной разбор не собрался").isNotEmpty();
+        assertThat(metrics).as("траектория не доехала до БД: все показатели пустые")
+                .anySatisfy(m -> assertThat(m.value()).isNotNull());
+    }
+
+    private String loginTeacher() throws Exception {
+        return login("teacher", "teacher");
     }
 
     /** Ранговая корреляция Спирмена; связанные ранги усредняются. */

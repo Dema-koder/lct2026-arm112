@@ -33,6 +33,11 @@ public class CardActionsAssessor {
     }
 
     public AssessmentResult assess(UUID sessionId, List<CardState> cards, List<CallState> calls) {
+        return assess(sessionId, cards, calls, DEFAULT_MIN_REACTION_SECONDS);
+    }
+
+    public AssessmentResult assess(UUID sessionId, List<CardState> cards, List<CallState> calls,
+                                   int minReactionSeconds) {
         List<AssessmentIssue> issues = new ArrayList<>();
         List<CardBreakdown> breakdown = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
@@ -88,6 +93,13 @@ public class CardActionsAssessor {
                         issues.add(new AssessmentIssue("REFUSE_WITHOUT_RESPONSE", "WARNING",
                                 "Отказ от выполнения работ без выезда", card.id(), null, null));
                     }
+                }
+                String clicked = clickThrough(card, minReactionSeconds);
+                if (clicked != null) {
+                    a -= 25;
+                    issues.add(new AssessmentIssue("CLICK_THROUGH", "WARNING",
+                            "Статусы проставлены подряд без паузы (" + clicked + "): карточку не читали",
+                            card.id(), minReactionSeconds, null));
                 }
                 if (card.requirements() != null && card.requirements().outboundCallRequired()
                         && card.status().equals("COMPLETED")) {
@@ -171,6 +183,35 @@ public class CardActionsAssessor {
         return new AssessmentResult(assessment, List.copyOf(breakdown));
     }
 
+    /** Норматив по умолчанию, если настройка не задана. */
+    private static final int DEFAULT_MIN_REACTION_SECONDS = 5;
+    /** Статусы, между которыми обучающийся обязан был что-то прочитать или сделать. */
+    private static final List<String> REACTION_CHAIN =
+            List.of("ACCEPT", "START_RESPONSE", "ARRIVE", "START_WORK", "COMPLETE");
+
+    /**
+     * Прокликивание: два статуса реагирования подряд быстрее норматива.
+     *
+     * <p>Между «начал реагирование» и «прибыл» обучающийся должен был хотя бы прочитать
+     * карточку. Секунда между ними означает, что статусы проставлены не глядя —
+     * работа сымитирована, хотя формально цепочка полная.
+     *
+     * @return подпись перехода, на котором поймано, или null
+     */
+    private static String clickThrough(CardState card, int minReactionSeconds) {
+        List<CardTimelineEntry> chain = card.timeline().stream()
+                .filter(e -> "TRAINEE".equals(e.actorRole()) && REACTION_CHAIN.contains(e.action()))
+                .sorted(java.util.Comparator.comparing(CardTimelineEntry::occurredAt))
+                .toList();
+        for (int i = 1; i < chain.size(); i++) {
+            long gap = Duration.between(chain.get(i - 1).occurredAt(), chain.get(i).occurredAt()).toSeconds();
+            if (gap < minReactionSeconds) {
+                return chain.get(i - 1).action() + " → " + chain.get(i).action();
+            }
+        }
+        return null;
+    }
+
     /** Ниже этой длины комментарий считается отпиской без разбора слотов. */
     private static final int MIN_COMMENT = 15;
     /** Что сделано. */
@@ -207,7 +248,7 @@ public class CardActionsAssessor {
         Long spent = card.acceptedAt() == null ? null
                 : Duration.between(card.acceptedAt(), lastTouch(card)).toSeconds();
         return new CardBreakdown(card.id(), card.scenarioId(), null, null, null, timing, language,
-                actions, communication, spent, own.size(),
+                actions, communication, spent, null, null, null, null, own.size(),
                 (int) own.stream().filter(i -> "CRITICAL".equals(i.severity())).count());
     }
 

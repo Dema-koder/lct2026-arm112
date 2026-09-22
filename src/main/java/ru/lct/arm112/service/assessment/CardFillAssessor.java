@@ -37,7 +37,12 @@ public class CardFillAssessor {
     }
 
     public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
-        return assess(sessionId, drafts, scenarios, 0, 0);
+        return assess(sessionId, drafts, scenarios, 0, 0, java.util.Map.of());
+    }
+
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
+                                   int missedCalls, int lostCalls) {
+        return assess(sessionId, drafts, scenarios, missedCalls, lostCalls, java.util.Map.of());
     }
 
     /**
@@ -45,7 +50,8 @@ public class CardFillAssessor {
      * @param lostCalls   сколько вызовов потеряно окончательно (заявитель не дозвонился)
      */
     public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
-                                   int missedCalls, int lostCalls) {
+                                   int missedCalls, int lostCalls,
+                                   java.util.Map<UUID, ru.lct.arm112.persistence.TrainingStateStore.DraftTrajectory> trajectories) {
         List<AssessmentIssue> issues = new ArrayList<>();
         List<CardBreakdown> breakdown = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
@@ -58,7 +64,7 @@ public class CardFillAssessor {
             if (scenario == null) {
                 address += 100; type += 100; services += 100; timing += 100; lang += 100;
                 breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), 100.0, 100.0, 100.0, 100.0, 100.0,
-                        null, null, null, 0, 0));
+                        null, null, null, null, null, null, null, 0, 0));
                 continue;
             }
 
@@ -121,8 +127,14 @@ public class CardFillAssessor {
 
             List<AssessmentIssue> cardIssues = issues.stream()
                     .filter(i -> draft.id().equals(i.cardId())).toList();
+            var trajectory = trajectories.get(draft.id());
             breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), addr.score(), typeScore, serviceScore,
-                    cardTiming, lr.score(), null, null, spentSeconds, cardIssues.size(),
+                    cardTiming, lr.score(), null, null, spentSeconds,
+                    secondsFrom(draft.startedAt(), trajectory == null ? null : trajectory.firstAddressAt()),
+                    secondsFrom(draft.startedAt(), trajectory == null ? null : trajectory.firstTypeAt()),
+                    trajectory == null ? null : trajectory.typeChanges(),
+                    trajectory == null ? null : trajectory.idleSeconds(),
+                    cardIssues.size(),
                     (int) cardIssues.stream().filter(i -> "CRITICAL".equals(i.severity())).count()));
         }
 
@@ -224,6 +236,10 @@ public class CardFillAssessor {
     private String categoryOf(String typeId) {
         ReferenceDataService.IncidentType type = references.incidentType(typeId);
         return type == null ? null : type.category();
+    }
+
+    private static Long secondsFrom(java.time.Instant from, java.time.Instant to) {
+        return from == null || to == null ? null : Duration.between(from, to).toSeconds();
     }
 
     private static double jaccard(List<String> a, List<String> b) {

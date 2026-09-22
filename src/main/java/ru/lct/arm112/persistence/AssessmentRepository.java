@@ -89,13 +89,16 @@ public class AssessmentRepository {
             jdbc.batchUpdate("""
                     insert into assessment_card (id, assessment_id, session_id, lesson_id, trainee_id, mode,
                                                  card_id, scenario_id, address, classification, services, timing,
-                                                 language, actions, communication, spent_seconds, issues, critical_issues)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                 language, actions, communication, spent_seconds,
+                                                 seconds_to_address, seconds_to_type, type_changes, idle_seconds,
+                                                 issues, critical_issues)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, cards.stream().map(card -> new Object[]{
                     UUID.randomUUID(), ai.id(), sessionId, lessonId, traineeId, ai.mode(),
                     card.cardId(), card.scenarioId() != null ? card.scenarioId() : cardScenarios.get(card.cardId()),
                     card.address(), card.classification(), card.services(), card.timing(), card.language(),
                     card.actions(), card.communication(), card.spentSeconds(),
+                    card.secondsToAddress(), card.secondsToType(), card.typeChanges(), card.idleSeconds(),
                     card.issues(), card.criticalIssues()}).toList());
         }
 

@@ -22,12 +22,14 @@ public class SettingsService {
     public static final String ACKNOWLEDGE_MS = "telephony.acknowledge_ms";
     public static final String ACCEPTANCE_SECONDS = "sla.acceptance_seconds";
     public static final String PROCESSING_SECONDS = "sla.processing_seconds";
+    /** Минимальный правдоподобный интервал между статусами реагирования: меньше — прокликивание. */
+    public static final String MIN_REACTION_SECONDS = "sla.min_reaction_seconds";
     public static final String LOGGING_LEVEL = "logging.level";
 
     /** ТЗ: хранение журналов безопасности не менее 6 месяцев — ниже опустить нельзя. */
     public static final int MIN_AUDIT_RETENTION_DAYS = 180;
     private static final Set<String> KNOWN = Set.of(AUDIT_RETENTION_DAYS, RINGING_MS, CONNECT_MS,
-            ACKNOWLEDGE_MS, ACCEPTANCE_SECONDS, PROCESSING_SECONDS, LOGGING_LEVEL);
+            ACKNOWLEDGE_MS, ACCEPTANCE_SECONDS, PROCESSING_SECONDS, MIN_REACTION_SECONDS, LOGGING_LEVEL);
 
     private final SettingsRepository repository;
     private final LoggingSystem loggingSystem;
