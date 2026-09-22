@@ -108,10 +108,17 @@ public class CardActionsAssessor {
                     .filter(e -> Set.of("DECLINE", "REFUSE_WORK", "COMPLETE", "ACCEPT").contains(e.action()))
                     .toList();
             double c = 100;
+            // Комментарии склеиваются для проверки грамотности; разделитель добавляется только между
+            // непустыми репликами и не дублирует точку в конце — иначе оценщик штрафует за «..»,
+            // которые сам же и вставил (находка эталонного прогона R09/R10).
             StringBuilder allText = new StringBuilder();
             for (CardTimelineEntry entry : commented) {
                 String comment = entry.comment() == null ? "" : entry.comment().trim();
-                allText.append(comment).append(". ");
+                if (!comment.isEmpty()) {
+                    if (!allText.isEmpty()) allText.append(' ');
+                    allText.append(comment);
+                    if (".!?".indexOf(comment.charAt(comment.length() - 1)) < 0) allText.append('.');
+                }
                 boolean mustComment = !entry.action().equals("ACCEPT");
                 if (mustComment && comment.length() < 15) {
                     c -= 30;
