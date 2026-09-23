@@ -48,7 +48,7 @@ public class BackupService {
     private static final List<String> TABLES = List.of("app_user", "training_group", "app_setting", "scenario",
             "lesson", "training_session", "assessment", "assessment_issue", "assessment_card",
             "training_state", "realtime_event",
-            "material", "material_group", "audit_event");
+            "material", "material_group", "audit_event", "job");
     /** Список таблиц копии — открыт для проверки соответствия схеме (см. BackupTablesTest). */
     public static List<String> tables() {
         return TABLES;

@@ -61,7 +61,10 @@ public class AddressReferenceService implements StreetDictionary {
         int before = streets.size();
         for (String name : names) {
             String normalized = TextUtil.normalize(name);
-            if (normalized.length() >= 3) streets.add(normalized);
+            // Порога по длине нет: название, встречающееся в библиотеке сценариев,
+            // по определению существует. В билетах есть короткие обозначения
+            // вроде «МО» и «СК», и отбрасывать их значит отвергать верный адрес.
+            if (!normalized.isBlank()) streets.add(normalized);
         }
         if (streets.size() > before) {
             log.info("Справочник улиц: {} названий (добавлено {})", streets.size(), streets.size() - before);

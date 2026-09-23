@@ -62,6 +62,9 @@ public class ScenarioValidator {
     private static final int MIN_CALLER_TEXT = 20;
     /** Подпись короче этого в тексте — совпадение с обычной речью, а не утечка. */
     private static final int MIN_LEAKED_LABEL = 8;
+    /** Слова, по которым видно, что происшествие в жилом доме. */
+    private static final List<String> RESIDENTIAL_MARKERS = List.of(
+            "подъезд", "этаж", "квартир", "лифт", "мусоропровод", "балкон", "лестничн", "домофон");
 
     private final AddressReferenceService addresses;
     private final ReferenceDataService references;
@@ -102,6 +105,7 @@ public class ScenarioValidator {
         checkTypes(scenario, fatal, warnings);
         checkServices(scenario, warnings);
         checkLeak(scenario, fatal);
+        checkContext(scenario, warnings);
         checkDuplicate(scenario, warnings);
 
         boolean valid = fatal.isEmpty();
@@ -232,6 +236,35 @@ public class ScenarioValidator {
             if (label.length() >= MIN_LEAKED_LABEL && normalizedText.contains(label)) {
                 fatal.add(new Violation("TYPE_LEAKED",
                         "Подпись типа «" + type.label() + "» встречается в тексте заявителя", "callerText"));
+                return;
+            }
+        }
+    }
+
+    /**
+     * Обстановка в тексте против вида адреса.
+     *
+     * <p>Слабое место перестановочного генератора: ситуация берётся из одного билета,
+     * адрес из другого, и получается «горит на седьмом этаже» по адресу железнодорожного
+     * переезда. Структурно всё верно — улица настоящая, тип свой, службы по ЕКП, — и
+     * остальные проверки такое пропускают.
+     *
+     * <p>Полноценно это требует понимания текста. Здесь ловится очевидное: заявитель
+     * говорит о жилом доме (подъезд, этаж, квартира, лифт), а в адресе нет номера дома,
+     * то есть это перегон, трасса или ориентир. Замечание, а не отказ: бывают адреса
+     * без номера и в жилой застройке.
+     */
+    private void checkContext(ScenarioUpsert s, List<Violation> warnings) {
+        if (isBlank(s.callerText())) return;
+        FormalAddress address = s.expectedAddress();
+        if (address == null || !isBlank(address.house())) return;
+
+        String text = s.callerText().toLowerCase(Locale.ROOT).replace('ё', 'е');
+        for (String marker : RESIDENTIAL_MARKERS) {
+            if (text.contains(marker)) {
+                warnings.add(new Violation("CONTEXT_MISMATCH",
+                        "Заявитель говорит о жилом доме («" + marker + "»), а в адресе нет номера дома",
+                        "callerText"));
                 return;
             }
         }
