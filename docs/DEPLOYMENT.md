@@ -1,6 +1,7 @@
 # Автоматическая выкладка
 
-Production доступен по адресу `http://103.112.71.71`. Swagger UI после выкладки: `http://103.112.71.71/swagger-ui.html`.
+Production доступен по адресу `http://103.112.71.71`. Swagger UI и динамический OpenAPI в production отключены;
+зафиксированный контракт доступен в репозитории, а для ручной проверки используйте локальный Swagger.
 
 Workflow [`.github/workflows/ci-cd.yml`](../.github/workflows/ci-cd.yml) запускается:
 
@@ -24,6 +25,9 @@ Workflow [`.github/workflows/ci-cd.yml`](../.github/workflows/ci-cd.yml) зап�
 - `deploy/nginx.conf` и `deploy/deploy.sh` — reverse proxy и сценарий выкладки.
 
 Данные PostgreSQL и загруженные материалы находятся в Docker volumes и не удаляются при обычной выкладке.
+Резервные копии дополнительно пишутся в `${ARM112_OFFSITE_BACKUP_DIR:-/opt/arm112/offsite-backups}`.
+Для защиты от потери VPS этот путь должен быть точкой монтирования отдельного диска или NFS,
+а не обычным каталогом того же сервера.
 
 ## Проверка и диагностика
 

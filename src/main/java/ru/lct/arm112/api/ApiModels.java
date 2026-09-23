@@ -22,7 +22,10 @@ public final class ApiModels {
     public record LoginRequest(@NotBlank @Size(max = 100) String username,
                                @NotBlank @Size(max = 200) String password) {}
 
-    public record AuthResponse(String accessToken, Instant expiresAt, User user) {}
+    public record AuthResponse(String accessToken, Instant expiresAt, User user,
+                               String refreshToken, Instant refreshExpiresAt) {}
+    public record RefreshRequest(@NotBlank String refreshToken) {}
+    public record LogoutRequest(@NotBlank String refreshToken) {}
     public record User(UUID id, String displayName, String role, String login,
                        String workstationNumber, UUID groupId) {}
     public record PasswordChangeRequest(@NotBlank String current,

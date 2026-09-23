@@ -161,7 +161,7 @@ public class CardFillService {
 
     public CardDraft save(UUID draftId, String idempotencyKey, CurrentUser actor) {
         SessionState state = engine.sessionOfDraft(draftId, actor);
-        return engine.idempotent(state, "save-draft:" + draftId, idempotencyKey, "SAVE", () -> {
+        return engine.idempotent(state, "save-draft:" + draftId, idempotencyKey, "SAVE", CardDraft.class, () -> {
             synchronized (state) {
                 requireActive(state);
                 CardDraft current = state.drafts.get(draftId);

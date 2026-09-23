@@ -1,16 +1,21 @@
 package ru.lct.arm112.persistence;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.lct.arm112.api.ApiModels.*;
+import ru.lct.arm112.api.ApiException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Снимок состояния одной персональной сессии: карточки, звонки, черновики и очередь сценариев.
@@ -20,6 +25,7 @@ import java.util.UUID;
 public class TrainingStateStore {
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
+    private final Map<UUID, Long> revisions = new ConcurrentHashMap<>();
 
     public TrainingStateStore(JdbcTemplate jdbc, ObjectMapper objectMapper) {
         this.jdbc = jdbc;
@@ -28,8 +34,11 @@ public class TrainingStateStore {
 
     public Optional<TrainingSnapshot> load(UUID sessionId) {
         return jdbc.query(
-                        "select payload from training_state where state_key = ?",
-                        (resultSet, rowNumber) -> decode(resultSet.getString("payload")),
+                        "select payload, revision from training_state where state_key = ?",
+                        (resultSet, rowNumber) -> {
+                            revisions.put(sessionId, resultSet.getLong("revision"));
+                            return decode(resultSet.getString("payload"));
+                        },
                         sessionId.toString())
                 .stream()
                 .findFirst();
@@ -38,19 +47,44 @@ public class TrainingStateStore {
     @Transactional
     public synchronized void save(UUID sessionId, TrainingSnapshot snapshot) {
         String payload = encode(snapshot);
+        Long expected = revisions.get(sessionId);
+        if (expected == null) {
+            try {
+                jdbc.update("insert into training_state (state_key, payload, revision) values (?, ?, 1)",
+                        sessionId.toString(), payload);
+                revisions.put(sessionId, 1L);
+                return;
+            } catch (DuplicateKeyException exception) {
+                throw conflict(sessionId, null);
+            }
+        }
         int updated = jdbc.update("""
                 update training_state
                    set payload = ?, revision = revision + 1, updated_at = current_timestamp
-                 where state_key = ?
-                """, payload, sessionId.toString());
+                 where state_key = ? and revision = ?
+                """, payload, sessionId.toString(), expected);
         if (updated == 0) {
-            jdbc.update("insert into training_state (state_key, payload) values (?, ?)",
-                    sessionId.toString(), payload);
+            throw conflict(sessionId, expected);
         }
+        revisions.put(sessionId, expected + 1);
     }
 
     public void delete(UUID sessionId) {
         jdbc.update("delete from training_state where state_key = ?", sessionId.toString());
+        revisions.remove(sessionId);
+    }
+
+    public void resetRevisionTracking() {
+        revisions.clear();
+    }
+
+    private ApiException conflict(UUID sessionId, Long expected) {
+        Long actual = jdbc.query("select revision from training_state where state_key = ?",
+                resultSet -> resultSet.next() ? resultSet.getLong(1) : null, sessionId.toString());
+        return new ApiException(HttpStatus.CONFLICT, "STATE_CONFLICT",
+                "Состояние занятия было изменено другим экземпляром приложения",
+                List.of(), Map.of("sessionId", sessionId.toString(), "expectedRevision",
+                        expected == null ? 0 : expected, "actualRevision", actual == null ? 0 : actual));
     }
 
     private String encode(TrainingSnapshot snapshot) {
