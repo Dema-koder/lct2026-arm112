@@ -68,6 +68,14 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>3.1.1</version>
         </dependency>
+        <!-- Проверка грамотности: локальная библиотека, работает без интернета.
+             Русская модель тянет свои словари, поэтому инстанция создаётся одна на приложение. -->
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-ru</artifactId>
+            <version>6.5</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
