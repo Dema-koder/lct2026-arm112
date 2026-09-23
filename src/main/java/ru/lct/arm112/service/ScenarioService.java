@@ -56,7 +56,23 @@ public class ScenarioService {
             learnPlaces();
             return;
         }
-        try (InputStream stream = new ClassPathResource("seed/scenarios.json").getInputStream()) {
+        int total = load("seed/scenarios.json") + load("seed/scenarios-generated.json");
+        log.info("Загружено сценариев в библиотеку: {}", total);
+        learnPlaces();
+    }
+
+    /**
+     * Загрузка набора сценариев из ресурса.
+     *
+     * <p>Наборов два: билеты заказчика и банк, сгенерированный заранее вне контура.
+     * Второй поставляется неподтверждённым — заказчик требовал, чтобы сгенерированное
+     * всегда проходило через преподавателя (q-and-a.md §3). Отсутствие файла не ошибка:
+     * банк необязателен, приложение работает и на одних билетах.
+     */
+    private int load(String resource) {
+        ClassPathResource file = new ClassPathResource(resource);
+        if (!file.exists()) return 0;
+        try (InputStream stream = file.getInputStream()) {
             JsonNode root = objectMapper.readTree(stream);
             int count = 0;
             for (JsonNode node : root) {
@@ -74,11 +90,10 @@ public class ScenarioService {
                 repository.insert(scenario);
                 count++;
             }
-            log.info("Загружено {} сценариев из билетов", count);
+            return count;
         } catch (IOException exception) {
-            throw new IllegalStateException("Не удалось загрузить seed/scenarios.json", exception);
+            throw new IllegalStateException("Не удалось загрузить " + resource, exception);
         }
-        learnPlaces();
     }
 
     /** Сценарии, засеянные до появления названий (V7): проставить название по умолчанию один раз. */

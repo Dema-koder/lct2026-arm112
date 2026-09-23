@@ -65,6 +65,10 @@ public class IncidentTypeClassifier {
     private static final String PHRASE_PREFIX = "~";
     /** Короче этого слова из подписи типа в признаки не берутся. */
     private static final int MIN_LABEL_FEATURE = 5;
+    /** Сколько букв основы должно совпасть минимально. */
+    private static final int MIN_STEM = 4;
+    /** Сколько букв в конце позволено не совпадать: русское окончание. */
+    private static final int MAX_ENDING = 3;
     /**
      * Одно совпавшее слово — случайность; для любого вывода нужно хотя бы два.
      *
@@ -268,8 +272,13 @@ public class IncidentTypeClassifier {
                 // с начала слова: иначе «101» находится в номере дома, а «дтп» — в середине.
                 if (word.equals(feature) || word.startsWith(feature)) return word;
             } else {
-                int prefix = Math.min(5, Math.min(word.length(), feature.length()));
-                if (word.regionMatches(0, feature, 0, prefix)) return word;
+                // Общая основа должна покрывать почти всё слово, а не первые пять букв.
+                // Пять букв делят «постройка» и «пострадавших» — а «пострадавших» есть
+                // почти в каждой вводной, и признак начинал совпадать со всем подряд.
+                // Допускаются расхождения только в окончании.
+                int shortest = Math.min(word.length(), feature.length());
+                int required = Math.max(MIN_STEM, shortest - MAX_ENDING);
+                if (shortest >= required && word.regionMatches(0, feature, 0, required)) return word;
             }
         }
         return null;

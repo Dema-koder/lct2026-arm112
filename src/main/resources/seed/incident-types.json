@@ -1,835 +1,840 @@
 [
- {
-  "id": "fire.garbage",
-  "label": "Пожар: мусор",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "пожар",
-   "101",
-   "горит",
-   "возгорание",
-   "контейнер"
-  ],
-  "classifierNumber": "1010101",
-  "classifierType": "пожар: мусор",
-  "surveyCardId": "fire.garbage"
- },
- {
-  "id": "fire.apartment",
-  "label": "Пожар: квартира",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "пожар",
-   "101",
-   "горит",
-   "квартира"
-  ],
-  "classifierNumber": "1050101",
-  "classifierType": "пожар: квартира",
-  "surveyCardId": "fire.apartment"
- },
- {
-  "id": "fire.building",
-  "label": "Пожар: здание",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "пожар",
-   "101",
-   "здание"
-  ],
-  "classifierNumber": "1060301",
-  "classifierType": "пожар: административное здание",
-  "surveyCardId": "fire.building"
- },
- {
-  "id": "fire.smoke",
-  "label": "Задымление в жилом доме",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "дым",
-   "задымление",
-   "гарь",
-   "101",
-   "мусоропровод"
-  ],
-  "classifierNumber": "1050102",
-  "classifierType": "задымление: квартира",
-  "surveyCardId": "fire.smoke"
- },
- {
-  "id": "fire.vehicle",
-  "label": "Пожар: транспортное средство",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "пожар",
-   "машина",
-   "автомобиль",
-   "101"
-  ],
-  "classifierNumber": "1020201",
-  "classifierType": "пожар: машина",
-  "surveyCardId": "fire.vehicle"
- },
- {
-  "id": "fire.grass",
-  "label": "Пожар: трава, пух",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "трава",
-   "пух",
-   "пожар"
-  ],
-  "classifierNumber": "1010201",
-  "classifierType": "пожар: трава",
-  "surveyCardId": "fire.grass"
- },
- {
-  "id": "fire.alarm",
-  "label": "Сработка пожарной сигнализации",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "сигнализация",
-   "сработка"
-  ],
-  "classifierNumber": "1030300",
-  "classifierType": "пожарная сигнализация (метро)",
-  "surveyCardId": "fire.alarm"
- },
- {
-  "id": "dtp.injured",
-  "label": "ДТП с пострадавшими",
-  "category": "POLICE",
-  "frequent": true,
-  "significant": true,
-  "synonyms": [
-   "дтп",
-   "столкнов",
-   "сбил",
-   "наезд",
-   "врезал"
-  ],
-  "classifierNumber": "2020000",
-  "classifierType": "ДТП с пострадавшими",
-  "surveyCardId": "dtp.injured"
- },
- {
-  "id": "dtp.no_injured",
-  "label": "ДТП без пострадавших",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "дтп без",
-   "стукнул",
-   "царапин"
-  ],
-  "classifierNumber": "2010000",
-  "classifierType": "ДТП без пострадавших",
-  "surveyCardId": "dtp.no_injured"
- },
- {
-  "id": "dtp.water",
-  "label": "Падение транспорта в воду",
-  "category": "RESCUE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "вода",
-   "утонул",
-   "машина в воде",
-   "падение"
-  ],
-  "classifierNumber": "2021400",
-  "classifierType": "Падение автомобиля в воду",
-  "surveyCardId": "dtp.water"
- },
- {
-  "id": "explosion",
-  "label": "Взрыв",
-  "category": "FIRE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "взрыв",
-   "хлопок",
-   "101"
-  ],
-  "classifierNumber": "3010100",
-  "classifierType": "Взрыв жилое здание",
-  "surveyCardId": "explosion"
- },
- {
-  "id": "explosion.threat",
-  "label": "Угроза взрыва",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "угроза",
-   "взрыв",
-   "заминирован",
-   "бомба"
-  ],
-  "classifierNumber": "4160000",
-  "classifierType": "Угроза взрыва в общественном месте",
-  "surveyCardId": "explosion.threat"
- },
- {
-  "id": "gas.smell",
-  "label": "Запах газа в помещении",
-  "category": "GAS",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "газ",
-   "запах",
-   "104"
-  ],
-  "classifierNumber": "13020100",
-  "classifierType": "Запах бытового газа в кухне",
-  "surveyCardId": "gas.smell"
- },
- {
-  "id": "fight",
-  "label": "Драка",
-  "category": "POLICE",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "драка",
-   "дерутся",
-   "избива",
-   "избие",
-   "бьют"
-  ],
-  "classifierNumber": "15060100",
-  "classifierType": "Драка в квартире",
-  "surveyCardId": "fight"
- },
- {
-  "id": "crime.robbery",
-  "label": "Грабёж",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "грабёж",
-   "грабеж",
-   "ограбили",
-   "украли",
-   "похитили",
-   "затащили",
-   "угнали",
-   "102"
-  ],
-  "classifierNumber": "15050600",
-  "classifierType": "Грабеж",
-  "surveyCardId": "crime.robbery"
- },
- {
-  "id": "crime.hooligan",
-  "label": "Хулиганство, нарушение тишины",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "хулиган",
-   "102",
-   "нарушение порядка",
-   "шум",
-   "музыка",
-   "поругался",
-   "скандал",
-   "дебошир"
-  ],
-  "classifierNumber": "15220000",
-  "classifierType": "Мелкое хулиганство",
-  "surveyCardId": "crime.hooligan"
- },
- {
-  "id": "medical.trauma",
-  "label": "Травма",
-  "category": "MEDICAL",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "травма",
-   "103",
-   "перелом",
-   "ушиб",
-   "отек",
-   "отёк",
-   "в крови",
-   "кровотечение",
-   "порез",
-   "упал с"
-  ],
-  "classifierNumber": "22530000",
-  "classifierType": "Травма",
-  "surveyCardId": "medical.trauma"
- },
- {
-  "id": "medical.illness",
-  "label": "Внезапное заболевание",
-  "category": "MEDICAL",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "плохо",
-   "сердце",
-   "103",
-   "без сознания",
-   "потеря сознания",
-   "скорая",
-   "заболевание",
-   "лекарств",
-   "головн",
-   "задыхается",
-   "астма",
-   "температур",
-   "давление",
-   "рожает",
-   "а/д",
-   "д/р"
-  ],
-  "classifierNumber": "22370000",
-  "classifierType": "Плохо с сердцем",
-  "surveyCardId": "medical.illness"
- },
- {
-  "id": "medical.suicide",
-  "label": "Попытка суицида",
-  "category": "MEDICAL",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "суицид",
-   "самоубий",
-   "хочет прыгнуть",
-   "повесил"
-  ],
-  "classifierNumber": "17100800",
-  "classifierType": "Попытка суицида",
-  "surveyCardId": "medical.suicide"
- },
- {
-  "id": "person.danger",
-  "label": "Человек в опасности",
-  "category": "RESCUE",
-  "frequent": true,
-  "significant": true,
-  "synonyms": [
-   "в опасности",
-   "спасение",
-   "застрял",
-   "открыть дверь",
-   "не подает признаков",
-   "не подаёт признаков",
-   "лежит человек",
-   "лежит мужчина",
-   "лежит женщина",
-   "инвалид"
-  ],
-  "classifierNumber": "17010100",
-  "classifierType": "Лежит человек",
-  "surveyCardId": "person.danger"
- },
- {
-  "id": "person.missing",
-  "label": "Пропал человек",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "пропал",
-   "потерялся",
-   "потерял",
-   "заблудил",
-   "ушел из дома",
-   "ушёл из дома",
-   "потерей памяти",
-   "не вернул",
-   "102"
-  ],
-  "classifierNumber": "17020203",
-  "classifierType": "Пропал человек",
-  "surveyCardId": "person.missing"
- },
- {
-  "id": "person.body",
-  "label": "Обнаружен труп",
-  "category": "POLICE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "труп",
-   "мертв",
-   "мёртв",
-   "без признаков жизни",
-   "тело"
-  ],
-  "classifierNumber": "19020100",
-  "classifierType": "Труп на улице ( в общественном месте)",
-  "surveyCardId": "person.body"
- },
- {
-  "id": "water.rescue",
-  "label": "Происшествие на воде",
-  "category": "RESCUE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "тонет",
-   "утопающий",
-   "спасение на воде",
-   "льдин",
-   "плывут",
-   "провалился под лед",
-   "провалился под лёд",
-   "на воде"
-  ],
-  "classifierNumber": "17070200",
-  "classifierType": "Тонет человек",
-  "surveyCardId": "water.rescue"
- },
- {
-  "id": "utility.water",
-  "label": "Прорыв воды, залив",
-  "category": "UTILITY",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "вода",
-   "залив",
-   "прорыв",
-   "течь",
-   "жкх"
-  ],
-  "classifierNumber": "14020200",
-  "classifierType": "Прорыв воды в теплосети",
-  "surveyCardId": "utility.water"
- },
- {
-  "id": "utility.elevator",
-  "label": "Застревание в лифте",
-  "category": "UTILITY",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "лифт",
-   "застрял",
-   "мослифт"
-  ],
-  "classifierNumber": "14100100",
-  "classifierType": "Застревание в лифте",
-  "surveyCardId": "utility.elevator"
- },
- {
-  "id": "utility.power",
-  "label": "Отключение электроэнергии",
-  "category": "UTILITY",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "свет",
-   "электричество",
-   "отключение"
-  ],
-  "classifierNumber": "14010200",
-  "classifierType": "Отключение электроэнергии",
-  "surveyCardId": "utility.power"
- },
- {
-  "id": "tree.fallen",
-  "label": "Поваленное дерево",
-  "category": "UTILITY",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "дерево",
-   "бревно",
-   "ветка",
-   "упало на"
-  ],
-  "classifierNumber": "14080101",
-  "classifierType": "Дерево упало на электрические провода",
-  "surveyCardId": "tree.fallen"
- },
- {
-  "id": "manhole.open",
-  "label": "Открытый люк",
-  "category": "UTILITY",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "люк",
-   "колодец",
-   "колодца"
-  ],
-  "classifierNumber": "14070301",
-  "classifierType": "Люк открыт (крышка рядом, крышка сдвинута, повреждена)",
-  "surveyCardId": "manhole.open"
- },
- {
-  "id": "collapse.threat",
-  "label": "Угроза обрушения",
-  "category": "RESCUE",
-  "frequent": false,
-  "significant": true,
-  "synonyms": [
-   "обрушение",
-   "трещина",
-   "101"
-  ],
-  "classifierNumber": "6060200",
-  "classifierType": "Дом многоквартирный угроза обрушения",
-  "surveyCardId": "collapse.threat"
- },
- {
-  "id": "animal",
-  "label": "Животные",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": [
-   "собака",
-   "животное",
-   "змея",
-   "кошка"
-  ],
-  "classifierNumber": "21010100",
-  "classifierType": "Агрессивное животное",
-  "surveyCardId": "animal"
- },
- {
-  "id": "wrong_number",
-  "label": "Ошибочно набран номер",
-  "category": "OTHER",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "ошибочно",
-   "ошибка"
-  ],
-  "classifierNumber": null,
-  "classifierType": null,
-  "surveyCardId": "wrong_number"
- },
- {
-  "id": "cancel",
-  "label": "Отмена вызова",
-  "category": "OTHER",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "отмена"
-  ],
-  "classifierNumber": null,
-  "classifierType": null,
-  "surveyCardId": "cancel"
- },
- {
-  "id": "test_call",
-  "label": "Тестовый вызов",
-  "category": "OTHER",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "тест"
-  ],
-  "classifierNumber": null,
-  "classifierType": null,
-  "surveyCardId": "test_call"
- },
- {
-  "id": "consult",
-  "label": "Консультация",
-  "category": "OTHER",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "консультация",
-   "справка"
-  ],
-  "classifierNumber": null,
-  "classifierType": null,
-  "surveyCardId": "consult"
- },
- {
-  "id": "foreign",
-  "label": "Вызов на иностранном языке",
-  "category": "OTHER",
-  "frequent": true,
-  "significant": false,
-  "synonyms": [
-   "иностранный",
-   "язык",
-   "english"
-  ],
-  "classifierNumber": null,
-  "classifierType": null,
-  "surveyCardId": "foreign"
- },
- {
-  "id": "top.accident_utility",
-  "label": "Аварии и происшествия в городском хозяйстве",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.accident_transport",
-  "label": "Аварии и происшествия на транспортных объектах",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.accident_hydro",
-  "label": "Аварии на гидротехнических сооружениях",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.accident_hazard",
-  "label": "Аварии на опасных и производственных объектах",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.gratitude",
-  "label": "Благодарность службам",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.uav",
-  "label": "БПЛА",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.internal_call",
-  "label": "Внутренний звонок (звонок от работников)",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.repeat_call",
-  "label": "Дополнительный звонок от заявителя",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.road_obstacle",
-  "label": "Дорожные помехи",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.complaint",
-  "label": "Жалоба на действие или бездействие служб",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.non_target",
-  "label": "Нецелевой вызов",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.feedback",
-  "label": "Отзыв о работе 112 Москва",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.shift_handover",
-  "label": "Передача дежурства",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.help_services",
-  "label": "Помощь службам",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.other",
-  "label": "Прочие происшествия",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.radiation",
-  "label": "Радиация",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.thermometer",
-  "label": "Разбитый градусник",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.gathering",
-  "label": "Сбор",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.social_help",
-  "label": "Социальная помощь",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_101",
-  "label": "Справка 101",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_102",
-  "label": "Справка 102",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_103",
-  "label": "Справка 103",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_104",
-  "label": "Справка 104",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_gibdd",
-  "label": "Справка ГИБДД",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_gorhoz",
-  "label": "Справка Городское хозяйство",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.info_mchs",
-  "label": "Справка МЧС",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.tech_failure",
-  "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.training",
-  "label": "Тренировка",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.emergency_notice",
-  "label": "Уведомление о ЧС",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.hazmat_threat",
-  "label": "Угроза выброса опасных веществ и радиации",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- },
- {
-  "id": "top.eco",
-  "label": "Экологическое происшествие",
-  "category": "OTHER",
-  "frequent": false,
-  "significant": false,
-  "synonyms": []
- }
+  {
+    "id": "fire.garbage",
+    "label": "Пожар: мусор",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "пожар",
+      "101",
+      "горит",
+      "возгорание",
+      "контейнер"
+    ],
+    "classifierNumber": "1010101",
+    "classifierType": "пожар: мусор",
+    "surveyCardId": "fire.garbage"
+  },
+  {
+    "id": "fire.apartment",
+    "label": "Пожар: квартира",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "пожар",
+      "101",
+      "горит",
+      "квартира"
+    ],
+    "classifierNumber": "1050101",
+    "classifierType": "пожар: квартира",
+    "surveyCardId": "fire.apartment"
+  },
+  {
+    "id": "fire.building",
+    "label": "Пожар: здание",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "пожар",
+      "101",
+      "здание",
+      "строение",
+      "постройка"
+    ],
+    "classifierNumber": "1060301",
+    "classifierType": "пожар: административное здание",
+    "surveyCardId": "fire.building"
+  },
+  {
+    "id": "fire.smoke",
+    "label": "Задымление в жилом доме",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "дым",
+      "задымление",
+      "гарь",
+      "101",
+      "мусоропровод"
+    ],
+    "classifierNumber": "1050102",
+    "classifierType": "задымление: квартира",
+    "surveyCardId": "fire.smoke"
+  },
+  {
+    "id": "fire.vehicle",
+    "label": "Пожар: транспортное средство",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "пожар",
+      "машина",
+      "автомобиль",
+      "101"
+    ],
+    "classifierNumber": "1020201",
+    "classifierType": "пожар: машина",
+    "surveyCardId": "fire.vehicle"
+  },
+  {
+    "id": "fire.grass",
+    "label": "Пожар: трава, пух",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "трава",
+      "пух",
+      "пожар"
+    ],
+    "classifierNumber": "1010201",
+    "classifierType": "пожар: трава",
+    "surveyCardId": "fire.grass"
+  },
+  {
+    "id": "fire.alarm",
+    "label": "Сработка пожарной сигнализации",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "сигнализация",
+      "сработка"
+    ],
+    "classifierNumber": "1030300",
+    "classifierType": "пожарная сигнализация (метро)",
+    "surveyCardId": "fire.alarm"
+  },
+  {
+    "id": "dtp.injured",
+    "label": "ДТП с пострадавшими",
+    "category": "POLICE",
+    "frequent": true,
+    "significant": true,
+    "synonyms": [
+      "дтп",
+      "столкнов",
+      "сбил",
+      "наезд",
+      "врезал"
+    ],
+    "classifierNumber": "2020000",
+    "classifierType": "ДТП с пострадавшими",
+    "surveyCardId": "dtp.injured"
+  },
+  {
+    "id": "dtp.no_injured",
+    "label": "ДТП без пострадавших",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "дтп без",
+      "стукнул",
+      "царапин"
+    ],
+    "classifierNumber": "2010000",
+    "classifierType": "ДТП без пострадавших",
+    "surveyCardId": "dtp.no_injured"
+  },
+  {
+    "id": "dtp.water",
+    "label": "Падение транспорта в воду",
+    "category": "RESCUE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "вода",
+      "утонул",
+      "машина в воде",
+      "падение"
+    ],
+    "classifierNumber": "2021400",
+    "classifierType": "Падение автомобиля в воду",
+    "surveyCardId": "dtp.water"
+  },
+  {
+    "id": "explosion",
+    "label": "Взрыв",
+    "category": "FIRE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "взрыв",
+      "хлопок",
+      "101"
+    ],
+    "classifierNumber": "3010100",
+    "classifierType": "Взрыв жилое здание",
+    "surveyCardId": "explosion"
+  },
+  {
+    "id": "explosion.threat",
+    "label": "Угроза взрыва",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "угроза",
+      "взрыв",
+      "заминирован",
+      "бомба"
+    ],
+    "classifierNumber": "4160000",
+    "classifierType": "Угроза взрыва в общественном месте",
+    "surveyCardId": "explosion.threat"
+  },
+  {
+    "id": "gas.smell",
+    "label": "Запах газа в помещении",
+    "category": "GAS",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "газ",
+      "запах",
+      "104"
+    ],
+    "classifierNumber": "13020100",
+    "classifierType": "Запах бытового газа в кухне",
+    "surveyCardId": "gas.smell"
+  },
+  {
+    "id": "fight",
+    "label": "Драка",
+    "category": "POLICE",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "драка",
+      "дерутся",
+      "избива",
+      "избие",
+      "бьют"
+    ],
+    "classifierNumber": "15060100",
+    "classifierType": "Драка в квартире",
+    "surveyCardId": "fight"
+  },
+  {
+    "id": "crime.robbery",
+    "label": "Грабёж",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "грабёж",
+      "грабеж",
+      "ограбили",
+      "украли",
+      "похитили",
+      "затащили",
+      "угнали",
+      "102"
+    ],
+    "classifierNumber": "15050600",
+    "classifierType": "Грабеж",
+    "surveyCardId": "crime.robbery"
+  },
+  {
+    "id": "crime.hooligan",
+    "label": "Хулиганство, нарушение тишины",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "хулиган",
+      "102",
+      "нарушение порядка",
+      "шум",
+      "музыка",
+      "поругался",
+      "скандал",
+      "дебошир"
+    ],
+    "classifierNumber": "15220000",
+    "classifierType": "Мелкое хулиганство",
+    "surveyCardId": "crime.hooligan"
+  },
+  {
+    "id": "medical.trauma",
+    "label": "Травма",
+    "category": "MEDICAL",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "травма",
+      "103",
+      "перелом",
+      "ушиб",
+      "отек",
+      "отёк",
+      "в крови",
+      "кровотечение",
+      "порез",
+      "упал с"
+    ],
+    "classifierNumber": "22530000",
+    "classifierType": "Травма",
+    "surveyCardId": "medical.trauma"
+  },
+  {
+    "id": "medical.illness",
+    "label": "Внезапное заболевание",
+    "category": "MEDICAL",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "плохо",
+      "сердце",
+      "103",
+      "без сознания",
+      "потеря сознания",
+      "скорая",
+      "заболевание",
+      "лекарств",
+      "головн",
+      "задыхается",
+      "астма",
+      "температур",
+      "давление",
+      "рожает",
+      "а/д",
+      "д/р"
+    ],
+    "classifierNumber": "22370000",
+    "classifierType": "Плохо с сердцем",
+    "surveyCardId": "medical.illness"
+  },
+  {
+    "id": "medical.suicide",
+    "label": "Попытка суицида",
+    "category": "MEDICAL",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "суицид",
+      "самоубий",
+      "хочет прыгнуть",
+      "повесил",
+      "спрыгн",
+      "на парапете",
+      "сброситься"
+    ],
+    "classifierNumber": "17100800",
+    "classifierType": "Попытка суицида",
+    "surveyCardId": "medical.suicide"
+  },
+  {
+    "id": "person.danger",
+    "label": "Человек в опасности",
+    "category": "RESCUE",
+    "frequent": true,
+    "significant": true,
+    "synonyms": [
+      "в опасности",
+      "спасение",
+      "застрял",
+      "открыть дверь",
+      "не подает признаков",
+      "не подаёт признаков",
+      "лежит человек",
+      "лежит мужчина",
+      "лежит женщина",
+      "инвалид"
+    ],
+    "classifierNumber": "17010100",
+    "classifierType": "Лежит человек",
+    "surveyCardId": "person.danger"
+  },
+  {
+    "id": "person.missing",
+    "label": "Пропал человек",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "пропал",
+      "потерялся",
+      "потерял",
+      "заблудил",
+      "ушел из дома",
+      "ушёл из дома",
+      "потерей памяти",
+      "не вернул",
+      "102"
+    ],
+    "classifierNumber": "17020203",
+    "classifierType": "Пропал человек",
+    "surveyCardId": "person.missing"
+  },
+  {
+    "id": "person.body",
+    "label": "Обнаружен труп",
+    "category": "POLICE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "труп",
+      "мертв",
+      "мёртв",
+      "без признаков жизни",
+      "тело"
+    ],
+    "classifierNumber": "19020100",
+    "classifierType": "Труп на улице ( в общественном месте)",
+    "surveyCardId": "person.body"
+  },
+  {
+    "id": "water.rescue",
+    "label": "Происшествие на воде",
+    "category": "RESCUE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "тонет",
+      "утопающий",
+      "спасение на воде",
+      "льдин",
+      "плывут",
+      "провалился под лед",
+      "провалился под лёд",
+      "на воде"
+    ],
+    "classifierNumber": "17070200",
+    "classifierType": "Тонет человек",
+    "surveyCardId": "water.rescue"
+  },
+  {
+    "id": "utility.water",
+    "label": "Прорыв воды, залив",
+    "category": "UTILITY",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "вода",
+      "залив",
+      "прорыв",
+      "течь",
+      "жкх"
+    ],
+    "classifierNumber": "14020200",
+    "classifierType": "Прорыв воды в теплосети",
+    "surveyCardId": "utility.water"
+  },
+  {
+    "id": "utility.elevator",
+    "label": "Застревание в лифте",
+    "category": "UTILITY",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "лифт",
+      "застрял",
+      "мослифт"
+    ],
+    "classifierNumber": "14100100",
+    "classifierType": "Застревание в лифте",
+    "surveyCardId": "utility.elevator"
+  },
+  {
+    "id": "utility.power",
+    "label": "Отключение электроэнергии",
+    "category": "UTILITY",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "свет",
+      "электричество",
+      "отключение"
+    ],
+    "classifierNumber": "14010200",
+    "classifierType": "Отключение электроэнергии",
+    "surveyCardId": "utility.power"
+  },
+  {
+    "id": "tree.fallen",
+    "label": "Поваленное дерево",
+    "category": "UTILITY",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "дерево",
+      "бревно",
+      "ветка",
+      "упало на"
+    ],
+    "classifierNumber": "14080101",
+    "classifierType": "Дерево упало на электрические провода",
+    "surveyCardId": "tree.fallen"
+  },
+  {
+    "id": "manhole.open",
+    "label": "Открытый люк",
+    "category": "UTILITY",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "люк",
+      "колодец",
+      "колодца"
+    ],
+    "classifierNumber": "14070301",
+    "classifierType": "Люк открыт (крышка рядом, крышка сдвинута, повреждена)",
+    "surveyCardId": "manhole.open"
+  },
+  {
+    "id": "collapse.threat",
+    "label": "Угроза обрушения",
+    "category": "RESCUE",
+    "frequent": false,
+    "significant": true,
+    "synonyms": [
+      "обрушение",
+      "трещина",
+      "101"
+    ],
+    "classifierNumber": "6060200",
+    "classifierType": "Дом многоквартирный угроза обрушения",
+    "surveyCardId": "collapse.threat"
+  },
+  {
+    "id": "animal",
+    "label": "Животные",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": [
+      "собака",
+      "животное",
+      "змея",
+      "кошка"
+    ],
+    "classifierNumber": "21010100",
+    "classifierType": "Агрессивное животное",
+    "surveyCardId": "animal"
+  },
+  {
+    "id": "wrong_number",
+    "label": "Ошибочно набран номер",
+    "category": "OTHER",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "ошибочно",
+      "ошибка"
+    ],
+    "classifierNumber": null,
+    "classifierType": null,
+    "surveyCardId": "wrong_number"
+  },
+  {
+    "id": "cancel",
+    "label": "Отмена вызова",
+    "category": "OTHER",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "отмена"
+    ],
+    "classifierNumber": null,
+    "classifierType": null,
+    "surveyCardId": "cancel"
+  },
+  {
+    "id": "test_call",
+    "label": "Тестовый вызов",
+    "category": "OTHER",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "тест"
+    ],
+    "classifierNumber": null,
+    "classifierType": null,
+    "surveyCardId": "test_call"
+  },
+  {
+    "id": "consult",
+    "label": "Консультация",
+    "category": "OTHER",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "консультация",
+      "справка"
+    ],
+    "classifierNumber": null,
+    "classifierType": null,
+    "surveyCardId": "consult"
+  },
+  {
+    "id": "foreign",
+    "label": "Вызов на иностранном языке",
+    "category": "OTHER",
+    "frequent": true,
+    "significant": false,
+    "synonyms": [
+      "иностранный",
+      "язык",
+      "english"
+    ],
+    "classifierNumber": null,
+    "classifierType": null,
+    "surveyCardId": "foreign"
+  },
+  {
+    "id": "top.accident_utility",
+    "label": "Аварии и происшествия в городском хозяйстве",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_transport",
+    "label": "Аварии и происшествия на транспортных объектах",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_hydro",
+    "label": "Аварии на гидротехнических сооружениях",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_hazard",
+    "label": "Аварии на опасных и производственных объектах",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.gratitude",
+    "label": "Благодарность службам",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.uav",
+    "label": "БПЛА",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.internal_call",
+    "label": "Внутренний звонок (звонок от работников)",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.repeat_call",
+    "label": "Дополнительный звонок от заявителя",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.road_obstacle",
+    "label": "Дорожные помехи",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.complaint",
+    "label": "Жалоба на действие или бездействие служб",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.non_target",
+    "label": "Нецелевой вызов",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.feedback",
+    "label": "Отзыв о работе 112 Москва",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.shift_handover",
+    "label": "Передача дежурства",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.help_services",
+    "label": "Помощь службам",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.other",
+    "label": "Прочие происшествия",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.radiation",
+    "label": "Радиация",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.thermometer",
+    "label": "Разбитый градусник",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.gathering",
+    "label": "Сбор",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.social_help",
+    "label": "Социальная помощь",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_101",
+    "label": "Справка 101",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_102",
+    "label": "Справка 102",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_103",
+    "label": "Справка 103",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_104",
+    "label": "Справка 104",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_gibdd",
+    "label": "Справка ГИБДД",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_gorhoz",
+    "label": "Справка Городское хозяйство",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_mchs",
+    "label": "Справка МЧС",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.tech_failure",
+    "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.training",
+    "label": "Тренировка",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.emergency_notice",
+    "label": "Уведомление о ЧС",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.hazmat_threat",
+    "label": "Угроза выброса опасных веществ и радиации",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.eco",
+    "label": "Экологическое происшествие",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  }
 ]
