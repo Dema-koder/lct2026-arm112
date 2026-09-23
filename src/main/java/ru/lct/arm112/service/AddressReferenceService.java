@@ -83,10 +83,16 @@ public class AddressReferenceService implements StreetDictionary {
         }
         try (InputStream stream = resource.getInputStream()) {
             JsonNode root = objectMapper.readTree(stream);
+            // Допускаются два вида файла: голый массив названий и объект с полем streets
+            // рядом со сведениями об источнике и лицензии. Второй предпочтителен:
+            // данные о происхождении должны ехать вместе с данными, а не в соседнем файле.
+            JsonNode list = root.isArray() ? root : root.path("streets");
             List<String> names = new ArrayList<>();
-            root.forEach(node -> names.add(node.asText()));
+            list.forEach(node -> names.add(node.asText()));
             learn(names);
-            log.info("Загружен внешний справочник улиц: {} названий", names.size());
+            log.info("Загружен внешний справочник улиц: {} названий, источник «{}», лицензия «{}»",
+                    names.size(), root.path("source").asText("не указан"),
+                    root.path("licence").asText("не указана"));
         } catch (IOException exception) {
             // справочник — обогащение, а не обязательный ресурс: без него оценка работает по-старому
             log.warn("Не удалось прочитать seed/streets.json: {}", exception.getMessage());
