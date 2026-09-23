@@ -59,6 +59,10 @@ public class IncidentTypeClassifier {
 
     /** Вес признака в зависимости от источника: рука человека надёжнее автонабора из примеров. */
     private static final double W_SYNONYM = 1.0, W_LABEL = 0.4, W_LEARNED = 0.5;
+    /** Словосочетание вернее одиночного слова: «потеря сознания» однозначнее, чем «потеря». */
+    private static final double W_PHRASE = 1.5;
+    /** Метка признака-словосочетания: ищется в тексте целиком, а не среди отдельных слов. */
+    private static final String PHRASE_PREFIX = "~";
     /** Короче этого слова из подписи типа в признаки не берутся. */
     private static final int MIN_LABEL_FEATURE = 5;
     /**
@@ -131,6 +135,7 @@ public class IncidentTypeClassifier {
         ensureTrained();
         Set<String> words = words(text);
         if (words.isEmpty()) return List.of();
+        String phraseText = normalize(text);
 
         List<Suggestion> result = new ArrayList<>();
         double total = 0;
@@ -140,7 +145,9 @@ public class IncidentTypeClassifier {
             double score = 0;
             List<String> matched = new ArrayList<>();
             for (Map.Entry<String, Double> feature : entry.getValue().entrySet()) {
-                String hit = firstMatch(words, feature.getKey());
+                String hit = feature.getKey().startsWith(PHRASE_PREFIX)
+                        ? phraseMatch(phraseText, feature.getKey().substring(PHRASE_PREFIX.length()))
+                        : firstMatch(words, feature.getKey());
                 if (hit == null) continue;
                 score += feature.getValue() * idf(feature.getKey());
                 matched.add(hit);
@@ -191,10 +198,20 @@ public class IncidentTypeClassifier {
         synchronized (this) {
             if (trained) return;
             for (IncidentType type : references.allIncidentTypes()) {
+                if (isSurveyRoot(type)) continue;
                 Map<String, Double> own = new LinkedHashMap<>();
                 if (type.synonyms() != null) {
                     for (String synonym : type.synonyms()) {
-                        for (String word : words(synonym)) own.put(word, W_SYNONYM);
+                        String phrase = normalize(synonym);
+                        if (phrase.contains(" ")) {
+                            // Словосочетание — самая точная часть ручной разметки, и резать
+                            // его на слова значит эту точность потерять: «потеря сознания»
+                            // превращалась в «потеря», а та совпадает с «потерял» у пропажи
+                            // человека. Такие признаки ищутся в тексте целиком.
+                            own.put(PHRASE_PREFIX + phrase, W_PHRASE);
+                        } else {
+                            for (String word : words(synonym)) own.put(word, W_SYNONYM);
+                        }
                     }
                 }
                 // Из подписи берутся только содержательные слова: короткие токены подписи —
@@ -212,6 +229,19 @@ public class IncidentTypeClassifier {
         }
     }
 
+    /**
+     * Верхний уровень списка «что случилось?» — не цель классификации.
+     *
+     * <p>В справочнике рядом с типами ЕКП лежат 31 запись {@code top.*}: это пункты первого
+     * экрана оператора, у каждого своё опросное дерево, а тип ЕКП выводится уже из ответов.
+     * Эталоном сценария они не бывают ни разу, зато их подписи — «Прочие происшествия»,
+     * «Аварии и происшествия в городском хозяйстве» — дают общие слова, которые
+     * конкурируют с настоящими типами и портят статистику редкости признаков.
+     */
+    private static boolean isSurveyRoot(IncidentType type) {
+        return type.id() != null && type.id().startsWith("top.");
+    }
+
     // ------------------------------------------------------------------ сопоставление
 
     /**
@@ -219,6 +249,18 @@ public class IncidentTypeClassifier {
      * русские окончания меняются, а первые буквы — нет. Короткие признаки ищутся вхождением,
      * иначе «дым» не нашёлся бы в «задымлении».
      */
+    /** Словосочетание ищется вхождением в текст: порядок слов в нём значим. */
+    private static String phraseMatch(String normalizedText, String phrase) {
+        return normalizedText.contains(phrase) ? phrase : null;
+    }
+
+    /** Текст без знаков препинания и лишних пробелов — в нём ищутся словосочетания. */
+    private static String normalize(String text) {
+        if (text == null) return "";
+        return text.toLowerCase(Locale.ROOT).replace('ё', 'е')
+                .replaceAll("[^а-я0-9]+", " ").replaceAll("\s+", " ").trim();
+    }
+
     private static String firstMatch(Set<String> words, String feature) {
         for (String word : words) {
             if (feature.length() <= 4) {

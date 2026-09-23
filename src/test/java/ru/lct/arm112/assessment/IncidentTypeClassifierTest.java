@@ -97,8 +97,9 @@ class IncidentTypeClassifierTest {
         assertThat(accuracy1).as("точность top-1").isGreaterThanOrEqualTo(60.0);
         assertThat(accuracy3).as("точность top-3: на ней держится подсказка-список")
                 .isGreaterThanOrEqualTo(90.0);
-        assertThat(macroF1).as("macro-F1: классы несбалансированы, среднее по классам честнее точности")
-                .isGreaterThanOrEqualTo(0.50);
+        assertThat(macroF1).as("macro-F1 по классам из разметки: классы несбалансированы, "
+                        + "среднее по классам честнее общей точности")
+                .isGreaterThanOrEqualTo(0.55);
         assertThat(perCallMs).as("задержка на вводную").isLessThanOrEqualTo(50L);
 
         // Подсказка-список должна появляться почти всегда: именно она, а не единственный
@@ -128,7 +129,11 @@ class IncidentTypeClassifierTest {
         List<Double> scores = new ArrayList<>();
         for (int[] counts : perType.values()) {
             double tp = counts[0], fp = counts[1], fn = counts[2];
-            if (tp + fp + fn == 0) continue;
+            // Усредняем по классам, которые есть в разметке. Класс, куда классификатор
+            // только ошибочно попадал, но которого в эталонах нет, входил бы в среднее
+            // с нулём и ронял метрику тем сильнее, чем мельче выборка, — а это свойство
+            // подсчёта, а не качества.
+            if (tp + fn == 0) continue;
             double precision = tp + fp == 0 ? 0 : tp / (tp + fp);
             double recall = tp + fn == 0 ? 0 : tp / (tp + fn);
             scores.add(precision + recall == 0 ? 0 : 2 * precision * recall / (precision + recall));
