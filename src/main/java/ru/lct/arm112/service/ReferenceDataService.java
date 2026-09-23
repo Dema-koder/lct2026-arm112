@@ -124,6 +124,11 @@ public class ReferenceDataService {
         return incidentTypes.values().stream().map(IncidentType::toItem).toList();
     }
 
+    /** Все типы с синонимами и категориями — вход для классификатора по тексту вводной. */
+    public List<IncidentType> allIncidentTypes() {
+        return List.copyOf(incidentTypes.values());
+    }
+
     public IncidentType incidentType(String id) {
         return incidentTypes.get(id);
     }

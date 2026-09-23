@@ -36,10 +36,13 @@ public class ScenarioService {
     private final ReferenceDataService references;
     private final LanguageChecker language;
     private final AddressReferenceService addresses;
+    private final ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier;
 
     public ScenarioService(ScenarioRepository repository, ObjectMapper objectMapper, ReferenceDataService references,
-                           LanguageChecker language, AddressReferenceService addresses) {
+                           LanguageChecker language, AddressReferenceService addresses,
+                           ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier) {
         this.addresses = addresses;
+        this.classifier = classifier;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.references = references;
@@ -166,8 +169,11 @@ public class ScenarioService {
     }
 
     public Scenario confirm(String id, UUID actor) {
-        require(id);
+        Scenario scenario = require(id);
         repository.confirmReference(id, actor);
+        // Подтверждённый преподавателем эталон — надёжная разметка: она доучивает подбор типа.
+        // Так правки преподавателя влияют на систему, как и просил заказчик (q-and-a.md §8).
+        classifier.learn(scenario.callerText(), scenario.expectedIncidentTypes());
         return require(id);
     }
 

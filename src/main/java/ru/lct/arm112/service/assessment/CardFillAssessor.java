@@ -29,11 +29,14 @@ public class CardFillAssessor {
     private final LanguageChecker language;
     private final ReferenceDataService references;
     private final StreetDictionary streets;
+    private final ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier;
 
-    public CardFillAssessor(LanguageChecker language, ReferenceDataService references, StreetDictionary streets) {
+    public CardFillAssessor(LanguageChecker language, ReferenceDataService references, StreetDictionary streets,
+                            ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier) {
         this.language = language;
         this.references = references;
         this.streets = streets;
+        this.classifier = classifier;
     }
 
     public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
@@ -187,6 +190,18 @@ public class CardFillAssessor {
         }
         if (draft.incidentTypeIds().isEmpty() && draft.address() != null && draft.address().street() != null) {
             hints.add(new Hint("incidentTypeIds", "Выберите тип происшествия — без него не подберутся службы"));
+        }
+        // Кандидаты по словам заявителя: список, а не один ответ. Верный тип попадает
+        // в первую тройку в 95 % случаев, на первое место — лишь в 66 %, поэтому
+        // единственная подсказка учила бы ошибке в каждом третьем случае.
+        if (draft.incidentTypeIds().isEmpty()) {
+            var candidates = classifier.suggest(draft.callerText());
+            if (!candidates.isEmpty()) {
+                List<String> labels = candidates.stream()
+                        .map(c -> c.label() + " (" + String.join(", ", c.matchedWords()) + ")").toList();
+                hints.add(new Hint("incidentTypeIds",
+                        "По словам заявителя похоже на: " + String.join("; ", labels)));
+            }
         }
         return hints;
     }
