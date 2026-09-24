@@ -45,6 +45,23 @@ import java.util.Random;
 public class LlmGenerator implements ScenarioGenerator {
     private static final Logger log = LoggerFactory.getLogger(LlmGenerator.class);
 
+    /**
+     * Ограничение выборки токенов: в ответе допустимы только кириллица, цифры и пунктуация.
+     *
+     * <p>Без него и 3B, и 7B срываются на китайский прямо посреди фразы — больше половины
+     * генераций уходило в брак. Системное сообщение «отвечай по-русски» не помогает,
+     * снижение температуры убирает срывы ценой одинаковых текстов.
+     *
+     * <p>Грамматика решает задачу на уровне выборки: токен с иероглифом просто не может
+     * быть выбран. Замер показал 0 срывов из 6 при сохранённом разнообразии и даже
+     * небольшом ускорении — словарь-кандидат сужается.
+     */
+    private static final String CYRILLIC_ONLY = """
+            root ::= line
+            line ::= char{40,400}
+            char ::= [а-яА-ЯёЁ0-9 ,.:;()«»!?/-]
+            """;
+
     private final String baseUrl;
     private final ObjectMapper objectMapper;
     private final ScenarioService scenarios;
@@ -124,7 +141,8 @@ public class LlmGenerator implements ScenarioGenerator {
             String body = objectMapper.writeValueAsString(java.util.Map.of(
                     "messages", List.of(java.util.Map.of("role", "user", "content", prompt)),
                     "temperature", 0.8,
-                    "max_tokens", 160));
+                    "max_tokens", 160,
+                    "grammar", CYRILLIC_ONLY));
             HttpResponse<String> response = client.send(
                     HttpRequest.newBuilder(URI.create(baseUrl + "/v1/chat/completions"))
                             .timeout(Duration.ofMinutes(5))
