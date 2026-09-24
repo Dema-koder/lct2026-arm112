@@ -34,6 +34,13 @@ arm112:
     admin-password: ${ARM112_SEED_ADMIN_PASSWORD:admin}
     teacher-password: ${ARM112_SEED_TEACHER_PASSWORD:teacher}
     trainee-password: ${ARM112_SEED_TRAINEE_PASSWORD:trainee}
+  llm:
+    # Пусто — генерация работает на перестановке билетов. Сайдкар подключается
+    # через compose.llm.yaml, см. docs/assessment/LLM_EXPERIMENT.md
+    url: ${ARM112_LLM_URL:}
+  jobs:
+    poll-ms: ${ARM112_JOBS_POLL_MS:1000}
+    batch-size: ${ARM112_JOBS_BATCH_SIZE:2}
   backup:
     dir: ${ARM112_BACKUP_DIR:./backups}
     cron: ${ARM112_BACKUP_CRON:0 0 2 * * *}

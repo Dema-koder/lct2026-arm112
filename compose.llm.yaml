@@ -1,0 +1,41 @@
+# Языковая модель отдельным файлом, а не в compose.yaml.
+#
+# Приложение обязано работать без неё: генерация откатывается на перестановку
+# билетов, разбор — на правиловый текст. Поэтому сайдкар подключается явно
+# и только там, где он нужен:
+#
+#   docker compose -f compose.yaml -f compose.llm.yaml up -d
+#
+# Веса не входят в образ: файл GGUF кладётся в ./models и монтируется. Для
+# локального контура это и есть способ доставки — флэшкой или разовой загрузкой
+# на машине с доступом (docs/assessment/LLM_EXPERIMENT.md).
+services:
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    volumes:
+      - ./models:/models:ro
+    command: >
+      -m /models/${LLM_MODEL:-qwen2.5-7b-q4.gguf}
+      --host 0.0.0.0
+      --port 8080
+      -c ${LLM_CONTEXT:-4096}
+      -t ${LLM_THREADS:-10}
+      --parallel ${LLM_PARALLEL:-1}
+    ports:
+      - "${LLM_PORT:-8090}:8080"
+    healthcheck:
+      # модель грузится с диска десятки секунд, поэтому длинный start_period
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    restart: unless-stopped
+
+  backend:
+    environment:
+      # Пусто — генерация работает на перестановке билетов, как и раньше
+      ARM112_LLM_URL: http://llm:8080
+    depends_on:
+      llm:
+        condition: service_healthy

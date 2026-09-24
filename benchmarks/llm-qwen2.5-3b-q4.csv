@@ -1,0 +1,2 @@
+﻿model;prompt_tok_per_s;gen_tok_per_s;produced;accepted;accept_pct;batch_seconds;seconds_per_scenario;rejections
+qwen2.5-3b-q4;53,28;9,57;10;6;60,00;44,15;4,42;{TYPE_CONTRADICTS_TEXT=4}
