@@ -205,7 +205,7 @@ class GoldenRunHarness {
         JsonNode cards = json(get("/api/v1/cards?sessionId=" + sessionId, token)).get("items");
         assertThat(cards.size()).as("карточка не пришла в журнал").isGreaterThan(0);
         String cardId = cards.get(0).get("id").asText();
-        get("/api/v1/cards/" + cardId, token); // открытие карточки — статус «получена службой»
+        openCard(token, cardId);
 
         String comment = run.path("comment").asText("");
         for (JsonNode act : run.get("acts")) {
@@ -229,6 +229,18 @@ class GoldenRunHarness {
             // прогон проставляет статусы за миллисекунды; без этого любая работа выглядит прокликиванием
             trainingEngine.forceTimelineSpacing(UUID.fromString(cardId), spacing);
         }
+    }
+
+    /**
+     * Открыть карточку. Открытие занимает реальное время ({@code simulation.card_open_ms}),
+     * и до его конца действия недоступны — поэтому здесь ожидание, а не один запрос.
+     */
+    private void openCard(String token, String cardId) throws Exception {
+        for (int i = 0; i < 200; i++) {
+            if (!"RECEIVED".equals(json(get("/api/v1/cards/" + cardId, token)).get("status").asText())) return;
+            Thread.sleep(25);
+        }
+        fail("карточка так и не открылась");
     }
 
     /** Обязательный доклад руководителю: дождаться, пока симулятор телефонии дойдёт до «принято». */

@@ -218,6 +218,9 @@ function Groups({ token }: { token: string }) {
 const SETTING_LABELS: Record<string, string> = {
   "audit.retention_days": "Хранение журнала аудита, дней (не меньше 180)",
   "telephony.ringing_ms": "Телефония: гудки, мс",
+  "simulation.card_open_ms": "Симуляция: открытие карточки, мс",
+  "simulation.card_arrival_ms": "Симуляция: базовый интервал карточек, мс",
+  "simulation.service_time_scale_percent": "Симуляция: масштаб времени служб, %",
   "telephony.connect_ms": "Телефония: соединение, мс",
   "telephony.acknowledge_ms": "Телефония: «информация принята», мс",
   "sla.acceptance_seconds": "Норматив принятия карточки, с",

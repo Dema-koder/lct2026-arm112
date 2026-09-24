@@ -69,19 +69,22 @@ public class TrainingEngine {
      * в журнале оператора 112 и «сложность» сессии. SEQUENTIAL — по одной, следующая после закрытия текущей.
      */
     public enum Intensity {
-        SEQUENTIAL(0, 0, 3, 5),
-        LOW(90, 180, 3, 3),
-        MEDIUM(45, 90, 6, 5),
-        HIGH(15, 40, 10, 8);
+        SEQUENTIAL(0, 0, 3, 5, 100),
+        LOW(90, 180, 3, 3, 200),
+        MEDIUM(45, 90, 6, 5, 100),
+        HIGH(15, 40, 10, 8, 40);
 
         final int minSeconds;
         final int maxSeconds;
         final int backgroundCards;
         final int difficulty;
+        /** Доля шага расписания ДДС от настройки {@code simulation.card_arrival_ms}, в процентах. */
+        final int arrivalPercent;
 
-        Intensity(int minSeconds, int maxSeconds, int backgroundCards, int difficulty) {
+        Intensity(int minSeconds, int maxSeconds, int backgroundCards, int difficulty, int arrivalPercent) {
             this.minSeconds = minSeconds; this.maxSeconds = maxSeconds;
             this.backgroundCards = backgroundCards; this.difficulty = difficulty;
+            this.arrivalPercent = arrivalPercent;
         }
 
         public static boolean isValid(String value) {
@@ -191,12 +194,13 @@ public class TrainingEngine {
         state.ownServiceCode = lesson.serviceCode() == null ? OWN_SERVICE_CODE : lesson.serviceCode();
         state.intensity = Intensity.of(lesson.intensity());
         for (Scenario scenario : lessonScenarios) state.pending.add(scenario.id());
+        if (lesson.mode().equals("CARD_ACTIONS")) schedulePendingCards(state);
         sessions.put(state.id, state);
         access.remember(state.id, state.traineeId, state.teacherId, state.lessonId);
         Instant now = Instant.now();
         if (lesson.mode().equals("CARD_ACTIONS")) {
-            // первая карточка сразу, остальные — по интенсивности
-            deliverNextCard(state);
+            // первая карточка — та, чьё время уже пришло (расписание задано выше)
+            deliverDueCards(state, now);
         } else {
             state.background.addAll(backgroundCards(state, lessonScenarios));
             arriveNextCall(state, now);
@@ -267,6 +271,9 @@ public class TrainingEngine {
 
     public CardPage cards(UUID sessionId, String status, int limit, CurrentUser actor) {
         SessionState state = requireAccessible(sessionId, actor);
+        if (state.mode.equals("CARD_ACTIONS") && deliverDueCards(state, Instant.now())) {
+            persist(state);
+        }
         List<CardListItem> result = state.cards.values().stream()
                 .filter(card -> status == null || card.status.equals(status))
                 .sorted(Comparator.comparing((MutableCard card) -> card.receivedAt).reversed())
@@ -282,13 +289,24 @@ public class TrainingEngine {
         boolean changed = false;
         IncidentCard view;
         synchronized (card) {
-            // Открытие карточки диспетчером на АРМ-112 автоматически переводит её
-            // в статус «Получена службой» — см. памятку ДДС, таблица статусов реагирования.
+            // Открытие карточки занимает реальное время: первый запрос запускает загрузку,
+            // следующий после readyAt завершает её и только тогда разрешает принять карточку.
             if (card.status.equals("RECEIVED") && actor.is(Role.TRAINEE)) {
-                card.status = "RECEIVED_BY_SERVICE";
-                addTimeline(card, "RECEIVE", null, null, null);
-                publishCard(state, card, "card.updated");
-                changed = true;
+                Instant now = Instant.now();
+                if (card.openingReadyAt == null) {
+                    int delayMs = settings.integer(SettingsService.CARD_OPEN_MS, 2500);
+                    card.openingStartedAt = now;
+                    card.openingReadyAt = now.plusMillis(Math.max(0, delayMs));
+                    publishCard(state, card, "card.opening_started");
+                    changed = true;
+                }
+                if (!now.isBefore(card.openingReadyAt)) {
+                    card.openedAt = card.openingReadyAt;
+                    card.status = "RECEIVED_BY_SERVICE";
+                    addTimeline(card, "RECEIVE", null, null, null);
+                    publishCard(state, card, "card.updated");
+                    changed = true;
+                }
             }
             view = toView(state, card);
         }
@@ -302,7 +320,11 @@ public class TrainingEngine {
             MutableCard card = state.cards.get(cardId);
             synchronized (card) {
                 requireActive(state);
-                boolean fresh = card.status.equals("RECEIVED") || card.status.equals("RECEIVED_BY_SERVICE");
+                if (card.status.equals("RECEIVED")) {
+                    throw new ApiException(HttpStatus.CONFLICT, "CARD_OPENING",
+                            "Дождитесь окончания открытия карточки");
+                }
+                boolean fresh = card.status.equals("RECEIVED_BY_SERVICE");
                 if (command.action() == AcceptanceAction.DECLINE) {
                     if (!fresh) throw invalidTransition(card.status);
                     requireReason(command.reasonCode(), command.comment());
@@ -760,7 +782,8 @@ public class TrainingEngine {
         synchronized (state) {
             stateStore.save(state.id, new TrainingSnapshot(state.id, state.lessonId, state.traineeId, state.mode,
                     state.lessonKind, state.workstationNumber, state.state, state.startedAt, state.completedAt,
-                    List.copyOf(state.pending), cardStates(state), callStates(state), List.copyOf(state.drafts.values()),
+                    List.copyOf(state.pending), Map.copyOf(state.scheduledScenarioAt), cardStates(state),
+                    callStates(state), List.copyOf(state.drafts.values()),
                     state.ownServiceCode, state.intensity.name(), state.nextArrivalAt, List.copyOf(state.callQueue),
                     state.ringing, List.copyOf(state.lost), state.missedCalls, List.copyOf(state.background),
                     List.copyOf(state.trajectories.values())));
@@ -798,30 +821,32 @@ public class TrainingEngine {
     }
 
     /**
-     * Поток по интенсивности: приход очередной вводной (карточка в журнал ДДС или вызов в очередь 112),
-     * звонок следующего вызова свободному оператору, пропуск вызова, который звонил дольше норматива.
+     * Поток занятия. В двух режимах вводные приходят по-разному, и это не случайность.
+     *
+     * <p>ДДС получает карточки по расписанию, разложенному заранее ({@link #schedulePendingCards}):
+     * обучающийся ведёт несколько карточек сразу, и очередная не должна ждать предыдущую.
+     * Оператор 112 получает вызовы очередью: вызов звонит, его можно пропустить и потерять,
+     * и на этом держится часть оценки — расписанием такое не выражается.
      */
     private boolean tickFlow(SessionState state, Instant now) {
         synchronized (state) {
+            if (state.mode.equals("CARD_ACTIONS")) return deliverDueCards(state, now);
             boolean changed = false;
             if (state.nextArrivalAt != null && !now.isBefore(state.nextArrivalAt)) {
                 if (!state.pending.isEmpty()) {
-                    if (state.mode.equals("CARD_ACTIONS")) deliverNextCard(state);
-                    else arriveNextCall(state, now);
+                    arriveNextCall(state, now);
                     changed = true;
                 }
                 state.nextArrivalAt = state.pending.isEmpty() ? null : state.intensity.nextArrival(now);
             }
-            if (state.mode.equals("CARD_FILL")) {
-                if (state.ringing != null && state.ringing.ringingSince() != null
-                        && now.isAfter(state.ringing.ringingSince().plusSeconds(RING_SECONDS))) {
-                    missRingingCall(state);
-                    changed = true;
-                }
-                IncomingCallState before = state.ringing;
-                presentNextCall(state, now);
-                changed |= before != state.ringing;
+            if (state.ringing != null && state.ringing.ringingSince() != null
+                    && now.isAfter(state.ringing.ringingSince().plusSeconds(RING_SECONDS))) {
+                missRingingCall(state);
+                changed = true;
             }
+            IncomingCallState before = state.ringing;
+            presentNextCall(state, now);
+            changed |= before != state.ringing;
             return changed;
         }
     }
@@ -833,6 +858,8 @@ public class TrainingEngine {
         synchronized (state) {
             Instant past = Instant.now().minusSeconds(1);
             state.nextArrivalAt = past;
+            // ДДС ходит по расписанию: сдвинуть надо его, иначе вводная так и не придёт
+            state.scheduledScenarioAt.replaceAll((scenarioId, at) -> past);
             List<IncomingCallState> queued = new ArrayList<>(state.callQueue);
             state.callQueue.clear();
             for (IncomingCallState c : queued) {
@@ -913,11 +940,30 @@ public class TrainingEngine {
 
     // ================================================================= internals
 
-    private void deliverNextCard(SessionState state) {
-        String scenarioId = state.pending.pollFirst();
-        if (scenarioId == null) return;
+    private boolean deliverDueCards(SessionState state, Instant now) {
+        boolean delivered = false;
+        synchronized (state) {
+            for (String scenarioId : List.copyOf(state.pending)) {
+                Instant scheduledAt = state.scheduledScenarioAt.get(scenarioId);
+                if (scheduledAt == null) {
+                    // «По одной»: очередную отдаёт afterCardChange, а не расписание.
+                    // Снимок, снятый до появления расписания, отдаёт сразу — как было тогда.
+                    if (state.intensity == Intensity.SEQUENTIAL) continue;
+                    scheduledAt = now;
+                }
+                if (now.isBefore(scheduledAt)) continue;
+                state.pending.remove(scenarioId);
+                state.scheduledScenarioAt.remove(scenarioId);
+                deliverCard(state, scenarioId, scheduledAt);
+                delivered = true;
+            }
+        }
+        return delivered;
+    }
+
+    private void deliverCard(SessionState state, String scenarioId, Instant receivedAt) {
         Scenario scenario = scenarios.require(scenarioId);
-        MutableCard card = cardFrom(scenario, state);
+        MutableCard card = cardFrom(scenario, state, receivedAt);
         state.cards.put(card.id, card);
         cardIndex.put(card.id, state.id);
         publishCard(state, card, "card.created");
@@ -925,15 +971,57 @@ public class TrainingEngine {
 
     private void afterCardChange(SessionState state, MutableCard card) {
         // Режим «по одной»: следующая карточка приходит, когда текущая доведена до конца.
-        // При заданной интенсивности карточки приходят по таймеру независимо от текущей (tickFlow).
-        if (state.intensity == Intensity.SEQUENTIAL && TERMINAL_CARD.contains(card.status) && !state.pending.isEmpty()
-                && state.cards.values().stream().allMatch(c -> TERMINAL_CARD.contains(c.status))) {
-            deliverNextCard(state);
+        // При заданной интенсивности карточки приходят по расписанию и текущей не ждут.
+        if (state.intensity == Intensity.SEQUENTIAL) {
+            if (TERMINAL_CARD.contains(card.status) && !state.pending.isEmpty()
+                    && state.cards.values().stream().allMatch(c -> TERMINAL_CARD.contains(c.status))) {
+                String scenarioId = state.pending.pollFirst();
+                state.scheduledScenarioAt.remove(scenarioId);
+                deliverCard(state, scenarioId, Instant.now());
+            }
+            return;
+        }
+        deliverDueCards(state, Instant.now());
+    }
+
+    /**
+     * Разложить вводные по времени заранее.
+     *
+     * <p>Шаг — настройка {@code simulation.card_arrival_ms}, помноженная на коэффициент
+     * интенсивности занятия. Интенсивность здесь именно множитель, а не второй планировщик:
+     * два механизма, независимо решающих судьбу {@code pending}, разошлись бы не сразу
+     * и не очевидно.
+     */
+    private void schedulePendingCards(SessionState state) {
+        if (state.pending.isEmpty() || !state.scheduledScenarioAt.isEmpty()) return;
+        if (state.intensity == Intensity.SEQUENTIAL) {
+            // расписания нет: отдаётся только первая, дальше — по завершении (afterCardChange)
+            state.scheduledScenarioAt.put(state.pending.getFirst(), state.startedAt);
+            return;
+        }
+        int baseMs = Math.max(100,
+                settings.integer(SettingsService.CARD_ARRIVAL_MS, 8000) * state.intensity.arrivalPercent / 100);
+        Instant batchAt = state.startedAt;
+        int index = 0;
+        int batch = -1;
+        for (String scenarioId : state.pending) {
+            if (index == 0) {
+                state.scheduledScenarioAt.put(scenarioId, state.startedAt);
+            } else {
+                int nextBatch = (index - 1) / 2;
+                if (nextBatch != batch) {
+                    long jitter = Math.floorMod((long) state.id.hashCode() + nextBatch * 7919L, baseMs + 1L);
+                    batchAt = batchAt.plusMillis(baseMs + jitter);
+                    batch = nextBatch;
+                }
+                // Пара карточек одного batch поступает в одну и ту же миллисекунду.
+                state.scheduledScenarioAt.put(scenarioId, batchAt);
+            }
+            index++;
         }
     }
 
-    private MutableCard cardFrom(Scenario scenario, SessionState state) {
-        Instant receivedAt = Instant.now();
+    private MutableCard cardFrom(Scenario scenario, SessionState state, Instant receivedAt) {
         MutableCard card = new MutableCard();
         card.id = UUID.randomUUID();
         card.sessionId = state.id;
@@ -1080,14 +1168,80 @@ public class TrainingEngine {
 
     private IncidentCard toView(SessionState state, MutableCard card) {
         synchronized (card) {
+            Instant now = Instant.now();
+            long remainingMs = card.openingReadyAt == null || card.openedAt != null
+                    ? 0 : Math.max(0, card.openingReadyAt.toEpochMilli() - now.toEpochMilli());
             return new IncidentCard(card.id, card.sessionId, card.number, card.receivedAt,
                     card.source, card.senderLabel, card.status, allowedActions(card), sla(card),
                     card.caller, card.address, card.description, card.incidentType, card.features,
                     card.assignedServices, card.requirements, card.callTargets,
                     List.copyOf(card.timeline), card.callIds.stream().map(state.calls::get)
                     .filter(call -> call != null).map(this::toView).toList(),
-                    hints(state, card), state.ownServiceCode, card.scenarioTitle);
+                    hints(state, card), state.ownServiceCode, card.scenarioTitle,
+                    new CardOpening(card.openingStartedAt, card.openingReadyAt, card.openedAt, remainingMs),
+                    serviceProgress(state, card, now));
         }
+    }
+
+    /** Независимые таймлайны служб. Чужие службы развиваются автоматически и параллельно. */
+    private List<ServiceProgress> serviceProgress(SessionState state, MutableCard card, Instant now) {
+        List<DictionaryItem> services = card.assignedServices;
+        int foreignOrdinal = 0;
+        List<ServiceProgress> result = new ArrayList<>();
+        for (DictionaryItem service : services) {
+            if (state.ownServiceCode.equals(service.code())) {
+                Instant changedAt = card.timeline.isEmpty() ? card.receivedAt
+                        : card.timeline.get(card.timeline.size() - 1).occurredAt();
+                result.add(new ServiceProgress(service, card.status, changedAt,
+                        card.openedAt, card.acceptedAt,
+                        timelineAt(card, "START_RESPONSE"), timelineAt(card, "ARRIVE"),
+                        timelineAt(card, "START_WORK"), timelineAt(card, "COMPLETE"), false));
+            } else {
+                result.add(simulatedProgress(card, service, foreignOrdinal++, now));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private ServiceProgress simulatedProgress(MutableCard card, DictionaryItem service, int ordinal, Instant now) {
+        long serviceSeed = Math.floorMod((long) service.code().hashCode() * 31L
+                + card.id.getLeastSignificantBits(), 1_000_003L);
+        long cardSeed = Math.floorMod(card.id.getMostSignificantBits() ^ card.id.getLeastSignificantBits(), 1_000_003L);
+        int scale = Math.max(1, settings.integer(SettingsService.SERVICE_TIME_SCALE_PERCENT, 25));
+
+        Instant opened = card.receivedAt.plusMillis(scaled(1_500 + serviceSeed % 3_500, scale));
+        Instant accepted = opened.plusMillis(scaled(3_000 + serviceSeed % 6_000, scale));
+        Instant response = accepted.plusMillis(scaled(4_000 + (serviceSeed / 7) % 12_000, scale));
+
+        // Первые две сторонние службы прибывают одновременно; остальные имеют свой разброс.
+        long commonArrivalMs = scaled(45_000 + cardSeed % 45_000, scale);
+        long jitterMs = ordinal < 2 ? 0 : scaled(((serviceSeed / 11) % 30_001) - 15_000, scale);
+        Instant arrived = card.receivedAt.plusMillis(Math.max(
+                commonArrivalMs + jitterMs,
+                response.toEpochMilli() - card.receivedAt.toEpochMilli() + scaled(2_000, scale)));
+        Instant work = arrived.plusMillis(scaled(3_000 + (serviceSeed / 13) % 7_000, scale));
+        Instant completed = work.plusMillis(scaled(30_000 + (serviceSeed / 17) % 60_000, scale));
+
+        String status = "RECEIVED";
+        Instant changedAt = card.receivedAt;
+        if (!now.isBefore(opened)) { status = "RECEIVED_BY_SERVICE"; changedAt = opened; }
+        if (!now.isBefore(accepted)) { status = "ACCEPTED"; changedAt = accepted; }
+        if (!now.isBefore(response)) { status = "RESPONSE_STARTED"; changedAt = response; }
+        if (!now.isBefore(arrived)) { status = "ARRIVED"; changedAt = arrived; }
+        if (!now.isBefore(work)) { status = "WORK_IN_PROGRESS"; changedAt = work; }
+        if (!now.isBefore(completed)) { status = "COMPLETED"; changedAt = completed; }
+        return new ServiceProgress(service, status, changedAt, opened, accepted, response,
+                arrived, work, completed, true);
+    }
+
+    private long scaled(long millis, int percent) {
+        if (millis <= 0) return millis * percent / 100;
+        return Math.max(100, millis * percent / 100);
+    }
+
+    private Instant timelineAt(MutableCard card, String action) {
+        return card.timeline.stream().filter(item -> action.equals(item.action()))
+                .map(CardTimelineEntry::occurredAt).findFirst().orElse(null);
     }
 
     /** Подсказки в режиме тренировки (решение №10): что сейчас было бы ошибкой. */
@@ -1121,7 +1275,8 @@ public class TrainingEngine {
 
     private List<String> allowedActions(MutableCard card) {
         return switch (card.status) {
-            case "RECEIVED", "RECEIVED_BY_SERVICE" -> List.of("ACCEPT", "DECLINE");
+            case "RECEIVED" -> List.of();
+            case "RECEIVED_BY_SERVICE" -> List.of("ACCEPT", "DECLINE");
             case "NOT_ACCEPTED" -> List.of("ACCEPT");
             case "ACCEPTED" -> List.of("START_RESPONSE", "REFUSE_WORK");
             case "RESPONSE_STARTED" -> List.of("ARRIVE", "REFUSE_WORK");
@@ -1270,7 +1425,8 @@ public class TrainingEngine {
         return state.cards.values().stream().map(card -> {
             synchronized (card) {
                 return new CardState(card.id, card.sessionId, card.scenarioId, card.number, card.receivedAt,
-                        card.source, card.senderLabel, card.status, card.acceptanceDeadlineAt,
+                        card.source, card.senderLabel, card.status, card.openingStartedAt,
+                        card.openingReadyAt, card.openedAt, card.acceptanceDeadlineAt,
                         card.processingDeadlineAt, card.acceptedAt, card.acceptanceOverdue,
                         card.processingOverdue, card.caller, card.address, card.description,
                         card.incidentType, card.features, card.assignedServices, card.requirements,
@@ -1307,11 +1463,15 @@ public class TrainingEngine {
         if (snapshot.trajectories() != null) {
             snapshot.trajectories().forEach(t -> state.trajectories.put(t.draftId(), t));
         }
+        if (snapshot.scheduledScenarioAt() != null) state.scheduledScenarioAt.putAll(snapshot.scheduledScenarioAt());
+        if (state.mode.equals("CARD_ACTIONS")) schedulePendingCards(state);
         for (CardState cs : snapshot.cards()) {
             MutableCard card = new MutableCard();
             card.id = cs.id(); card.sessionId = cs.sessionId(); card.scenarioId = cs.scenarioId();
             card.number = cs.number(); card.receivedAt = cs.receivedAt(); card.source = cs.source();
             card.senderLabel = cs.senderLabel(); card.status = cs.status();
+            card.openingStartedAt = cs.openingStartedAt(); card.openingReadyAt = cs.openingReadyAt();
+            card.openedAt = cs.openedAt();
             card.acceptanceDeadlineAt = cs.acceptanceDeadlineAt(); card.processingDeadlineAt = cs.processingDeadlineAt();
             card.acceptedAt = cs.acceptedAt(); card.acceptanceOverdue = cs.acceptanceOverdue();
             card.processingOverdue = cs.processingOverdue(); card.caller = cs.caller(); card.address = cs.address();
@@ -1357,6 +1517,7 @@ public class TrainingEngine {
         volatile Instant startedAt;
         volatile Instant completedAt;
         final Deque<String> pending = new ArrayDeque<>();
+        final Map<String, Instant> scheduledScenarioAt = new LinkedHashMap<>();
         final Map<UUID, MutableCard> cards = new ConcurrentHashMap<>();
         final Map<UUID, MutableCall> calls = new ConcurrentHashMap<>();
         final Map<UUID, CardDraft> drafts = new LinkedHashMap<>();
@@ -1393,6 +1554,9 @@ public class TrainingEngine {
         String source;
         String senderLabel;
         String status;
+        Instant openingStartedAt;
+        Instant openingReadyAt;
+        Instant openedAt;
         Instant acceptanceDeadlineAt;
         Instant processingDeadlineAt;
         Instant acceptedAt;

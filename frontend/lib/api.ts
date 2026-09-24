@@ -130,6 +130,26 @@ export type TimelineEntry = {
   actorRole: string;
 };
 
+export type CardOpening = {
+  startedAt: string | null;
+  readyAt: string | null;
+  openedAt: string | null;
+  remainingMs: number;
+};
+
+export type ServiceProgress = {
+  service: DictionaryItem;
+  status: string;
+  statusChangedAt: string;
+  openedAt: string | null;
+  acceptedAt: string | null;
+  responseStartedAt: string | null;
+  arrivedAt: string | null;
+  workStartedAt: string | null;
+  completedAt: string | null;
+  simulated: boolean;
+};
+
 export type IncidentCard = {
   scenarioTitle: string | null;
   id: string;
@@ -166,6 +186,8 @@ export type IncidentCard = {
   outboundCalls: OutboundCall[];
   hints: Hint[];
   ownServiceCode: string;
+  opening: CardOpening;
+  serviceProgress: ServiceProgress[];
 };
 
 // ------------------------------------------------------------------ card fill (оператор 112)

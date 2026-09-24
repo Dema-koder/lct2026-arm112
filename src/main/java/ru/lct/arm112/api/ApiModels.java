@@ -70,7 +70,18 @@ public final class ApiModels {
                                List<CallTarget> callTargets,
                                List<CardTimelineEntry> timeline,
                                List<OutboundCall> outboundCalls,
-                               List<Hint> hints, String ownServiceCode, String scenarioTitle) {}
+                               List<Hint> hints, String ownServiceCode,
+                               String scenarioTitle,
+                               CardOpening opening,
+                               List<ServiceProgress> serviceProgress) {}
+
+    public record CardOpening(Instant startedAt, Instant readyAt, Instant openedAt,
+                              long remainingMs) {}
+
+    public record ServiceProgress(DictionaryItem service, String status, Instant statusChangedAt,
+                                  Instant openedAt, Instant acceptedAt, Instant responseStartedAt,
+                                  Instant arrivedAt, Instant workStartedAt, Instant completedAt,
+                                  boolean simulated) {}
 
     public record CardSla(Instant acceptanceDeadlineAt, Instant processingDeadlineAt,
                           boolean acceptanceOverdue, boolean processingOverdue) {}

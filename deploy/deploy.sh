@@ -41,7 +41,25 @@ rollback() {
 }
 trap rollback ERR
 
-compose pull
+pull_service() {
+  local service="$1"
+  local attempt
+  for attempt in 1 2 3; do
+    if compose pull "$service"; then
+      return 0
+    fi
+    echo "Pull of ${service} failed (${attempt}/3), retrying in 5 seconds" >&2
+    sleep 5
+  done
+  return 1
+}
+
+# На небольшом production-сервере параллельная распаковка двух прикладных
+# образов создаёт лишний пик RAM и I/O. Загружаем их последовательно и
+# повторяем сетевые операции: соединение с GHCR на сервере нестабильно.
+pull_service backend
+pull_service frontend
+compose pull --policy missing postgres proxy
 compose up -d --remove-orphans
 
 for attempt in {1..30}; do

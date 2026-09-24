@@ -115,7 +115,12 @@ public class LessonService {
         if (!MODES.contains(request.mode())) throw invalid("Режим: CARD_FILL или CARD_ACTIONS");
         if (!SOURCES.contains(request.cardSource())) throw invalid("Источник карточек: GENERATED, TRAINEE_MADE или MIXED");
         scenarios.requireAll(request.scenarioIds());
-        String intensity = request.intensity() == null ? TrainingEngine.Intensity.SEQUENTIAL.name() : request.intensity();
+        // Умолчание разное по режиму: в ДДС карточки идут потоком по расписанию — на этом
+        // построено рабочее место диспетчера, где их ведут несколько сразу. У оператора 112
+        // вызов ждёт ответа, и поток без выбора преподавателя означал бы шквал с первой секунды.
+        String intensity = request.intensity() != null ? request.intensity()
+                : "CARD_ACTIONS".equals(request.mode())
+                ? TrainingEngine.Intensity.MEDIUM.name() : TrainingEngine.Intensity.SEQUENTIAL.name();
         if (!TrainingEngine.Intensity.isValid(intensity)) throw invalid("Интенсивность: SEQUENTIAL, LOW, MEDIUM или HIGH");
         String serviceCode = request.serviceCode() == null || request.serviceCode().isBlank()
                 ? TrainingEngine.OWN_SERVICE_CODE : request.serviceCode().trim();

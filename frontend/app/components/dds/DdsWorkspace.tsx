@@ -83,6 +83,16 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
     return () => window.clearInterval(timer);
   }, [activeCall, token]);
 
+  // Карточка открывается с задержкой, а чужие службы двигаются по независимым
+  // таймлайнам. Короткий опрос держит плитки живыми даже без ручных действий.
+  useEffect(() => {
+    if (!selectedId) return;
+    const timer = window.setInterval(() => {
+      void loadCard(selectedId).catch(() => undefined);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [selectedId, loadCard]);
+
   const filteredCards = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return cards;
@@ -262,8 +272,9 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
   workstation: string;
 }) {
   const callActive = activeCall && !["ENDED", "FAILED", "NO_ANSWER", "CANCELLED"].includes(activeCall.state);
-  const lastEvent = card.timeline.at(-1);
   const awaitingAcceptance = card.status === "RECEIVED" || card.status === "RECEIVED_BY_SERVICE";
+  const opening = card.status === "RECEIVED" && card.opening.readyAt && !card.opening.openedAt;
+  const openingLeftMs = opening ? Math.max(0, new Date(card.opening.readyAt!).getTime() - now) : 0;
   const [statusList, setStatusList] = useState(false);
   return (
     <section className="card-workspace">
@@ -287,40 +298,51 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
         <button className="back-list" onClick={onBack}>архив/список</button>
       </div>
 
-      <div className="card-summary-row">
-        <span>ФИО заявителя: <b>{card.caller.fullName ?? "не указано"}</b></span>
-        <span>Пострадавшие: нет　 Отказ от скорой: нет　 Заблокированные: нет</span>
-      </div>
-
-      {card.hints.length > 0 && (
-        <div className="hint-strip">
-          {card.hints.map((hint) => <span key={hint.field + hint.message}>💡 {hint.message}</span>)}
+      {opening ? (
+        <div className="card-opening" role="status" aria-live="polite">
+          <span className="card-opening-spinner" aria-hidden="true" />
+          <b>Открытие карточки происшествия</b>
+          <span>Получение данных из системы 112…</span>
+          <strong>{(openingLeftMs / 1000).toFixed(1)} сек.</strong>
         </div>
-      )}
-
-      <div className="card-columns">
-        <div className="caller-pane">
-          <b>{card.address.region ?? "Москва"}{card.address.district ? `, ${card.address.district}` : ""}</b>
-          <span>{card.address.raw}</span>
-          <div className="message"><b>{dateTime(card.receivedAt)}　{card.senderLabel}</b><p>{card.description}</p><small>Телефон: {card.caller.phone ?? "не указан"} · {card.caller.relation ?? "отношение не указано"}</small></div>
-        </div>
-        <div className="incident-pane">
-          <h2>Происшествие {card.incidentType.label}</h2>
-          <b>{card.features.length > 0 ? card.features.join(" · ") : card.address.landmark ?? ""}</b>
-          <p>Класс: <strong>{card.incidentType.label.toLowerCase()}</strong>;</p>
-          <p>[ВИС] Класс: <span>—</span></p>
-          <div className="timeline">
-            {card.timeline.map((event) => (
-              <div key={event.id}>
-                <em>{event.actorLabel}</em>
-                <time>{dateTime(event.occurredAt)}</time>
-                <b>{actionLabels[event.action] ?? event.action}</b>
-                <span>{event.comment ? `❯ ${event.comment}` : ""}</span>
-              </div>
-            ))}
+      ) : (
+        <>
+          <div className="card-summary-row">
+            <span>ФИО заявителя: <b>{card.caller.fullName ?? "не указано"}</b></span>
+            <span>Пострадавшие: нет　 Отказ от скорой: нет　 Заблокированные: нет</span>
           </div>
-        </div>
-      </div>
+
+          {card.hints.length > 0 && (
+            <div className="hint-strip">
+              {card.hints.map((hint) => <span key={hint.field + hint.message}>💡 {hint.message}</span>)}
+            </div>
+          )}
+
+          <div className="card-columns">
+            <div className="caller-pane">
+              <b>{card.address.region ?? "Москва"}{card.address.district ? `, ${card.address.district}` : ""}</b>
+              <span>{card.address.raw}</span>
+              <div className="message"><b>{dateTime(card.receivedAt)}　{card.senderLabel}</b><p>{card.description}</p><small>Телефон: {card.caller.phone ?? "не указан"} · {card.caller.relation ?? "отношение не указано"}</small></div>
+            </div>
+            <div className="incident-pane">
+              <h2>Происшествие {card.incidentType.label}</h2>
+              <b>{card.features.length > 0 ? card.features.join(" · ") : card.address.landmark ?? ""}</b>
+              <p>Класс: <strong>{card.incidentType.label.toLowerCase()}</strong>;</p>
+              <p>[ВИС] Класс: <span>—</span></p>
+              <div className="timeline">
+                {card.timeline.map((event) => (
+                  <div key={event.id}>
+                    <em>{event.actorLabel}</em>
+                    <time>{dateTime(event.occurredAt)}</time>
+                    <b>{actionLabels[event.action] ?? event.action}</b>
+                    <span>{event.comment ? `❯ ${event.comment}` : ""}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="service-dock">
         <button className="services-label">Службы:</button>
@@ -328,8 +350,9 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
           {card.assignedServices.map((service) => {
             const own = service.code === card.ownServiceCode;
             const expanded = serviceMenu === service.id;
+            const progress = card.serviceProgress.find((item) => item.service.code === service.code);
             return (
-              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "own" : "foreign"}`}>
+              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "" : "foreign"} service-${progress?.status.toLowerCase() ?? "received"}`}>
                 <button
                   className="tile-body"
                   title={own ? "Ваша служба — здесь проставляется статус реагирования" : "Статус другой службы — только просмотр"}
@@ -337,7 +360,7 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
                 >
                   <i className="tile-chevron">{expanded ? "⌄" : "⌃"}</i>
                   <b>{service.label}</b>
-                  <span>{own ? `${lastEvent ? timeOnly(lastEvent.occurredAt) : "—"} ${statusLabels[card.status] ?? card.status}` : `${timeOnly(card.receivedAt)} Добавлена`}</span>
+                  <span>{progress ? `${timeOnly(progress.statusChangedAt)} ${statusLabels[progress.status] ?? progress.status}` : `${timeOnly(card.receivedAt)} Добавлена`}</span>
                 </button>
                 {expanded && own && (
                   <button className="tile-pencil" title="Проставить статус реагирования" onClick={() => setStatusList(!statusList)}>✎</button>
