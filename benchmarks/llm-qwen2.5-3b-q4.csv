@@ -1,2 +1,2 @@
-﻿model;prompt_tok_per_s;gen_tok_per_s;produced;accepted;accept_pct;batch_seconds;seconds_per_scenario;rejections
-qwen2.5-3b-q4;53,28;9,57;10;6;60,00;44,15;4,42;{TYPE_CONTRADICTS_TEXT=4}
+﻿model;prompt_tok_per_s;gen_tok_per_s;produced;accepted;accept_pct;unique;with_foreign;batch_seconds;seconds_per_scenario;debrief_seconds;debrief_foreign;debrief_swapped;rejections
+qwen2.5-3b-q4;52,24;7,59;12;5;41,67;12;0;68,68;5,72;32,22;нет;нет;{TYPE_CONTRADICTS_TEXT=5, TYPE_LEAKED=2}
