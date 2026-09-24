@@ -115,6 +115,7 @@ public class TrainingEngine {
     private final SessionAccess access;
     private final CardActionsAssessor actionsAssessor;
     private final CardFillAssessor fillAssessor;
+    private final ru.lct.arm112.persistence.JobRepository jobs;
 
     private final Map<UUID, SessionState> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> cardIndex = new ConcurrentHashMap<>();
@@ -130,7 +131,9 @@ public class TrainingEngine {
     public TrainingEngine(EventService events, TrainingStateStore stateStore, SessionRepository sessionRepo,
                           LessonRepository lessonRepo, UserRepository userRepo, AssessmentRepository assessmentRepo,
                           ScenarioService scenarios, ReferenceDataService references, SettingsService settings,
-                          SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor) {
+                          SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor,
+                          ru.lct.arm112.persistence.JobRepository jobs) {
+        this.jobs = jobs;
         this.events = events;
         this.stateStore = stateStore;
         this.sessionRepo = sessionRepo;
@@ -454,6 +457,10 @@ public class TrainingEngine {
         state.drafts.values().forEach(draft -> cardScenarios.put(draft.id(), draft.scenarioId()));
         Assessment assessment = result.assessment();
         assessmentRepo.insert(result, state.id, state.lessonId, state.traineeId, cardScenarios);
+        // Разбор считается в фоне: на целевом железе он стоит десятки секунд,
+        // а обучающийся должен увидеть оценку сразу.
+        jobs.enqueue("SESSION_DEBRIEF", "{\"assessmentId\":\"" + assessment.id() + "\"}",
+                state.traineeId, 2);
         state.state = "COMPLETED";
         state.completedAt = Instant.now();
         sessionRepo.setState(state.id, "COMPLETED", state.completedAt);

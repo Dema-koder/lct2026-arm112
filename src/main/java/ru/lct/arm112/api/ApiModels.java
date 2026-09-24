@@ -217,6 +217,15 @@ public final class ApiModels {
                                     @Size(max = 2000) String comment,
                                     List<@Valid CriterionScore> criteria) {}
 
+    /**
+     * Персональный разбор занятия.
+     *
+     * @param state  READY — готов; PENDING — считается в фоне
+     * @param source LLM или RULES: обучающийся вправе знать, кто писал текст
+     */
+    public record Debrief(UUID assessmentId, String state, String text, String source,
+                          Instant createdAt) {}
+
     public record ResultItem(UUID sessionId, UUID lessonId, String lessonTitle, String lessonKind,
                              String mode, Instant completedAt, boolean visible,
                              Double finalTotal, String source, UUID assessmentId) {}

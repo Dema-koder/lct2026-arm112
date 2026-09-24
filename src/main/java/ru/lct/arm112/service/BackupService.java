@@ -46,7 +46,7 @@ public class BackupService {
     private static final Logger log = LoggerFactory.getLogger(BackupService.class);
     /** Порядок вставки: родители раньше детей. app_user.group_id проставляется после training_group. */
     private static final List<String> TABLES = List.of("app_user", "training_group", "app_setting", "scenario",
-            "lesson", "training_session", "assessment", "assessment_issue", "assessment_card",
+            "lesson", "training_session", "assessment", "assessment_issue", "assessment_card", "assessment_debrief",
             "training_state", "realtime_event",
             "material", "material_group", "audit_event", "job");
     /** Список таблиц копии — открыт для проверки соответствия схеме (см. BackupTablesTest). */
