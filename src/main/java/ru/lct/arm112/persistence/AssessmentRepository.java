@@ -48,6 +48,14 @@ public class AssessmentRepository {
                 .stream().findFirst();
     }
 
+    /** Все оценки обучающегося по времени — для кривой обучения и профиля. */
+    public List<AssessmentRow> findByTrainee(UUID traineeId) {
+        return jdbc.query("""
+                select a.* from assessment a join training_session s on s.id = a.session_id
+                 where s.trainee_id = ? order by a.created_at
+                """, mapper, traineeId);
+    }
+
     public List<AssessmentRow> findByLesson(UUID lessonId) {
         return jdbc.query("""
                 select a.* from assessment a join training_session s on s.id = a.session_id

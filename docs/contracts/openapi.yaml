@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.3
+  version: 0.3.4
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -87,6 +87,25 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TraineeContext'}
+  /assessments/{assessmentId}/debrief:
+    get:
+      tags: [Trainee]
+      operationId: assessmentDebrief
+      summary: Персональный разбор занятия
+      description: >
+        Считается в фоновой очереди, поэтому может быть ещё не готов — тогда state PENDING.
+        Поле source говорит, писала текст модель (LLM) или правила (RULES).
+      parameters:
+        - name: assessmentId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Разбор
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Debrief'}
   /trainee/results:
     get:
       tags: [Trainee]
@@ -756,6 +775,77 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/LessonReport'}
+  /teacher/lessons/{id}/overview:
+    get:
+      tags: [Teacher]
+      operationId: lessonOverview
+      summary: Обзор занятия для разбора с группой
+      description: >
+        Средние по критериям с потерей в баллах, типовые ошибки и разрез по сценариям.
+        Отдельно от /report: тот отдаёт строки по обучающимся, и его форма не меняется.
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Обзор занятия
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonOverview'}
+  /teacher/trainees/{traineeId}/profile:
+    get:
+      tags: [Teacher]
+      operationId: traineeProfile
+      summary: Профиль обучающегося
+      description: >
+        Критерии, время внутри карточки на фоне группы, устойчивые недочёты,
+        кривая обучения и покрытие категорий. Преподаватель видит только тех,
+        кто участвовал в его занятиях.
+      parameters:
+        - name: traineeId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TraineeProfile'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /teacher/scenarios/quality:
+    get:
+      tags: [Teacher]
+      operationId: scenarioQuality
+      summary: Качество библиотеки сценариев
+      description: >
+        Эмпирическая сложность по модели Раша против заявленной и дискриминативность.
+        Сценарии с числом наблюдений меньше десяти в выдачу не попадают.
+      responses:
+        '200':
+          description: Качество сценариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ScenarioQuality'}
+  /teacher/calibration:
+    get:
+      tags: [Teacher]
+      operationId: calibrationReport
+      summary: Расхождение оценки ИИ с оценкой преподавателя
+      description: >
+        Предложение по калибровке, а не применённое изменение: решение за преподавателем.
+        Критерии, где калибровать нечего, попадают в skipped с объяснением.
+      parameters:
+        - name: mode
+          in: query
+          schema: {type: string, enum: [CARD_FILL, CARD_ACTIONS], default: CARD_FILL}
+      responses:
+        '200':
+          description: Отчёт о калибровке
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CalibrationReport'}
   /teacher/lessons/{id}/report.csv:
     get:
       tags: [Teacher]
@@ -1958,6 +2048,183 @@ components:
         completedCards: {type: integer}
         totalCards: {type: integer}
         finalTotal: {type: [number, 'null']}
+    CriterionSummary:
+      type: object
+      additionalProperties: false
+      required: [code, label, weight]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        average: {type: number, nullable: true}
+        weight: {type: number}
+        lostPoints:
+          type: number
+          nullable: true
+          description: (100 − балл) × вес / 100 — вклад критерия в потерю итога
+    IssueSummary:
+      type: object
+      additionalProperties: false
+      required: [code, severity, occurrences, trainees]
+      properties:
+        code: {type: string}
+        severity: {type: string, enum: [CRITICAL, WARNING, INFO]}
+        message: {type: string, nullable: true}
+        occurrences: {type: integer}
+        trainees: {type: integer}
+    ScenarioIssues:
+      type: object
+      additionalProperties: false
+      required: [scenarioId, cards, withIssues]
+      properties:
+        scenarioId: {type: string}
+        title: {type: string, nullable: true}
+        cards: {type: integer}
+        withIssues: {type: integer}
+    LessonOverview:
+      type: object
+      additionalProperties: false
+      required: [lesson, trainees, criticalIssues, criteria, topIssues, byScenario]
+      properties:
+        lesson: {$ref: '#/components/schemas/Lesson'}
+        trainees: {type: integer}
+        medianTotal: {type: number, nullable: true}
+        spread: {type: number, nullable: true}
+        inNormPercent: {type: number, nullable: true}
+        criticalIssues: {type: integer}
+        criteria:
+          type: array
+          description: по убыванию потери в баллах, а не по баллу
+          items: {$ref: '#/components/schemas/CriterionSummary'}
+        topIssues:
+          type: array
+          items: {$ref: '#/components/schemas/IssueSummary'}
+        byScenario:
+          type: array
+          items: {$ref: '#/components/schemas/ScenarioIssues'}
+    TimingMetric:
+      type: object
+      additionalProperties: false
+      required: [code, label]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        value: {type: number, nullable: true}
+        groupMedian: {type: number, nullable: true}
+        percentile:
+          type: integer
+          nullable: true
+          description: null при группе меньше восьми человек — на малой группе ранг это шум
+        hint: {type: string, nullable: true}
+    PersistentIssue:
+      type: object
+      additionalProperties: false
+      required: [code, severity, lessons, occurrences, trend]
+      properties:
+        code: {type: string}
+        severity: {type: string, enum: [CRITICAL, WARNING, INFO]}
+        message: {type: string, nullable: true}
+        lessons: {type: integer}
+        occurrences: {type: integer}
+        trend: {type: string, enum: [PERSISTENT, IMPROVING, RESOLVED]}
+    ProgressPoint:
+      type: object
+      additionalProperties: false
+      required: [sessionNumber, lessonId]
+      properties:
+        sessionNumber: {type: integer}
+        lessonId: {type: string, format: uuid}
+        lessonTitle: {type: string, nullable: true}
+        lessonKind: {type: string, nullable: true}
+        total: {type: number, nullable: true}
+        completedAt: {type: string, format: date-time, nullable: true}
+    CategoryCoverage:
+      type: object
+      additionalProperties: false
+      required: [category, cards]
+      properties:
+        category: {type: string}
+        cards: {type: integer}
+    TraineeProfile:
+      type: object
+      additionalProperties: false
+      required: [trainee, criteria, timing, persistentIssues, progress, coverage]
+      properties:
+        trainee: {$ref: '#/components/schemas/User'}
+        rating: {$ref: '#/components/schemas/Rating'}
+        criteria:
+          type: array
+          items: {$ref: '#/components/schemas/CriterionSummary'}
+        timing:
+          type: array
+          items: {$ref: '#/components/schemas/TimingMetric'}
+        persistentIssues:
+          type: array
+          items: {$ref: '#/components/schemas/PersistentIssue'}
+        progress:
+          type: array
+          items: {$ref: '#/components/schemas/ProgressPoint'}
+        coverage:
+          type: array
+          items: {$ref: '#/components/schemas/CategoryCoverage'}
+    ScenarioQuality:
+      type: object
+      additionalProperties: false
+      required: [scenarioId, observations, passed, referenceConfirmed]
+      properties:
+        scenarioId: {type: string}
+        title: {type: string, nullable: true}
+        category: {type: string, nullable: true}
+        declaredDifficulty: {type: integer, nullable: true}
+        suggestedDifficulty:
+          type: integer
+          nullable: true
+          description: сложность по Рашу на шкале 1–10
+        difficultyLogit: {type: number, nullable: true}
+        standardError: {type: number, nullable: true}
+        observations: {type: integer}
+        passed: {type: integer}
+        discrimination:
+          type: number
+          nullable: true
+          description: около нуля — сценарий ничего не различает
+        referenceConfirmed: {type: boolean}
+    CriterionCalibration:
+      type: object
+      additionalProperties: false
+      required: [code, label, slope, intercept, maeBefore, maeAfter, improvementPercent, pairs]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        slope: {type: number}
+        intercept: {type: number}
+        maeBefore: {type: number}
+        maeAfter: {type: number}
+        improvementPercent: {type: number}
+        pairs: {type: integer}
+    CalibrationReport:
+      type: object
+      additionalProperties: false
+      required: [mode, assessments, criteria, skipped]
+      properties:
+        mode: {type: string}
+        assessments: {type: integer}
+        criteria:
+          type: array
+          items: {$ref: '#/components/schemas/CriterionCalibration'}
+        skipped:
+          type: array
+          description: критерии без калибровки с объяснением причины
+          items: {type: string}
+    Debrief:
+      type: object
+      additionalProperties: false
+      required: [assessmentId, state]
+      properties:
+        assessmentId: {type: string, format: uuid}
+        state: {type: string, enum: [READY, PENDING]}
+        text: {type: string, nullable: true}
+        source: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time, nullable: true}
     LessonReport:
       type: object
       additionalProperties: false

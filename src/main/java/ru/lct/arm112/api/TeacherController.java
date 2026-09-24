@@ -37,10 +37,16 @@ public class TeacherController {
     private final TrainingEngine engine;
     private final MaterialRepository materials;
     private final Path materialsDir;
+    private final ru.lct.arm112.service.analytics.DashboardService dashboards;
+    private final ru.lct.arm112.persistence.SessionRepository sessions;
 
     public TeacherController(LessonService lessons, ScenarioService scenarios, TrainingEngine engine,
                              MaterialRepository materials,
-                             @Value("${arm112.materials.dir:./materials-store}") String materialsDir) {
+                             @Value("${arm112.materials.dir:./materials-store}") String materialsDir,
+                             ru.lct.arm112.service.analytics.DashboardService dashboards,
+                             ru.lct.arm112.persistence.SessionRepository sessions) {
+        this.dashboards = dashboards;
+        this.sessions = sessions;
         this.lessons = lessons;
         this.scenarios = scenarios;
         this.engine = engine;
@@ -129,6 +135,41 @@ public class TeacherController {
         return lessons.monitor(id, actor);
     }
 
+    /**
+     * Обзор занятия: средние по критериям, типовые ошибки, разрез по сценариям.
+     *
+     * <p>Отдельно от {@code /report}: тот отдаёт строки по обучающимся и его форму
+     * менять нельзя — в контракте запрещены лишние поля.
+     */
+    @GetMapping("/lessons/{id}/overview")
+    public LessonOverview overview(@PathVariable UUID id, CurrentUser actor) {
+        return dashboards.lessonOverview(lessons.require(id, actor));
+    }
+
+    /** Профиль обучающегося: то, с чего преподаватель пишет характеристику. */
+    @GetMapping("/trainees/{traineeId}/profile")
+    public TraineeProfile traineeProfile(@PathVariable UUID traineeId, CurrentUser actor) {
+        requireOwnTrainee(traineeId, actor);
+        return dashboards.traineeProfile(traineeId);
+    }
+
+    /** Качество библиотеки: эмпирическая сложность сценариев против заявленной. */
+    @GetMapping("/scenarios/quality")
+    public List<ScenarioQuality> scenarioQuality() {
+        return dashboards.scenarioQuality();
+    }
+
+    /**
+     * Расхождение оценки ИИ с оценкой преподавателя и предложение по калибровке.
+     *
+     * <p>Именно предложение: коэффициенты возвращаются, но ничего не применяют.
+     * Приоритет за преподавателем, решение тоже.
+     */
+    @GetMapping("/calibration")
+    public CalibrationReport calibration(@RequestParam(defaultValue = "CARD_FILL") String mode) {
+        return dashboards.calibrationReport(mode);
+    }
+
     @GetMapping("/lessons/{id}/report")
     public LessonReport report(@PathVariable UUID id, CurrentUser actor) {
         return lessons.report(id, actor);
@@ -215,5 +256,21 @@ public class TeacherController {
     private Material toMaterial(MaterialRow row) {
         return new Material(row.id(), row.teacherId(), row.title(), row.fileName(), row.contentType(),
                 row.sizeBytes(), row.uploadedAt(), materials.groupsOf(row.id()));
+    }
+
+    /**
+     * Преподаватель смотрит только тех, кого учит сам: обучающийся должен быть
+     * участником хотя бы одного его занятия. Решение №8 о видимости занятий
+     * распространяется и на профили.
+     */
+    private void requireOwnTrainee(UUID traineeId, CurrentUser actor) {
+        if (actor.is(ru.lct.arm112.security.Role.ADMIN)) return;
+        boolean own = lessons.list(actor, null).stream()
+                .anyMatch(lesson -> sessions.findByLesson(lesson.id()).stream()
+                        .anyMatch(row -> row.traineeId().equals(traineeId)));
+        if (!own) {
+            throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "FORBIDDEN",
+                    "Обучающийся не участвовал в ваших занятиях");
+        }
     }
 }

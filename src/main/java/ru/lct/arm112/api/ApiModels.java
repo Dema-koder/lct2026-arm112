@@ -260,6 +260,90 @@ public final class ApiModels {
                             Double timingScore, Integer syntaxErrors, Double level,
                             Double aiTotal, Double teacherTotal, Double finalTotal, String state) {}
 
+    // ---------------------------------------------------------------- аналитика (экраны разбора)
+    //
+    // Записи добавлены под экраны из DASHBOARDS.md. Существующие ответы не менялись:
+    // в контракте additionalProperties: false, и новое поле сломало бы строгих клиентов.
+
+    /**
+     * Балл по критерию и его вклад в потерю итога.
+     *
+     * @param lostPoints (100 − балл) × вес / 100 — сколько баллов итога стоила эта ошибка.
+     *                   Сортировать экран надо по нему, а не по баллу: время 61 при весе 15
+     *                   стоит меньше, чем адрес 72 при весе 40
+     */
+    public record CriterionSummary(String code, String label, Double average,
+                                   double weight, Double lostPoints) {}
+
+    /** Как часто встречается код замечания и скольких обучающихся задел. */
+    public record IssueSummary(String code, String severity, String message,
+                               int occurrences, int trainees) {}
+
+    /** Ошибки в разрезе сценария: отделяет плохой сценарий от неусвоенной темы. */
+    public record ScenarioIssues(String scenarioId, String title, int cards, int withIssues) {}
+
+    /**
+     * Обзор занятия для преподавателя.
+     *
+     * @param inNormPercent доля карточек, уложившихся в норматив
+     * @param criteria      по убыванию потери в баллах, а не по баллу
+     */
+    public record LessonOverview(Lesson lesson, int trainees, Double medianTotal, Double spread,
+                                 Double inNormPercent, int criticalIssues,
+                                 List<CriterionSummary> criteria, List<IssueSummary> topIssues,
+                                 List<ScenarioIssues> byScenario) {}
+
+    /** Показатель времени внутри карточки на фоне группы; перцентиль null при группе меньше восьми. */
+    public record TimingMetric(String code, String label, Double value, Double groupMedian,
+                               Integer percentile, String hint) {}
+
+    /**
+     * Недочёт, повторяющийся из занятия в занятие.
+     *
+     * @param trend PERSISTENT — не уходит, IMPROVING — реже, RESOLVED — нет в последних занятиях
+     */
+    public record PersistentIssue(String code, String severity, String message,
+                                  int lessons, int occurrences, String trend) {}
+
+    /** Точка кривой обучения. */
+    public record ProgressPoint(int sessionNumber, UUID lessonId, String lessonTitle, String lessonKind,
+                                Double total, Instant completedAt) {}
+
+    /** Сколько карточек отработано по категории происшествий — видно пробелы в подготовке. */
+    public record CategoryCoverage(String category, int cards) {}
+
+    /** Профиль обучающегося: то, с чего преподаватель пишет характеристику. */
+    public record TraineeProfile(User trainee, Rating rating, List<CriterionSummary> criteria,
+                                 List<TimingMetric> timing, List<PersistentIssue> persistentIssues,
+                                 List<ProgressPoint> progress, List<CategoryCoverage> coverage) {}
+
+    /**
+     * Качество сценария по накопленной статистике.
+     *
+     * @param suggestedDifficulty сложность по Рашу, приведённая к шкале 1–10; null — наблюдений мало
+     * @param discrimination      связь балла за сценарий с итогом сессии; около нуля означает,
+     *                            что сценарий ничего не различает
+     */
+    public record ScenarioQuality(String scenarioId, String title, String category,
+                                  Integer declaredDifficulty, Integer suggestedDifficulty,
+                                  Double difficultyLogit, Double standardError,
+                                  int observations, int passed, Double discrimination,
+                                  boolean referenceConfirmed) {}
+
+    /** Калибровка по одному критерию: предложение, а не применённое изменение. */
+    public record CriterionCalibration(String code, String label, double slope, double intercept,
+                                       double maeBefore, double maeAfter, double improvementPercent,
+                                       int pairs) {}
+
+    /**
+     * Расхождение оценки ИИ с оценкой преподавателя.
+     *
+     * @param skipped критерии, для которых калибровка не предлагается, с причиной:
+     *                мало пар, ИИ уже согласен с преподавателем, улучшение не окупается
+     */
+    public record CalibrationReport(String mode, int assessments,
+                                    List<CriterionCalibration> criteria, List<String> skipped) {}
+
     public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
                                 List<CardDraft> drafts, Assessment assessment) {}
 

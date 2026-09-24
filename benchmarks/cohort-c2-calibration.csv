@@ -1,0 +1,4 @@
+﻿criterion;slope;intercept;true_slope;true_intercept;mae_before;mae_after;improvement_pct;pairs
+address;0,97;-13,98;0,90;-8,00;16,53;1,84;88,90;72
+timing;0,82;3,20;0,80;5,00;12,42;1,50;87,90;72
+language;1,03;11,35;1,10;6,00;11,78;2,25;80,90;72
