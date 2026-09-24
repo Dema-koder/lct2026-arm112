@@ -11,6 +11,7 @@ import ru.lct.arm112.service.ReferenceDataService;
 import ru.lct.arm112.service.ScenarioService;
 import ru.lct.arm112.service.analytics.IncidentTypeClassifier;
 import ru.lct.arm112.service.analytics.IncidentTypeClassifier.Suggestion;
+import ru.lct.arm112.service.assessment.LanguageChecker;
 import ru.lct.arm112.service.assessment.TextUtil;
 
 import java.util.ArrayList;
@@ -70,9 +71,12 @@ public class ScenarioValidator {
     private final ReferenceDataService references;
     private final IncidentTypeClassifier classifier;
     private final ScenarioService scenarios;
+    private final LanguageChecker language;
 
     public ScenarioValidator(AddressReferenceService addresses, ReferenceDataService references,
-                             IncidentTypeClassifier classifier, ScenarioService scenarios) {
+                             IncidentTypeClassifier classifier, ScenarioService scenarios,
+                             LanguageChecker language) {
+        this.language = language;
         this.addresses = addresses;
         this.references = references;
         this.classifier = classifier;
@@ -104,6 +108,7 @@ public class ScenarioValidator {
         checkAddress(scenario, fatal, warnings);
         checkTypes(scenario, fatal, warnings);
         checkServices(scenario, warnings);
+        checkLanguage(scenario, fatal, warnings);
         checkLeak(scenario, fatal);
         checkContext(scenario, warnings);
         checkDuplicate(scenario, warnings);
@@ -200,6 +205,70 @@ public class ScenarioValidator {
                     "Состав служб расходится с ЕКП: лишние " + extra + ", отсутствуют " + missing,
                     "expectedServices"));
         }
+    }
+
+    /**
+     * Текст вводной должен быть по-русски и читаемым.
+     *
+     * <p>Проверка появилась после замера языковых моделей: и 3B, и 7B срываются
+     * на другие языки прямо посреди фразы — «Пожар в мусорном баку,没有人说话».
+     * Остальные проверки такое пропускали: тип верный, адрес из справочника,
+     * службы по ЕКП. Формально безупречный сценарий, который нельзя показать человеку.
+     *
+     * <p>Иероглифы и прочие чужие письменности — отказ, потому что осмысленного
+     * текста из этого не выйдет. Небрежность в пределах русского — замечание:
+     * её увидит преподаватель при подтверждении.
+     */
+    private void checkLanguage(ScenarioUpsert s, List<Violation> fatal, List<Violation> warnings) {
+        if (isBlank(s.callerText())) return;
+        String text = s.callerText();
+
+        StringBuilder foreign = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (isForeignScript(c) && foreign.indexOf(String.valueOf(c)) < 0) foreign.append(c);
+        }
+        if (!foreign.isEmpty()) {
+            fatal.add(new Violation("FOREIGN_SCRIPT",
+                    "В тексте заявителя чужая письменность: «" + foreign + "»", "callerText"));
+            return;
+        }
+
+        int cyrillic = 0, latin = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = Character.toLowerCase(text.charAt(i));
+            if (c >= 'а' && c <= 'я' || c == 'ё') cyrillic++;
+            else if (c >= 'a' && c <= 'z') latin++;
+        }
+        if (cyrillic == 0) {
+            fatal.add(new Violation("NOT_RUSSIAN",
+                    "Текст заявителя не на русском языке", "callerText"));
+            return;
+        }
+        if (latin > cyrillic / 10) {
+            warnings.add(new Violation("LATIN_IN_TEXT",
+                    "Много латиницы в тексте заявителя: проверьте, не сорвалась ли генерация",
+                    "callerText"));
+        }
+        LanguageChecker.Result quality = language.check(text);
+        if (quality.errors() > 0) {
+            warnings.add(new Violation("SLOPPY_TEXT",
+                    "Проверка грамотности нашла: " + String.join("; ", quality.findings()), "callerText"));
+        }
+    }
+
+    /** Письменности, которых в тексте заявителя службы 112 быть не может. */
+    private static boolean isForeignScript(char c) {
+        Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+        return block == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                || block == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+                || block == Character.UnicodeBlock.HIRAGANA
+                || block == Character.UnicodeBlock.KATAKANA
+                || block == Character.UnicodeBlock.HANGUL_SYLLABLES
+                || block == Character.UnicodeBlock.ARABIC
+                || block == Character.UnicodeBlock.HEBREW
+                || block == Character.UnicodeBlock.DEVANAGARI
+                || block == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS;
     }
 
     /**

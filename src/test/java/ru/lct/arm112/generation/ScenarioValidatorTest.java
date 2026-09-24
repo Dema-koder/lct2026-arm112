@@ -66,7 +66,13 @@ class ScenarioValidatorTest {
                         s -> withText(s, "Горит мусорный контейнер, адрес цюрупы 12, пострадавших нет.")),
                 new Broken("подпись типа в тексте", "TYPE_LEAKED",
                         s -> withText(s, "У нас тут пожар мусора во дворе, огонь до метра, никто не пострадал.")),
-                new Broken("нет названия", "TITLE_MISSING", s -> withTitle(s, null)));
+                new Broken("нет названия", "TITLE_MISSING", s -> withTitle(s, null)),
+                // Найдено замером языковых моделей: и 3B, и 7B срываются на другие языки
+                // посреди фразы, а остальные проверки такое пропускали
+                new Broken("иероглифы в тексте", "FOREIGN_SCRIPT",
+                        s -> withText(s, "Пожар в мусорном баку,没有人说话，请问您需要我做什么？")),
+                new Broken("текст не на русском", "NOT_RUSSIAN",
+                        s -> withText(s, "A garbage container is on fire in the yard, nobody hurt.")));
 
         List<String> missed = new ArrayList<>();
         for (Broken broken : cases) {
