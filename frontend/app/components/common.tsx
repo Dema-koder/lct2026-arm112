@@ -82,16 +82,18 @@ export function TopStrip({ label, onLogout, nav }: { label: string; onLogout: ()
   const [scale, setScale] = useUiScale();
   return (
     <header className="top-strip">
-      <div className="product-name">ГБУ Система 112</div>
       {nav && <nav className="top-nav">{nav}</nav>}
-      <div className="scale-control" title="Масштаб интерфейса">
-        <button onClick={() => setScale(scale - 0.1)} disabled={scale <= 0.8} aria-label="Мельче">A−</button>
-        <span>{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(scale + 0.1)} disabled={scale >= 1.6} aria-label="Крупнее">A+</button>
+      <div className="product-name">ГБУ Система 112</div>
+      <div className="top-actions">
+        <button type="button" className="user-chip" onClick={onLogout} title={`${label} — выйти из системы`}>
+          <span className="user-chip-label">{label}</span> <b>×</b>
+        </button>
+        <div className="scale-control" title="Масштаб интерфейса">
+          <button type="button" onClick={() => setScale(scale - 0.1)} disabled={scale <= 0.8} aria-label="Мельче">A−</button>
+          <span>{Math.round(scale * 100)}%</span>
+          <button type="button" onClick={() => setScale(scale + 0.1)} disabled={scale >= 1.6} aria-label="Крупнее">A+</button>
+        </div>
       </div>
-      <button className="user-chip" onClick={onLogout} title="Выйти из системы">
-        {label} <b>×</b>
-      </button>
     </header>
   );
 }

@@ -2,8 +2,8 @@
    Общие панели преподавателя / администратора / результатов — тот же стиль,
    что у журнала: серо-синяя палитра, кнопка только там, где без неё нельзя.
    ===================================================================== */
-.top-nav { position: absolute; left: 12px; top: 0; height: 34px; display: flex; gap: 2px; }
-.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; }
+.top-nav { min-width: 0; height: 34px; display: flex; gap: 2px; overflow-x: auto; }
+.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap; flex: 0 0 auto; }
 .top-nav button.active { border-bottom-color: var(--blue); color: #111; font-weight: bold; }
 .top-nav button:hover { background: #e9ecee; }
 
@@ -149,12 +149,31 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .fill-row { display: flex; gap: 6px; align-items: end; }
 .fill-row.wrap { flex-wrap: wrap; }
 .fill-block label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.fill-block label > span { font-size: 10px; color: #56656c; white-space: nowrap; }
-.fill-block input, .fill-block select { height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px; }
+.fill-block label > span { font-size: 10px; color: #56656c; line-height: 1.2; }
+.fill-block input, .fill-block select {
+  width: 100%; min-width: 0; height: 26px; padding: 0 6px;
+  border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px;
+  box-sizing: border-box;
+}
 .fill-block label.hinted input { border-color: #e2b400; background: #fffbe6; }
-.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; }
+.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; box-sizing: border-box; }
 .counter { text-align: right; font-size: 10px; color: #6d797f; }
-.w-xs { width: 64px; } .w-s { width: 96px; } .w-m { flex: 1; min-width: 120px; } .w-l { flex: 2; min-width: 180px; } .w-full { width: 100%; }
+.w-xs { width: 64px; flex: none; } .w-s { width: 96px; flex: none; }
+.w-m { flex: 1 1 120px; min-width: 120px; } .w-l { flex: 2 1 180px; min-width: 180px; }
+.w-full { width: 100%; display: block; margin-top: 6px; }
+/* Адрес: 12 колонок — поля не наезжают друг на друга при zoom и узкой левой колонке */
+.address-fields {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px 8px;
+  align-items: end;
+}
+.address-fields label { min-width: 0; }
+.address-fields .af-2 { grid-column: span 2; }
+.address-fields .af-3 { grid-column: span 3; }
+.address-fields .af-4 { grid-column: span 4; }
+.address-fields .af-5 { grid-column: span 5; }
+.address-fields .af-6 { grid-column: span 6; }
 .flags-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .flags-bar button { height: 28px; padding: 0 10px; border: 1px solid #b1babf; background: #e8eaeb; font-size: 11px; }
 .flags-bar button.on { background: var(--blue); color: white; border-color: var(--blue); }
@@ -190,12 +209,20 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 @media (max-width: 1250px) {
   .fill-columns { grid-template-columns: 1fr; }
   .form-grid, .form-grid.four, .form-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .address-fields { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .address-fields .af-3,
+  .address-fields .af-4 { grid-column: span 3; }
+  .address-fields .af-5,
+  .address-fields .af-6 { grid-column: span 6; }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
 :root { --ui-scale: 1; }
 body { zoom: var(--ui-scale); }
-.scale-control { position: absolute; right: 250px; top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #3c4a51; }
+.scale-control {
+  display: flex; align-items: center; gap: 4px; flex: 0 0 auto; position: static !important;
+  right: auto !important; top: auto !important; font-size: 11px; color: #3c4a51;
+}
 .scale-control button { width: 26px; height: 22px; padding: 0; border: 1px solid #b1babf; background: white; font-size: 11px; }
 .scale-control button:disabled { opacity: .4; }
 .scale-control span { min-width: 36px; text-align: center; }
@@ -252,7 +279,6 @@ body { zoom: var(--ui-scale); }
 .chip-inline { display: inline-block; margin: 0 4px 2px 0; }
 
 @media (max-width: 1366px) {
-  .scale-control { right: 230px; }
   .analytics-page .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analytics-grid { grid-template-columns: 1fr; }
   .donut-wrap { grid-template-columns: 1fr; justify-items: start; }

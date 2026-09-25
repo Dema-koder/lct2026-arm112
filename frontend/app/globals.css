@@ -60,10 +60,26 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* App chrome */
 .arm-shell { min-width: 980px; min-height: 100vh; background: var(--steel-500); overflow: hidden; }
-.top-strip { height: 34px; display: flex; align-items: center; justify-content: center; background: #f7f7f7; border-bottom: 1px solid #bbc1c4; position: relative; }
-.product-name { font-size: 14px; }
-.user-chip { position: absolute; right: 10px; top: 5px; border: 0; background: transparent; color: #3c4a51; font-size: 11px; }
-.user-chip b { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 8px; color: white; background: var(--steel-900); }
+.top-strip {
+  height: 34px; display: grid; align-items: center; gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  background: #f7f7f7; border-bottom: 1px solid #bbc1c4;
+  padding: 0 10px; overflow: hidden;
+}
+.top-strip:not(:has(.top-nav)) { grid-template-columns: 1fr auto; }
+.top-strip:not(:has(.top-nav)) .product-name { grid-column: 1; justify-self: center; }
+.product-name { flex: none; font-size: 14px; white-space: nowrap; margin: 0; }
+.top-actions {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  white-space: nowrap; justify-self: end;
+}
+.user-chip {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  border: 0; background: transparent; color: #3c4a51; font-size: 11px;
+  white-space: nowrap;
+}
+.user-chip-label { white-space: nowrap; }
+.user-chip b { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; color: white; background: var(--steel-900); }
 
 /* Journal */
 .journal { min-height: calc(100vh - 34px); }

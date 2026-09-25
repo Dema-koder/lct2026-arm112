@@ -16,11 +16,20 @@ type Props = {
 };
 
 const ADDRESS_FIELDS: Array<[keyof FormalAddress, string, string]> = [
-  ["country", "Страна", "w-s"], ["region", "Субъект", "w-m"], ["locality", "Населённый пункт", "w-m"],
-  ["object", "Объект", "w-m"], ["okrug", "Округ", "w-s"], ["district", "Район", "w-m"],
-  ["street", "Улица", "w-l"], ["house", "Дом/Вл.", "w-xs"], ["building", "Корпус", "w-xs"],
-  ["structure", "Стр/соор.", "w-xs"], ["apartment", "Квартира/офис", "w-xs"], ["entrance", "Подъезд", "w-xs"],
-  ["floor", "Этаж", "w-xs"], ["code", "Код", "w-xs"],
+  ["country", "Страна", "af-2"],
+  ["region", "Субъект", "af-5"],
+  ["locality", "Населённый пункт", "af-5"],
+  ["object", "Объект", "af-4"],
+  ["okrug", "Округ", "af-3"],
+  ["district", "Район", "af-5"],
+  ["street", "Улица", "af-6"],
+  ["house", "Дом/Вл.", "af-2"],
+  ["building", "Корпус", "af-2"],
+  ["structure", "Стр/соор.", "af-2"],
+  ["apartment", "Квартира/офис", "af-3"],
+  ["entrance", "Подъезд", "af-3"],
+  ["floor", "Этаж", "af-3"],
+  ["code", "Код", "af-3"],
 ];
 
 /**
@@ -220,7 +229,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
 
               <fieldset className={`fill-block ${hint("address.street") || hint("address.house") ? "hinted" : ""}`}>
                 <legend>Адрес</legend>
-                <div className="fill-row wrap">
+                <div className="address-fields">
                   {ADDRESS_FIELDS.map(([key, title, width]) => (
                     <label key={key} className={`${width} ${hint(`address.${key}`) ? "hinted" : ""}`} title={hint(`address.${key}`)}>
                       <span>{title}</span>
