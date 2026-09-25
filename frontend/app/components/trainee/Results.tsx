@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, type Assessment, type Material, type Rating, type ResultItem } from "../../../lib/api";
-import { bytes, criterionLabels, dateTime, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
+import { bytes, criterionLabels, dateTime, formatIssueValue, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
 
 /** Мои результаты: список занятий по правилу видимости, детали оценки, рейтинг, материалы группы. */
 export function Results({ token, refreshKey }: { token: string; refreshKey: number }) {
@@ -98,7 +98,7 @@ async function download(token: string, material: Material) {
   URL.revokeObjectURL(url);
 }
 
-export function AssessmentView({ assessment, onClose, title }: { assessment: Assessment; onClose?: () => void; title?: string }) {
+export function AssessmentView({ assessment, onClose, title, hideIssues }: { assessment: Assessment; onClose?: () => void; title?: string; hideIssues?: boolean }) {
   const fill = assessment.mode === "CARD_FILL";
   return (
     <section className="assessment-card">
@@ -140,10 +140,23 @@ export function AssessmentView({ assessment, onClose, title }: { assessment: Ass
             })}
           </ul>
         )}
-        {assessment.issues.filter((i) => i.severity !== "INFO").map((issue, index) => (
-          <p key={index} className={`assessment-issue ${issue.severity === "CRITICAL" ? "critical" : ""}`}>{issue.message}</p>
-        ))}
-        {assessment.issues.filter((i) => i.severity === "INFO").length > 0 && (
+        {!hideIssues && assessment.issues.filter((i) => i.severity !== "INFO").map((issue, index) => {
+          const expected = formatIssueValue(issue.expected);
+          const actual = formatIssueValue(issue.actual);
+          return (
+            <p key={index} className={`assessment-issue ${issue.severity === "CRITICAL" ? "critical" : ""}`}>
+              {issue.message}
+              {(expected || actual) && (
+                <small className="issue-compare">
+                  {expected && <>эталон: <b>{expected}</b></>}
+                  {expected && actual && " · "}
+                  {actual && <>факт: <b>{actual}</b></>}
+                </small>
+              )}
+            </p>
+          );
+        })}
+        {!hideIssues && assessment.issues.filter((i) => i.severity === "INFO").length > 0 && (
           <details className="assessment-details">
             <summary>Замечания по тексту ({assessment.issues.filter((i) => i.severity === "INFO").length})</summary>
             {assessment.issues.filter((i) => i.severity === "INFO").map((issue, index) => <p key={index}>{issue.message}</p>)}

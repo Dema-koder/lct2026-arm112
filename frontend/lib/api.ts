@@ -361,6 +361,7 @@ export type Lesson = {
   completedAt: string | null;
   resultsPublishedAt: string | null;
   sessionCount: number;
+  normScore: number;
 };
 
 export type LessonCreate = {
@@ -371,6 +372,7 @@ export type LessonCreate = {
   cardSource: CardSource;
   scenarioIds: string[];
   traineeIds: string[];
+  normScore: number;
 };
 
 export type MonitorRow = {

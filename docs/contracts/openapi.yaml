@@ -1770,7 +1770,7 @@ components:
     Lesson:
       type: object
       additionalProperties: false
-      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount]
+      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount, normScore]
       properties:
         id: {type: string, format: uuid}
         teacherId: {type: string, format: uuid}
@@ -1787,6 +1787,7 @@ components:
         completedAt: {type: [string, 'null'], format: date-time}
         resultsPublishedAt: {type: [string, 'null'], format: date-time}
         sessionCount: {type: integer}
+        normScore: {type: integer, minimum: 0, maximum: 100, description: "Балл, от которого результат занятия считается нормой"}
     LessonCreate:
       type: object
       additionalProperties: false
@@ -1799,6 +1800,7 @@ components:
         cardSource: {$ref: '#/components/schemas/CardSource'}
         scenarioIds: {type: array, minItems: 1, items: {type: string}}
         traineeIds: {type: array, minItems: 1, items: {type: string, format: uuid}}
+        normScore: {type: [integer, 'null'], minimum: 0, maximum: 100, description: "Порог нормы, по умолчанию 60"}
     LessonMonitor:
       type: object
       additionalProperties: false
