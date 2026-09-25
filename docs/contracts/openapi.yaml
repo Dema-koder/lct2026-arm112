@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.4
+  version: 0.3.5
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -43,6 +43,38 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/AuthResponse'}
         '401': {$ref: '#/components/responses/ErrorResponse'}
+        '429': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      security:
+        - contractVersion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RefreshRequest'}
+      responses:
+        '200':
+          description: Токены ротированы; переданный refresh-токен отозван
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '401': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      security:
+        - contractVersion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LogoutRequest'}
+      responses:
+        '204': {description: Refresh-токен отозван}
   /auth/me:
     get:
       tags: [Auth]
@@ -1256,11 +1288,25 @@ components:
     AuthResponse:
       type: object
       additionalProperties: false
-      required: [accessToken, expiresAt, user]
+      required: [accessToken, expiresAt, user, refreshToken, refreshExpiresAt]
       properties:
         accessToken: {type: string}
         expiresAt: {type: string, format: date-time}
         user: {$ref: '#/components/schemas/User'}
+        refreshToken: {type: string, description: Одноразовый токен для ротации пары токенов}
+        refreshExpiresAt: {type: string, format: date-time}
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string, minLength: 1}
+    LogoutRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string, minLength: 1}
     PasswordChangeRequest:
       type: object
       additionalProperties: false

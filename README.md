@@ -10,6 +10,7 @@
 - Spring Boot 4.1.1;
 - Spring Web MVC и Bean Validation;
 - Spring Security, JWT HS256;
+- access JWT и ротируемый refresh-токен с отзывом;
 - raw WebSocket с одноразовым ticket;
 - PostgreSQL 17, JDBC и Flyway;
 - Maven и Docker Compose;
@@ -120,6 +121,10 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 - независимое поступление карточек во время обработки предыдущих, пакетные одновременные поступления, задержка открытия и параллельные таймлайны служб;
 - оценка ИИ: адрес (опечатка в улице — критично), тип, службы, время, грамотность; для ДДС — нормативы, решение по компетенции, полнота комментариев;
 - JWT с ролью и немедленным отзывом после блокировки, смены роли или пароля (фронтенд при этом сразу показывает экран входа); масштаб интерфейса A−/A+; RBAC по префиксам, адресная доставка WebSocket-событий, идемпотентность команд, единый формат ошибок, Swagger по контракту.
+- PostgreSQL-идемпотентность команд, optimistic locking снимков, транзакционная запись realtime-событий и повторная доставка после сбоя;
+- ограничение попыток входа, ротируемые refresh-токены, закрытый Swagger в production;
+- Prometheus (`/actuator/prometheus`), health/readiness, метрики входа, WebSocket, очереди, событий и резервных копий;
+- атомарные ZIP-копии с SHA-256, сроком хранения и дублированием во внешний каталог; профиль k6 на 20–100 пользователей.
 
 ## WebSocket
 
@@ -161,6 +166,9 @@ Frontend-тест собирает production bundle, проверяет сер�
 | `ARM112_ALLOWED_ORIGINS` | origins фронтенда через запятую | `http://localhost:3000,http://localhost:5173` |
 | `ARM112_SEED_ADMIN_PASSWORD` и др. | пароли сидовых учётных записей | `admin` / `teacher` / `trainee` |
 | `ARM112_BACKUP_DIR`, `ARM112_BACKUP_CRON` | каталог и расписание резервных копий | `./backups`, `0 0 2 * * *` |
+| `ARM112_BACKUP_EXTERNAL_DIR` | второй каталог копий; в production смонтировать отдельный диск/NFS | выключен |
+| `ARM112_BACKUP_RETENTION_DAYS` | срок хранения ZIP-копий и checksum | `14` |
+| `ARM112_SWAGGER_PUBLIC` | публичный Swagger; при `false` доступен только администратору | `true` |
 | `ARM112_MATERIALS_DIR` | каталог файлов методических материалов | `./materials-store` |
 | `ARM112_LOG_FILE` | файл лога (виден администратору в UI) | `./logs/arm112.log` |
 

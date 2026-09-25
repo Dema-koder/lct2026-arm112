@@ -21,9 +21,13 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.ResultSetMetaData;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +35,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -47,7 +53,8 @@ public class BackupService {
     /** Порядок вставки: родители раньше детей. app_user.group_id проставляется после training_group. */
     private static final List<String> TABLES = List.of("app_user", "training_group", "app_setting", "scenario",
             "lesson", "training_session", "assessment", "assessment_issue", "assessment_card", "assessment_debrief",
-            "training_state", "realtime_event",
+            "training_state", "realtime_event", "realtime_event_sequence", "idempotency_record",
+            "auth_refresh_token", "login_throttle",
             "material", "material_group", "audit_event", "job");
     /** Список таблиц копии — открыт для проверки соответствия схеме (см. BackupTablesTest). */
     public static List<String> tables() {
@@ -62,14 +69,26 @@ public class BackupService {
     private final ObjectMapper objectMapper;
     private final Path directory;
     private final Path materialsDirectory;
+    private final Path externalDirectory;
+    private final int retentionDays;
+    private final OperationalMetrics metrics;
+    private volatile Instant lastSuccessfulBackup;
+    private volatile String lastFailure;
 
     public BackupService(JdbcTemplate jdbc, ObjectMapper objectMapper,
                          @Value("${arm112.backup.dir:./backups}") String directory,
-                         @Value("${arm112.materials.dir:./materials-store}") String materialsDirectory) {
+                         @Value("${arm112.materials.dir:./materials-store}") String materialsDirectory,
+                         @Value("${arm112.backup.external-dir:}") String externalDirectory,
+                         @Value("${arm112.backup.retention-days:14}") int retentionDays,
+                         OperationalMetrics metrics) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
         this.directory = Path.of(directory);
         this.materialsDirectory = Path.of(materialsDirectory);
+        this.externalDirectory = externalDirectory == null || externalDirectory.isBlank()
+                ? null : Path.of(externalDirectory);
+        this.retentionDays = retentionDays;
+        this.metrics = metrics;
     }
 
     public List<BackupInfo> list() {
@@ -104,12 +123,14 @@ public class BackupService {
     }
 
     public synchronized BackupInfo create() {
+        Path temporary = null;
         try {
             Files.createDirectories(directory);
             String name = "arm112-" + LocalDateTime.now(ZoneOffset.UTC).format(STAMP) + "-"
                     + UUID.randomUUID().toString().substring(0, 8) + ".zip";
             Path file = directory.resolve(name);
-            try (OutputStream out = Files.newOutputStream(file); ZipOutputStream zip = new ZipOutputStream(out)) {
+            temporary = directory.resolve(name + ".tmp");
+            try (OutputStream out = Files.newOutputStream(temporary); ZipOutputStream zip = new ZipOutputStream(out)) {
                 for (String table : TABLES) {
                     zip.putNextEntry(new ZipEntry(table + ".json"));
                     zip.write(objectMapper.writeValueAsBytes(export(table)));
@@ -117,9 +138,24 @@ public class BackupService {
                 }
                 appendMaterials(zip);
             }
+            verifyArchive(temporary);
+            moveAtomically(temporary, file);
+            writeChecksum(file);
+            copyExternal(file);
+            cleanupOld(directory);
+            if (externalDirectory != null) cleanupOld(externalDirectory);
+            lastSuccessfulBackup = Instant.now();
+            lastFailure = null;
+            metrics.backupSuccess();
             return new BackupInfo(name, Files.size(file), Files.getLastModifiedTime(file).toInstant());
-        } catch (IOException exception) {
-            throw new IllegalStateException("Не удалось записать резервную копию", exception);
+        } catch (Exception exception) {
+            lastFailure = exception.getMessage();
+            metrics.backupFailure();
+            if (temporary != null) {
+                try { Files.deleteIfExists(temporary); } catch (IOException ignored) { }
+            }
+            throw exception instanceof RuntimeException runtime ? runtime
+                    : new IllegalStateException("Не удалось записать резервную копию", exception);
         }
     }
 
@@ -132,6 +168,8 @@ public class BackupService {
         if (!Files.isRegularFile(file)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Резервная копия не найдена");
         }
+        verifyChecksum(file);
+        verifyArchive(file);
         List<ObjectNode> dumps = new ArrayList<>();
         Map<String, byte[]> materialFiles = new LinkedHashMap<>();
         boolean containsMaterials = false;
@@ -187,6 +225,112 @@ public class BackupService {
         jdbc.update("update app_user set auth_version = auth_version + 1");
         log.warn("База восстановлена из резервной копии {}", fileName);
     }
+
+    public BackupHealth health() {
+        try {
+            Files.createDirectories(directory);
+            if (externalDirectory != null) Files.createDirectories(externalDirectory);
+            boolean writable = Files.isWritable(directory);
+            boolean externalWritable = externalDirectory == null
+                    || Files.isDirectory(externalDirectory) && Files.isWritable(externalDirectory);
+            return new BackupHealth(writable && externalWritable, lastSuccessfulBackup, lastFailure,
+                    externalDirectory != null, externalWritable);
+        } catch (IOException exception) {
+            return new BackupHealth(false, lastSuccessfulBackup, exception.getMessage(),
+                    externalDirectory != null, false);
+        }
+    }
+
+    private void copyExternal(Path source) throws IOException {
+        if (externalDirectory == null) return;
+        Files.createDirectories(externalDirectory);
+        Path target = externalDirectory.resolve(source.getFileName());
+        Path temporary = externalDirectory.resolve(source.getFileName() + ".tmp");
+        Files.copy(source, temporary, StandardCopyOption.REPLACE_EXISTING);
+        verifyArchive(temporary);
+        moveAtomically(temporary, target);
+        writeChecksum(target);
+    }
+
+    private void cleanupOld(Path targetDirectory) throws IOException {
+        if (retentionDays <= 0 || !Files.isDirectory(targetDirectory)) return;
+        Instant cutoff = Instant.now().minus(Duration.ofDays(retentionDays));
+        try (Stream<Path> files = Files.list(targetDirectory)) {
+            for (Path path : files.toList()) {
+                String name = path.getFileName().toString();
+                if ((name.endsWith(".zip") || name.endsWith(".zip.sha256"))
+                        && Files.getLastModifiedTime(path).toInstant().isBefore(cutoff)) {
+                    Files.deleteIfExists(path);
+                }
+            }
+        }
+    }
+
+    private void verifyArchive(Path file) {
+        Set<String> found = new HashSet<>();
+        boolean manifest = false;
+        try (InputStream in = Files.newInputStream(file); ZipInputStream zip = new ZipInputStream(in)) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name.equals(MATERIALS_MANIFEST)) manifest = true;
+                if (name.endsWith(".json") && !name.contains("/")) {
+                    JsonNode json = objectMapper.readTree(zip.readAllBytes());
+                    String table = json.path("table").asText();
+                    if (!TABLES.contains(table)) throw new IOException("Неизвестная таблица " + table);
+                    found.add(table);
+                }
+            }
+            if (!found.containsAll(TABLES) || !manifest) {
+                throw new IOException("Резервная копия неполная");
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Проверка резервной копии не пройдена", exception);
+        }
+    }
+
+    private void writeChecksum(Path file) throws IOException {
+        String value = sha256(file) + "  " + file.getFileName() + System.lineSeparator();
+        Files.writeString(file.resolveSibling(file.getFileName() + ".sha256"), value, StandardCharsets.UTF_8);
+    }
+
+    private void verifyChecksum(Path file) {
+        Path checksum = file.resolveSibling(file.getFileName() + ".sha256");
+        if (!Files.isRegularFile(checksum)) return; // совместимость со старыми копиями
+        try {
+            String expected = Files.readString(checksum).trim().split("\\s+", 2)[0];
+            if (!MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII),
+                    sha256(file).getBytes(StandardCharsets.US_ASCII))) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "BACKUP_CHECKSUM_MISMATCH",
+                        "Контрольная сумма резервной копии не совпадает");
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Не удалось проверить контрольную сумму", exception);
+        }
+    }
+
+    private static String sha256(Path file) throws IOException {
+        try (InputStream in = Files.newInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) >= 0) digest.update(buffer, 0, read);
+            return java.util.HexFormat.of().formatHex(digest.digest());
+        } catch (java.security.NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 недоступен", exception);
+        }
+    }
+
+    private static void moveAtomically(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    public record BackupHealth(boolean healthy, Instant lastSuccessfulBackup, String lastFailure,
+                               boolean externalConfigured, boolean externalWritable) {}
 
     private void appendMaterials(ZipOutputStream zip) throws IOException {
         zip.putNextEntry(new ZipEntry(MATERIALS_MANIFEST));
