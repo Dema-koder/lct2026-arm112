@@ -37,6 +37,6 @@
 
 ## Что осталось
 
-- Многоузловой запуск: `EventService` раздаёт номера событий из счётчика в памяти. В тестах несколько контекстов Spring делят одну H2 и тикают одни и те же сессии — в журнале сборки видна `DuplicateKeyException` по `uq_realtime_event_sequence`. На один экземпляр приложения это не влияет, на два — сломает порядок событий.
+- ~~Многоузловой запуск: `EventService` раздаёт номера событий из счётчика в памяти~~ — **чинить не нужно, уже сделано** в `feat/backend-production-hardening` (`RealtimeEventStore.nextSequence` через `insert … on conflict … returning`). Нужно слить эту ветку: [improvements/merge-pending-2026-09-25-hardening.md](../improvements/merge-pending-2026-09-25-hardening.md).
 - Экраны преподавателя на новых ручках (UI-сессия).
 - Нагрузочный профиль против развёрнутого стека с Postgres.
