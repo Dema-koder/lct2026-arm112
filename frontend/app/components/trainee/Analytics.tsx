@@ -18,7 +18,6 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     (async () => {
       try {
         const [results, ratingValue] = await Promise.all([api.results(token), api.rating(token)]);

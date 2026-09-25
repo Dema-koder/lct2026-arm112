@@ -58,6 +58,11 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
   const [serviceMenu, setServiceMenu] = useState<string | null>(null);
   const [working, run] = useAction(setError);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const activeCallId = activeCall?.id;
+  const activeCallState = activeCall?.state;
+  const ringbackUrl = activeCall?.media?.ringbackUrl;
+  const answerUrl = activeCall?.media?.answerUrl;
+  const acknowledgementUrl = activeCall?.media?.acknowledgementUrl;
 
   const session = context.activeSession!;
   const sessionId = session.id;
@@ -100,16 +105,15 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
 
   // Softphone audio: ringback → answer («Слушаю вас») → ack («информация принята»).
   useEffect(() => {
-    const media = activeCall?.media;
-    if (!activeCall || !media) {
+    if (!activeCallId) {
       audioRef.current?.pause();
       audioRef.current = null;
       return;
     }
     let url: string | null = null;
-    if (activeCall.state === "DIALING" || activeCall.state === "RINGING") url = media.ringbackUrl;
-    else if (activeCall.state === "CONNECTED") url = media.answerUrl;
-    else if (activeCall.state === "ACKNOWLEDGED") url = media.acknowledgementUrl;
+    if (activeCallState === "DIALING" || activeCallState === "RINGING") url = ringbackUrl ?? null;
+    else if (activeCallState === "CONNECTED") url = answerUrl ?? null;
+    else if (activeCallState === "ACKNOWLEDGED") url = acknowledgementUrl ?? null;
     if (!url) return;
     const audio = new Audio(url);
     audioRef.current?.pause();
@@ -119,7 +123,7 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
       audio.pause();
       if (audioRef.current === audio) audioRef.current = null;
     };
-  }, [activeCall?.id, activeCall?.state, activeCall?.media?.ringbackUrl, activeCall?.media?.answerUrl, activeCall?.media?.acknowledgementUrl]);
+  }, [activeCallId, activeCallState, ringbackUrl, answerUrl, acknowledgementUrl]);
 
   useEffect(() => {
     if (!selectedId) return;

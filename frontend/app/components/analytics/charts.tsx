@@ -76,22 +76,22 @@ export function Donut({ segments, center, size = 120 }: {
   if (total <= 0) return <p className="muted chart-empty">Нет данных</p>;
   const r = 42;
   const c = 2 * Math.PI * r;
-  let offset = 0;
+  const visible = segments.filter((segment) => segment.value > 0);
+  const arcs = visible.map((segment, index) => ({
+    segment,
+    length: (segment.value / total) * c,
+    offset: visible.slice(0, index).reduce((sum, previous) => sum + (previous.value / total) * c, 0),
+  }));
   return (
     <div className="donut-wrap">
       <svg width={size} height={size} viewBox="0 0 120 120" role="img" aria-label={center}>
         <g transform="rotate(-90 60 60)">
-          {segments.filter((s) => s.value > 0).map((seg) => {
-            const len = (seg.value / total) * c;
-            const node = (
-              <circle key={seg.key} cx="60" cy="60" r={r} fill="none" stroke={seg.color}
-                strokeWidth="16" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-offset}>
-                <title>{seg.label}: {seg.value}</title>
-              </circle>
-            );
-            offset += len;
-            return node;
-          })}
+          {arcs.map(({ segment, length, offset }) => (
+            <circle key={segment.key} cx="60" cy="60" r={r} fill="none" stroke={segment.color}
+              strokeWidth="16" strokeDasharray={`${length} ${c - length}`} strokeDashoffset={-offset}>
+              <title>{segment.label}: {segment.value}</title>
+            </circle>
+          ))}
         </g>
         <text x="60" y="58" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#24313a">{center}</text>
         <text x="60" y="74" textAnchor="middle" fontSize="9" fill="#6d797f">всего</text>
