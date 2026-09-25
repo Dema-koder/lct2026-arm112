@@ -39,7 +39,10 @@ export function TeacherAnalytics({ token }: { token: string }) {
     }
   }, [token]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const allRows = useMemo(() => {
     const rows: Array<ReportRow & { lessonId: string; lessonTitle: string; kind: string; mode: string }> = [];
@@ -58,10 +61,10 @@ export function TeacherAnalytics({ token }: { token: string }) {
     return rows;
   }, [bundles]);
 
-  const graded = allRows.filter((r) => r.finalTotal !== null);
-  const focusRows = focusLessonId
+  const graded = useMemo(() => allRows.filter((r) => r.finalTotal !== null), [allRows]);
+  const focusRows = useMemo(() => focusLessonId
     ? graded.filter((r) => r.lessonId === focusLessonId)
-    : graded;
+    : graded, [focusLessonId, graded]);
 
   const stateMix = useMemo(() => {
     const counts = { DRAFT: 0, ACTIVE: 0, COMPLETED: 0 };

@@ -35,6 +35,7 @@ arm112:
     admin-password: ${ARM112_SEED_ADMIN_PASSWORD:admin}
     teacher-password: ${ARM112_SEED_TEACHER_PASSWORD:teacher}
     trainee-password: ${ARM112_SEED_TRAINEE_PASSWORD:trainee}
+    analytics-demo-enabled: ${ARM112_SEED_ANALYTICS_DEMO_ENABLED:true}
   backup:
     dir: ${ARM112_BACKUP_DIR:./backups}
     cron: ${ARM112_BACKUP_CRON:0 0 2 * * *}
