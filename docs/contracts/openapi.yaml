@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.5
+  version: 0.3.6
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -2063,7 +2063,7 @@ components:
     Lesson:
       type: object
       additionalProperties: false
-      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount, serviceCode, intensity]
+      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount, serviceCode, intensity, normScore]
       properties:
         id: {type: string, format: uuid}
         teacherId: {type: string, format: uuid}
@@ -2082,6 +2082,7 @@ components:
         sessionCount: {type: integer}
         serviceCode: {type: string, description: "Служба обучающегося в режиме действий (по умолчанию 101)"}
         intensity: {$ref: '#/components/schemas/Intensity'}
+        normScore: {type: integer, minimum: 0, maximum: 100, description: "Балл, от которого результат занятия считается нормой"}
     LessonCreate:
       type: object
       additionalProperties: false
@@ -2096,6 +2097,7 @@ components:
         traineeIds: {type: array, minItems: 1, items: {type: string, format: uuid}}
         serviceCode: {type: [string, 'null'], description: "Код службы из справочника; пусто — 101"}
         intensity: {anyOf: [{$ref: '#/components/schemas/Intensity'}, {type: 'null'}], description: "Пусто — SEQUENTIAL"}
+        normScore: {type: [integer, 'null'], minimum: 0, maximum: 100, description: "Порог нормы, по умолчанию 60"}
     LessonMonitor:
       type: object
       additionalProperties: false

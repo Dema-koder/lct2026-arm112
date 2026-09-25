@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { countdown, dateTime, timeOnly } from "../../../lib/format";
+import { countdown, dateTime, statusLabels, timeOnly } from "../../../lib/format";
 
 /** Строка журнала происшествий — общая для экрана ДДС (карточки) и оператора 112 (сохранённые и фоновые карточки). */
 export type JournalRowView = {
@@ -29,11 +29,28 @@ type Props = {
   loading: boolean;
   /** Правая часть заголовка списка: счётчики очереди, кнопка завершения. */
   extra?: ReactNode;
+  /**
+   * Расширенный поиск. Необязателен: экран оператора 112 обходится строкой поиска,
+   * у диспетчера ДДС карточек в журнале больше и без отбора по типу и статусу их не найти.
+   */
+  advancedOpen?: boolean;
+  setAdvancedOpen?: (value: boolean) => void;
+  filterType?: string;
+  setFilterType?: (value: string) => void;
+  filterStatus?: string;
+  setFilterStatus?: (value: string) => void;
+  filterAddress?: string;
+  setFilterAddress?: (value: string) => void;
+  onReset?: () => void;
 };
 
 /** Главный экран АРМ по кадрам dds-02.png / dds-03.png: поиск, часы, «Список происшествий». */
-export function IncidentJournal({ rows, search, setSearch, onOpen, now, workstationLabel, loading, extra }: Props) {
+export function IncidentJournal({ rows, search, setSearch, onOpen, now, workstationLabel, loading, extra,
+                                 advancedOpen, setAdvancedOpen, filterType, setFilterType,
+                                 filterStatus, setFilterStatus, filterAddress, setFilterAddress,
+                                 onReset }: Props) {
   const current = new Date(now);
+  const advanced = Boolean(setAdvancedOpen);
   return (
     <section className="journal">
       <div className="journal-heading">
@@ -43,9 +60,27 @@ export function IncidentJournal({ rows, search, setSearch, onOpen, now, workstat
             <span className="magnifier" aria-hidden="true">⌕</span>
           </div>
           <div className="search-meta">
-            <small>расширенный по параметрам⌄</small>
-            <button onClick={() => setSearch("")}>сбросить</button>
+            {advanced ? (
+              <button type="button" className="linkish" onClick={() => setAdvancedOpen?.(!advancedOpen)}>
+                расширенный по параметрам{advancedOpen ? "⌃" : "⌄"}
+              </button>
+            ) : <small>расширенный по параметрам⌄</small>}
+            <button onClick={() => (onReset ? onReset() : setSearch(""))}>сбросить</button>
           </div>
+          {advanced && advancedOpen && (
+            <div className="advanced-search">
+              <label><span>Тип</span>
+                <input value={filterType ?? ""} onChange={(e) => setFilterType?.(e.target.value)} placeholder="пожар, ДТП…" /></label>
+              <label><span>Статус</span>
+                <select value={filterStatus ?? ""} onChange={(e) => setFilterStatus?.(e.target.value)}>
+                  <option value="">все</option>
+                  {Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </select>
+              </label>
+              <label><span>Адрес</span>
+                <input value={filterAddress ?? ""} onChange={(e) => setFilterAddress?.(e.target.value)} placeholder="улица, округ…" /></label>
+            </div>
+          )}
         </div>
         <div className="digital-clock">
           <b>{new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(current)}</b>

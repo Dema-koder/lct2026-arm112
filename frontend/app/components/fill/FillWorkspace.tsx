@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type JournalRow, type ServiceItem, type SurveyTree, type TopTypeItem, type TraineeContext } from "../../../lib/api";
-import { countdown, dateTime, elapsed } from "../../../lib/format";
+import { countdown, dateTime, displayCardNumber, elapsed } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useRingTone, useSocket } from "../common";
 import { AssessmentView } from "../trainee/Results";
 import { IncidentJournal, type JournalRowView } from "../journal/IncidentJournal";
@@ -16,12 +16,21 @@ type Props = {
   label: string;
 };
 
-/** Строки адреса как в оригинале (card-01.png): подпись и доля ширины в строке. */
-const ADDRESS_ROWS: Array<Array<[keyof FormalAddress, string, number]>> = [
-  [["country", "Страна", 1], ["region", "Субъект", 1], ["locality", "Населённый пункт", 1]],
-  [["object", "Объект", 2], ["okrug", "Округ", 1], ["district", "Район", 1]],
-  [["street", "Улица", 2], ["house", "Дом/Вл.", 1], ["building", "Корпус", 1]],
-  [["structure", "Стр/соор.", 1], ["apartment", "Квартира/офис", 1], ["entrance", "Подъезд", 1], ["floor", "Этаж", 1], ["code", "Код", 1]],
+const ADDRESS_FIELDS: Array<[keyof FormalAddress, string, string]> = [
+  ["country", "Страна", "af-2"],
+  ["region", "Субъект", "af-5"],
+  ["locality", "Населённый пункт", "af-5"],
+  ["object", "Объект", "af-4"],
+  ["okrug", "Округ", "af-3"],
+  ["district", "Район", "af-5"],
+  ["street", "Улица", "af-6"],
+  ["house", "Дом/Вл.", "af-2"],
+  ["building", "Корпус", "af-2"],
+  ["structure", "Стр/соор.", "af-2"],
+  ["apartment", "Квартира/офис", "af-3"],
+  ["entrance", "Подъезд", "af-3"],
+  ["floor", "Этаж", "af-3"],
+  ["code", "Код", "af-3"],
 ];
 
 /**
@@ -129,7 +138,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   const save = () => draft && run(async () => {
     await flush();
     const saved = await api.saveDraft(token, draft.id);
-    setNotice(`Карточка ${saved.number.replace(/\D/g, "").slice(-8)} сохранена`);
+    setNotice(`Карточка ${displayCardNumber(saved.number)} сохранена`);
     const next = await api.context(token);
     if (!next.activeSession || next.activeSession.state !== "ACTIVE") {
       // последняя вводная — занятие завершилось само, показываем результат по правилу вида
@@ -176,7 +185,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   };
 
   const hint = (field: string) => draft?.hints.find((h) => h.field === field)?.message;
-  const number = draft ? draft.number.replace(/\D/g, "").slice(-8) : "—";
+  const number = draft ? displayCardNumber(draft.number) : "—";
   const overdue = draft?.deadlineAt ? new Date(draft.deadlineAt).getTime() < now : false;
 
   if (done && !draft) {
@@ -316,16 +325,14 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
 
               <fieldset className={`fill-block ${hint("address.street") || hint("address.house") ? "hinted" : ""}`}>
                 <legend>Адрес</legend>
-                {ADDRESS_ROWS.map((row, index) => (
-                  <div key={index} className="fill-row address-row">
-                    {row.map(([key, title, share]) => (
-                      <label key={key} className={`f${share} ${hint(`address.${key}`) ? "hinted" : ""}`} title={hint(`address.${key}`)}>
-                        <span>{title}</span>
-                        <input value={(draft.address[key] as string | null) ?? ""} onChange={(e) => queue({ address: { ...draft.address, [key]: e.target.value } })} />
-                      </label>
-                    ))}
-                  </div>
-                ))}
+                <div className="address-fields">
+                  {ADDRESS_FIELDS.map(([key, title, width]) => (
+                    <label key={key} className={`${width} ${hint(`address.${key}`) ? "hinted" : ""}`} title={hint(`address.${key}`)}>
+                      <span>{title}</span>
+                      <input value={(draft.address[key] as string | null) ?? ""} onChange={(e) => queue({ address: { ...draft.address, [key]: e.target.value } })} />
+                    </label>
+                  ))}
+                </div>
                 <label className="w-full"><span>Описательный адрес</span>
                   <input value={draft.address.descriptive ?? ""} onChange={(e) => queue({ address: { ...draft.address, descriptive: e.target.value } })} placeholder="ориентиры со слов заявителя" /></label>
                 {(hint("address.street") || hint("address.house")) && (

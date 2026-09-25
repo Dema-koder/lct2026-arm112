@@ -113,7 +113,8 @@ public class CardFillAssessor {
                         : TextUtil.clamp(100 - 100.0 * (spent.toSeconds() - NORM.toSeconds()) / NORM.toSeconds());
                 if (t < 100) {
                     issues.add(new AssessmentIssue("PROCESSING_OVERDUE", "WARNING",
-                            "Карточка заполнялась дольше норматива 3 минуты", draft.id(), 180, spent.toSeconds()));
+                            "Карточка заполнялась дольше норматива 3 минуты", draft.id(),
+                            "норматив 180 с", "факт " + spent.toSeconds() + " с"));
                 }
                 timing += t;
                 cardTiming = t;

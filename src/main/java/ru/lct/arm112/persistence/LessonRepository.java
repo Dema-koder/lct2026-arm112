@@ -97,11 +97,11 @@ public class LessonRepository {
     public void insertLesson(Lesson lesson) {
         jdbc.update("""
                 insert into lesson (id, teacher_id, group_id, title, kind, mode, card_source, state, scenario_ids,
-                                    service_code, intensity)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                    service_code, intensity, norm_score)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, lesson.id(), lesson.teacherId(), lesson.groupId(), lesson.title(), lesson.kind(),
                 lesson.mode(), lesson.cardSource(), lesson.state(), encode(lesson.scenarioIds()),
-                lesson.serviceCode(), lesson.intensity());
+                lesson.serviceCode(), lesson.intensity(), lesson.normScore());
     }
 
     public void setState(UUID id, String state, Instant startedAt, Instant completedAt) {
@@ -121,7 +121,7 @@ public class LessonRepository {
                 decode(rs.getString("scenario_ids")), instant(rs.getTimestamp("created_at")),
                 instant(rs.getTimestamp("started_at")), instant(rs.getTimestamp("completed_at")),
                 instant(rs.getTimestamp("results_published_at")), rs.getInt("session_count"),
-                rs.getString("service_code"), rs.getString("intensity"));
+                rs.getString("service_code"), rs.getString("intensity"), rs.getInt("norm_score"));
     }
 
     private static Instant instant(Timestamp value) {

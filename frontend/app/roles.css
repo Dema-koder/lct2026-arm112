@@ -2,8 +2,8 @@
    Общие панели преподавателя / администратора / результатов — тот же стиль,
    что у журнала: серо-синяя палитра, кнопка только там, где без неё нельзя.
    ===================================================================== */
-.top-nav { position: absolute; left: 12px; top: 0; height: 34px; display: flex; gap: 2px; }
-.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; }
+.top-nav { min-width: 0; height: 34px; display: flex; gap: 2px; overflow-x: auto; }
+.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap; flex: 0 0 auto; }
 .top-nav button.active { border-bottom-color: var(--blue); color: #111; font-weight: bold; }
 .top-nav button:hover { background: #e9ecee; }
 
@@ -12,6 +12,12 @@
 
 .panel-page { min-height: calc(100vh - 34px); padding: 14px 18px 60px; color: #172026; background: #eef0f1; }
 .panel-head { display: flex; align-items: center; gap: 12px; min-height: 40px; margin: 8px 0 8px; }
+.lesson-filters { flex-wrap: wrap; margin-top: 0; }
+.lesson-filters > input { min-width: 200px; }
+.lesson-filters input[type="date"] { width: 140px; }
+.sub-nav { display: flex; gap: 2px; }
+.sub-nav button { height: 28px; padding: 0 12px; border: 1px solid #b1babf; background: white; color: #3c4a51; font-size: 12px; }
+.sub-nav button.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: bold; }
 .panel-head > b { font-size: 16px; }
 .panel-head select, .panel-head input { height: 28px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; }
 .panel-head .spacer, .spacer { flex: 1; }
@@ -73,6 +79,10 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .review-card { padding: 10px 12px; margin-bottom: 8px; background: white; border-left: 4px solid var(--blue); }
 .review-card p { margin: 4px 0; }
 .review-card em { font-style: normal; color: #56656c; }
+.issue-list { margin: 2px 0 8px; padding-left: 18px; }
+.issue-list li { margin: 4px 0; }
+.issue-list li small { display: block; color: #56656c; font-weight: normal; }
+.issue-tag { margin-left: 8px; padding: 1px 6px; font-size: 10px; color: #872d24; background: #f4dcd9; }
 .review-timeline { margin: 6px 0 0; padding-left: 0; list-style: none; }
 .review-timeline li { display: flex; gap: 8px; padding: 2px 0; font-size: 12px; }
 .review-timeline time { color: #6d797f; }
@@ -83,6 +93,7 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .assessment-card > header button { width: 38px; height: 38px; color: white; border: 0; background: transparent; font-size: 20px; }
 .assessment-body { padding: 14px; }
 .assessment-issue.critical { background: #f0c9c4; font-weight: bold; }
+.assessment-issue .issue-compare { display: block; margin-top: 4px; font-weight: normal; color: #4a575e; }
 .assessment-details { margin-top: 8px; color: #56656c; }
 .assessment-details p { margin: 4px 0; font-size: 12px; }
 .recommendations { margin: 12px 0 0; padding-left: 18px; }
@@ -149,12 +160,31 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .fill-row.address-row label.f2 { flex: 2 1 0; }
 .fill-row.address-row input { width: 100%; }
 .fill-block label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.fill-block label > span { font-size: 10px; color: #56656c; white-space: nowrap; }
-.fill-block input, .fill-block select { height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px; }
+.fill-block label > span { font-size: 10px; color: #56656c; line-height: 1.2; }
+.fill-block input, .fill-block select {
+  width: 100%; min-width: 0; height: 26px; padding: 0 6px;
+  border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px;
+  box-sizing: border-box;
+}
 .fill-block label.hinted input { border-color: #e2b400; background: #fffbe6; }
-.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; }
+.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; box-sizing: border-box; }
 .counter { text-align: right; font-size: 10px; color: #6d797f; }
-.w-xs { width: 64px; } .w-s { width: 96px; } .w-m { flex: 1; min-width: 120px; } .w-l { flex: 2; min-width: 180px; } .w-full { width: 100%; }
+.w-xs { width: 64px; flex: none; } .w-s { width: 96px; flex: none; }
+.w-m { flex: 1 1 120px; min-width: 120px; } .w-l { flex: 2 1 180px; min-width: 180px; }
+.w-full { width: 100%; display: block; margin-top: 6px; }
+/* Адрес: 12 колонок — поля не наезжают друг на друга при zoom и узкой левой колонке */
+.address-fields {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px 8px;
+  align-items: end;
+}
+.address-fields label { min-width: 0; }
+.address-fields .af-2 { grid-column: span 2; }
+.address-fields .af-3 { grid-column: span 3; }
+.address-fields .af-4 { grid-column: span 4; }
+.address-fields .af-5 { grid-column: span 5; }
+.address-fields .af-6 { grid-column: span 6; }
 .flags-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .flags-bar button { height: 28px; padding: 0 10px; border: 1px solid #b1babf; background: #e8eaeb; font-size: 11px; }
 .flags-bar button.on { background: var(--blue); color: white; border-color: var(--blue); }
@@ -190,12 +220,20 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 @media (max-width: 1250px) {
   .fill-columns { grid-template-columns: 1fr; }
   .form-grid, .form-grid.four, .form-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .address-fields { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .address-fields .af-3,
+  .address-fields .af-4 { grid-column: span 3; }
+  .address-fields .af-5,
+  .address-fields .af-6 { grid-column: span 6; }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
 :root { --ui-scale: 1; }
 body { zoom: var(--ui-scale); }
-.scale-control { position: absolute; right: 250px; top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #3c4a51; }
+.scale-control {
+  display: flex; align-items: center; gap: 4px; flex: 0 0 auto; position: static !important;
+  right: auto !important; top: auto !important; font-size: 11px; color: #3c4a51;
+}
 .scale-control button { width: 26px; height: 22px; padding: 0; border: 1px solid #b1babf; background: white; font-size: 11px; }
 .scale-control button:disabled { opacity: .4; }
 .scale-control span { min-width: 36px; text-align: center; }
@@ -219,8 +257,42 @@ body { zoom: var(--ui-scale); }
 .criteria-notes li { margin: 3px 0; }
 .criteria-notes small { color: #6d797f; }
 
+/* ---- Analytics dashboards (trainee / teacher) ---- */
+.analytics-page .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 8px 0 14px; }
+.kpi-card { display: grid; gap: 4px; padding: 12px 14px; background: white; border: 1px solid #d7dcde; border-left: 4px solid #8e9ca3; }
+.kpi-card span { font-size: 11px; color: #56656c; }
+.kpi-card b { font-size: 22px; line-height: 1.1; color: #172026; }
+.kpi-card.ok { border-left-color: #2f9a5a; }
+.kpi-card.warn { border-left-color: #b03f2e; }
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.analytics-card { padding: 10px 12px 12px; background: white; border: 1px solid #d7dcde; min-width: 0; }
+.analytics-card.wide { grid-column: 1 / -1; }
+.analytics-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; min-height: 28px; }
+.analytics-card > header b { font-size: 13px; }
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-empty { margin: 18px 0; text-align: center; }
+.chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
+.hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hbar-list li { display: grid; grid-template-columns: 110px 1fr 36px; gap: 8px; align-items: center; font-size: 12px; }
+.hbar-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #3c4a51; }
+.hbar-track { height: 10px; background: #e4ebef; border-radius: 2px; overflow: hidden; }
+.hbar-track > i { display: block; height: 100%; background: #0784c6; }
+.hbar-value { text-align: right; font-size: 12px; }
+.donut-wrap { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
+.donut-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+.donut-legend li { display: flex; align-items: center; gap: 8px; }
+.donut-legend i { width: 10px; height: 10px; border-radius: 2px; }
+.donut-legend b { margin-left: auto; }
+.sparkline { display: block; }
+.reference-preview { margin: 6px 0; padding: 8px 10px; background: #e8f4fb; border-left: 3px solid #0784c6; }
+.reference-preview .reference-title { margin: 0 0 4px; font-weight: bold; color: #0c6fa4; font-size: 11px; }
+.ref-ok { background: #c6e7b0; padding: 1px 5px; }
+.chip-inline { display: inline-block; margin: 0 4px 2px 0; }
+
 @media (max-width: 1366px) {
-  .scale-control { right: 230px; }
+  .analytics-page .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analytics-grid { grid-template-columns: 1fr; }
+  .donut-wrap { grid-template-columns: 1fr; justify-items: start; }
 }
 
 /* --- оператор 112: главный экран с журналом и входящими вызовами (замечания 3, 5) --- */

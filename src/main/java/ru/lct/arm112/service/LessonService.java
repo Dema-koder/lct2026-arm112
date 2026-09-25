@@ -136,10 +136,11 @@ public class LessonService {
             Group group = group(request.groupId());
             if (!group.teacherId().equals(teacher.id())) throw invalid("Группа другого преподавателя");
         }
+        int normScore = request.normScore() == null ? 60 : request.normScore();
         UUID id = UUID.randomUUID();
         Lesson lesson = new Lesson(id, teacher.id(), request.groupId(), null, request.title().trim(), request.kind(),
                 request.mode(), request.cardSource(), "DRAFT", request.scenarioIds(), Instant.now(), null, null, null, 0,
-                serviceCode, intensity);
+                serviceCode, intensity, normScore);
         lessons.insertLesson(lesson);
         for (AppUser trainee : trainees) {
             sessions.insert(new SessionRow(UUID.randomUUID(), id, trainee.id(), trainee.workstationNumber(),

@@ -60,10 +60,26 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* App chrome */
 .arm-shell { min-width: 980px; min-height: 100vh; background: var(--steel-500); overflow: hidden; }
-.top-strip { height: 34px; display: flex; align-items: center; justify-content: center; background: #f7f7f7; border-bottom: 1px solid #bbc1c4; position: relative; }
-.product-name { font-size: 14px; }
-.user-chip { position: absolute; right: 10px; top: 5px; border: 0; background: transparent; color: #3c4a51; font-size: 11px; }
-.user-chip b { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 8px; color: white; background: var(--steel-900); }
+.top-strip {
+  height: 34px; display: grid; align-items: center; gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  background: #f7f7f7; border-bottom: 1px solid #bbc1c4;
+  padding: 0 10px; overflow: hidden;
+}
+.top-strip:not(:has(.top-nav)) { grid-template-columns: 1fr auto; }
+.top-strip:not(:has(.top-nav)) .product-name { grid-column: 1; justify-self: center; }
+.product-name { flex: none; font-size: 14px; white-space: nowrap; margin: 0; }
+.top-actions {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  white-space: nowrap; justify-self: end;
+}
+.user-chip {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  border: 0; background: transparent; color: #3c4a51; font-size: 11px;
+  white-space: nowrap;
+}
+.user-chip-label { white-space: nowrap; }
+.user-chip b { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; color: white; background: var(--steel-900); }
 
 /* Journal */
 .journal { min-height: calc(100vh - 34px); }
@@ -77,6 +93,10 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .search-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
 .search-meta small { font-size: 11px; white-space: nowrap; }
 .search-meta button { height: 25px; padding: 0 12px; border: 1px solid #9da8ad; background: #f6f7f7; color: #68777e; white-space: nowrap; }
+.search-meta button.linkish { border: 0; background: transparent; padding: 0; height: auto; color: #24313a; font-size: 11px; }
+.advanced-search { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; padding: 8px 0 0; border-top: 1px dashed #c5ced2; }
+.advanced-search label { display: grid; gap: 2px; font-size: 11px; color: #4a575e; }
+.advanced-search input, .advanced-search select { height: 28px; padding: 0 8px; border: 1px solid #9da8ad; background: white; }
 .digital-clock { position: relative; padding: 16px 18px; color: white; background: #2f393f; }
 /* Дата слева, время абсолютно справа: справа резервируем место, длинная дата переносится, а не наезжает */
 .digital-clock b { display: block; padding-right: 160px; font-size: 13px; line-height: 1.2; }
@@ -163,6 +183,12 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .service-tile b { font-size: 12px; }
 .service-tile span { margin-top: 6px; font-size: 10px; }
 .tile-chevron { display: block; font-style: normal; font-size: 11px; line-height: 1; opacity: .8; }
+.tile-history { position: absolute; left: 0; right: 0; bottom: 100%; max-height: 180px; overflow: auto; padding: 6px 8px; background: #0784c6; color: white; box-shadow: 0 -4px 12px rgba(0,0,0,.2); z-index: 5; text-align: left; }
+.tile-history > div { display: grid; grid-template-columns: 64px 1fr; gap: 2px 8px; font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.18); }
+.tile-history time { opacity: .85; }
+.tile-history span { grid-column: 1 / -1; opacity: .9; font-size: 10px; margin-top: 0; }
+.tile-call { width: 100%; margin-top: 6px; border: 1px solid rgba(255,255,255,.4); background: #0b75ad; color: white; padding: 6px; }
+.tile-call.hangup { background: #a93f31; }
 .tile-pencil { position: absolute; top: 2px; right: 3px; width: 20px; height: 18px; padding: 0; color: white; border: 0; background: transparent; font-size: 12px; }
 .tile-pencil:hover { background: rgba(255,255,255,.25); }
 .service-tile.active { background: #0784c6; }
@@ -180,8 +206,11 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .menu-status { grid-column: 1 / -1; display: flex; justify-content: space-between; padding: 6px; border-bottom: 1px solid rgba(255,255,255,.4); }
 
 /* Форма проставления статуса — строка над панелью служб, как на кадре dds-16.png */
-.status-form { position: fixed; z-index: 20; left: 72px; right: 96px; bottom: 74px; display: grid; grid-template-columns: 210px 1fr 38px 38px; gap: 6px; align-items: center; padding: 6px; background: #eef0f1; border: 1px solid #9aa6ac; box-shadow: 0 -4px 14px rgba(0,0,0,.22); }
+.status-form { position: fixed; z-index: 20; left: 72px; right: 96px; bottom: 74px; display: grid; grid-template-columns: 210px 72px 1fr 38px 38px; gap: 6px; align-items: center; padding: 6px; background: #eef0f1; border: 1px solid #9aa6ac; box-shadow: 0 -4px 14px rgba(0,0,0,.22); }
+.status-form-select { display: grid; gap: 2px; font-size: 10px; color: #4a575e; }
+.status-form-select select { height: 32px; border: 1px solid #9aa6ac; background: white; padding: 0 6px; }
 .status-form-status { padding: 0 8px; font-weight: bold; color: #24313a; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.status-form-numeric { height: 32px; width: 72px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; text-align: center; }
 .status-form-comment { height: 32px; padding: 0 9px; border: 1px solid #9aa6ac; background: white; outline-color: var(--blue); }
 .status-form button { height: 32px; border: 1px solid #9aa6ac; background: white; font-size: 16px; }
 .status-form .ok { color: #17713f; }
