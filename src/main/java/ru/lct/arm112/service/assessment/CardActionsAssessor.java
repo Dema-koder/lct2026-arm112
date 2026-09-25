@@ -41,12 +41,14 @@ public class CardActionsAssessor {
             if (card.acceptanceOverdue()) {
                 t -= 40;
                 issues.add(new AssessmentIssue("ACCEPTANCE_OVERDUE", "WARNING",
-                        "Превышен норматив 30 секунд на принятие карточки", card.id(), 30, null));
+                        "Превышен норматив 30 секунд на принятие карточки", card.id(),
+                        "норматив 30 с", "принятие просрочено"));
             }
             if (card.processingOverdue()) {
                 t -= 30;
                 issues.add(new AssessmentIssue("PROCESSING_OVERDUE", "WARNING",
-                        "Превышен норматив 3 минуты на отработку карточки", card.id(), 180, null));
+                        "Превышен норматив 3 минуты на отработку карточки", card.id(),
+                        "норматив 180 с", "отработка просрочена"));
             }
             timing += TextUtil.clamp(t);
 

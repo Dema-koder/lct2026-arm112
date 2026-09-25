@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Assessment, type CardDraft, type CardDraftPatch, type FormalAddress, type IncidentTypeItem, type SurveyCard, type TraineeContext } from "../../../lib/api";
-import { countdown, dateTime, elapsed } from "../../../lib/format";
+import { countdown, dateTime, displayCardNumber, elapsed } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useSocket } from "../common";
 import { AssessmentView } from "../trainee/Results";
 
@@ -99,7 +99,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   const save = () => draft && run(async () => {
     await flush();
     const saved = await api.saveDraft(token, draft.id);
-    setNotice(`Карточка ${saved.number.replace(/\D/g, "").slice(-8)} сохранена`);
+    setNotice(`Карточка ${displayCardNumber(saved.number)} сохранена`);
     const next = await api.context(token);
     if (!next.activeSession || next.activeSession.state !== "ACTIVE") {
       // последняя вводная — занятие завершилось само, показываем результат по правилу вида
@@ -138,7 +138,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
   };
 
   const hint = (field: string) => draft?.hints.find((h) => h.field === field)?.message;
-  const number = draft ? draft.number.replace(/\D/g, "").slice(-8) : "—";
+  const number = draft ? displayCardNumber(draft.number) : "—";
   const overdue = draft?.deadlineAt ? new Date(draft.deadlineAt).getTime() < now : false;
 
   if (done && !draft) {

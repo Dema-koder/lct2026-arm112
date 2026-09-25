@@ -5,7 +5,7 @@ import { api, type IncidentTypeItem, type Scenario, type ScenarioListItem } from
 import { categoryLabels, dateTime, sourceLabels } from "../../../lib/format";
 import { ErrorBanner, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
 
-/** Развёрнутая карточка сценария: вводная целиком, адреса, эталон. Используется в списках. */
+/** Развёрнутая карточка сценария: вводная целиком, адреса, эталон с подсветкой правильных ответов. */
 export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListItem; typeLabel: (id: string) => string }) {
   const a = scenario.expectedAddress;
   const expected = a ? [a.locality, a.street, a.house && `д. ${a.house}`, a.building && `к. ${a.building}`, a.structure && `стр. ${a.structure}`, a.apartment && `кв. ${a.apartment}`].filter(Boolean).join(", ") : "";
@@ -13,8 +13,16 @@ export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListIt
     <div className="scenario-details">
       <p><em>Вводная:</em> {scenario.callerText}</p>
       <p><em>Адрес со слов заявителя:</em> {scenario.rawAddress || "—"}</p>
-      <p><em>Эталон адреса:</em> {expected || "не уточнён"}{a?.descriptive && !expected ? ` (ориентир: ${a.descriptive})` : ""}</p>
-      <p><em>Тип:</em> {scenario.expectedIncidentTypes.map(typeLabel).join(", ") || "не задан"} · <em>Службы:</em> {scenario.expectedServices.join(", ") || "—"}</p>
+      <div className="reference-preview">
+        <p className="reference-title">Эталон (правильные ответы)</p>
+        <p><em>Адрес:</em> <mark className="ref-ok">{expected || "не уточнён"}</mark>{a?.descriptive && !expected ? ` (ориентир: ${a.descriptive})` : ""}</p>
+        <p><em>Тип:</em> {scenario.expectedIncidentTypes.length
+          ? scenario.expectedIncidentTypes.map((id) => <mark key={id} className="ref-ok chip-inline">{typeLabel(id)}</mark>)
+          : <span className="muted">не задан</span>}</p>
+        <p><em>Службы:</em> {scenario.expectedServices.length
+          ? scenario.expectedServices.map((code) => <mark key={code} className="ref-ok chip-inline">{code}</mark>)
+          : "—"}</p>
+      </div>
       <p className="muted">{sourceLabels[scenario.source]} · {categoryLabels[scenario.category] ?? scenario.category} · сложность {scenario.difficulty} · {scenario.referenceConfirmed ? "эталон подтверждён" : "эталон не подтверждён"} · {scenario.id}</p>
     </div>
   );
@@ -28,6 +36,7 @@ export function Scenarios({ token }: { token: string }) {
   const [selected, setSelected] = useState<Scenario | null>(null);
   const [types, setTypes] = useState<IncidentTypeItem[]>([]);
   const [genCount, setGenCount] = useState(3);
+  const [genDifficulty, setGenDifficulty] = useState(5);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -43,8 +52,8 @@ export function Scenarios({ token }: { token: string }) {
 
   const open = (id: string) => run(async () => setSelected(await api.teacher.scenario(token, id)));
   const generate = () => run(async () => {
-    const created = await api.teacher.generate(token, category || "FIRE", genCount, 5);
-    setNotice(`Сгенерировано сценариев: ${created.length} — подтвердите эталон`);
+    const created = await api.teacher.generate(token, category || "FIRE", genCount, genDifficulty);
+    setNotice(`Сгенерировано сценариев: ${created.length} (сложность ${genDifficulty}) — подтвердите эталон`);
     await load();
   });
 
@@ -70,6 +79,9 @@ export function Scenarios({ token }: { token: string }) {
         <span className="spacer" />
         <label className="inline"><span>сгенерировать</span>
           <input type="number" min={1} max={20} value={genCount} onChange={(e) => setGenCount(Number(e.target.value) || 1)} className="w-xs" />
+        </label>
+        <label className="inline"><span>сложность</span>
+          <input type="number" min={1} max={10} value={genDifficulty} onChange={(e) => setGenDifficulty(Math.min(10, Math.max(1, Number(e.target.value) || 5)))} className="w-xs" />
         </label>
         <button className="primary-button" disabled={working} onClick={generate}>Сгенерировать</button>
       </div>

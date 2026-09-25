@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.*;
@@ -68,6 +69,7 @@ public class TrainingEngine {
     private final SessionAccess access;
     private final CardActionsAssessor actionsAssessor;
     private final CardFillAssessor fillAssessor;
+    private final String publicBaseUrl;
 
     private final Map<UUID, SessionState> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> cardIndex = new ConcurrentHashMap<>();
@@ -83,7 +85,8 @@ public class TrainingEngine {
     public TrainingEngine(EventService events, TrainingStateStore stateStore, SessionRepository sessionRepo,
                           LessonRepository lessonRepo, UserRepository userRepo, AssessmentRepository assessmentRepo,
                           ScenarioService scenarios, ReferenceDataService references, SettingsService settings,
-                          SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor) {
+                          SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor,
+                          @Value("${arm112.public-base-url:http://localhost:8080}") String publicBaseUrl) {
         this.events = events;
         this.stateStore = stateStore;
         this.sessionRepo = sessionRepo;
@@ -96,6 +99,8 @@ public class TrainingEngine {
         this.access = access;
         this.actionsAssessor = actionsAssessor;
         this.fillAssessor = fillAssessor;
+        this.publicBaseUrl = publicBaseUrl.endsWith("/")
+                ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
     }
 
     @PostConstruct
@@ -666,7 +671,7 @@ public class TrainingEngine {
         card.incidentType = type == null
                 ? new DictionaryItem("incident.other", "OTHER", "Происшествие")
                 : new DictionaryItem("incident." + type.id(), type.id().toUpperCase().replace('.', '_'), type.label());
-        card.features = List.of();
+        card.features = featuresFromText(scenario.callerText());
         List<String> serviceCodes = scenario.expectedServices().isEmpty()
                 ? List.of(OWN_SERVICE_CODE) : scenario.expectedServices();
         card.assignedServices = serviceCodes.stream().map(references::service).toList();
@@ -688,9 +693,9 @@ public class TrainingEngine {
     }
 
     private void scheduleCallChain(SessionState state, UUID callId, String from) {
-        int ringing = settings.integer(SettingsService.RINGING_MS, 300);
-        int connect = settings.integer(SettingsService.CONNECT_MS, 700);
-        int ack = settings.integer(SettingsService.ACKNOWLEDGE_MS, 1200);
+        int ringing = settings.integer(SettingsService.RINGING_MS, 2500);
+        int connect = settings.integer(SettingsService.CONNECT_MS, 4500);
+        int ack = settings.integer(SettingsService.ACKNOWLEDGE_MS, 8000);
         switch (from) {
             case "DIALING" -> {
                 scheduleCallState(state, callId, "RINGING", ringing);
@@ -895,10 +900,28 @@ public class TrainingEngine {
 
     private OutboundCall toView(MutableCall call) {
         synchronized (call) {
+            String voice = call.target.voice() == null ? "MALE" : call.target.voice().toUpperCase();
+            String voiceKey = voice.startsWith("F") ? "female" : "male";
+            Instant expires = call.startedAt.plusSeconds(900);
             return new OutboundCall(call.id, call.cardId, call.target, call.state,
                     call.startedAt, call.connectedAt, call.endedAt,
-                    new CallMedia(null, null, null, call.startedAt.plusSeconds(900)));
+                    new CallMedia(
+                            publicBaseUrl + "/telephony/ringback.wav",
+                            publicBaseUrl + "/telephony/answer-" + voiceKey + ".wav",
+                            publicBaseUrl + "/telephony/ack-" + voiceKey + ".wav",
+                            expires));
         }
+    }
+
+    /** Признаки по тексту вводной — для колонки «Постр.» и сводки карточки без расширения контракта. */
+    private static List<String> featuresFromText(String text) {
+        if (text == null || text.isBlank()) return List.of();
+        String lower = text.toLowerCase();
+        List<String> features = new ArrayList<>();
+        if (lower.contains("пострадав")) features.add("Пострадавшие");
+        if (lower.contains("отказ от скорой") || lower.contains("отказался от скорой")) features.add("Отказ от скорой");
+        if (lower.contains("заблок") || lower.contains("нет доступа")) features.add("Заблокированные");
+        return List.copyOf(features);
     }
 
     private TrainingSession toView(SessionState state) {
