@@ -372,13 +372,15 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
         <div className="phone-slot"><b>☎</b><span>{activeCall?.target.organization ?? "предоставленный"}</span></div>
         <div className="phone-slot"><b>☎</b><span>телефон на место</span></div>
         <div className="card-number"><b>Происшествие {displayCardNumber(card.number)}</b><small>созд. {dateTime(card.receivedAt)}<br />Опер., АРМ {workstation}</small></div>
-        <div className={`card-timer ${card.sla.acceptanceOverdue || card.sla.processingOverdue ? "overdue" : ""}`}>
+        <div className={`card-timer ${card.sla.acceptanceOverdue || card.sla.processingOverdue ? "overdue" : ""}`}
+          title={awaitingAcceptance
+            ? `принять за ${countdown(card.sla.acceptanceDeadlineAt, now)}`
+            : `отработать за ${countdown(card.sla.processingDeadlineAt, now)}`}>
           <b>{elapsed(card.receivedAt, now)}</b>
-          <span>минут</span><span>секунд</span>
           <small>
             {awaitingAcceptance
-              ? `принять за ${countdown(card.sla.acceptanceDeadlineAt, now)}`
-              : `отработать за ${countdown(card.sla.processingDeadlineAt, now)}`}
+              ? countdown(card.sla.acceptanceDeadlineAt, now)
+              : countdown(card.sla.processingDeadlineAt, now)}
           </small>
         </div>
         <button className="view-button">просмотр</button>

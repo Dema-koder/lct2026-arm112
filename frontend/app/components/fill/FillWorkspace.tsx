@@ -289,10 +289,9 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
               <b>Происшествие {number}</b>
               <small>начато {dateTime(draft.startedAt)}<br />Опер., АРМ {context.workstation.number}{session.queuedCalls > 0 ? <span title="Вызовы ждут в очереди — заявители дозвонятся, когда вы сохраните карточку"> · в очереди вызовов: {session.queuedCalls}</span> : ""}</small>
             </div>
-            <div className={`card-timer ${overdue ? "overdue" : ""}`}>
+            <div className={`card-timer ${overdue ? "overdue" : ""}`} title={`отработать за ${countdown(draft.deadlineAt, now)}`}>
               <b>{elapsed(draft.startedAt, now)}</b>
-              <span>минут</span><span>секунд</span>
-              <small>отработать за {countdown(draft.deadlineAt, now)}</small>
+              <small>{countdown(draft.deadlineAt, now)}</small>
             </div>
           </div>
 
