@@ -14,6 +14,9 @@ export function clamp(n: number, min = 0, max = 100) {
 
 type BarItem = { key: string; label: string; value: number; color?: string; hint?: string };
 
+/** score = баллы 0–100; count = количество (шкала до max в ряду или явного max). */
+export type ChartScale = "score" | "count";
+
 function wrapLabel(text: string, maxChars: number): string[] {
   const limit = Math.max(4, maxChars);
   const lines: string[] = [];
@@ -31,35 +34,58 @@ function wrapLabel(text: string, maxChars: number): string[] {
   return lines;
 }
 
-export function BarChart({ items, max = 100, height, ariaLabel }: {
+function resolveCeiling(items: BarItem[], scale: ChartScale, max?: number) {
+  if (scale === "score") return max ?? 100;
+  if (max !== undefined) return Math.max(1, max);
+  return Math.max(1, ...items.map((i) => i.value));
+}
+
+function axisTicks(scaleMax: number): number[] {
+  if (scaleMax <= 0) return [];
+  if (scaleMax === 100) return [25, 50, 75, 100];
+  const step = scaleMax <= 5 ? 1
+    : scaleMax <= 10 ? 2
+    : scaleMax <= 20 ? 5
+    : scaleMax <= 50 ? 10
+    : Math.ceil(scaleMax / 4);
+  const ticks: number[] = [];
+  for (let t = step; t < scaleMax; t += step) ticks.push(t);
+  ticks.push(scaleMax);
+  return ticks;
+}
+
+export function BarChart({ items, scale = "score", max, height, compact, ariaLabel }: {
   items: BarItem[];
+  scale?: ChartScale;
   max?: number;
   height?: number;
+  compact?: boolean;
   ariaLabel: string;
 }) {
   if (items.length === 0) return <p className="muted chart-empty">Нет данных для диаграммы</p>;
   const width = 420;
   const padX = 24;
-  const padTop = 18;
+  const padTop = compact ? 14 : 18;
   const slot = (width - padX * 2) / items.length;
   const bar = Math.max(6, Math.min(16, slot * 0.4));
-  const scale = max <= 0 ? 1 : max;
+  const scaleMax = resolveCeiling(items, scale, max);
   const labelChars = Math.max(4, Math.floor(slot / 5));
   const wrapped = items.map((item) => wrapLabel(item.label, labelChars));
   const maxLines = Math.max(1, ...wrapped.map((lines) => lines.length));
-  const lineH = 10;
-  const padBottom = 12 + maxLines * lineH;
-  const chartH = height ?? (110 + padBottom);
+  const lineH = compact ? 9 : 10;
+  const padBottom = (compact ? 8 : 12) + maxLines * lineH;
+  const chartH = height ?? ((compact ? 48 : 110) + padBottom);
   const plotH = chartH - padTop - padBottom;
+  const ticks = axisTicks(scaleMax);
   return (
     <svg className="chart-svg" viewBox={`0 0 ${width} ${chartH}`} role="img" aria-label={ariaLabel}>
       <line x1={padX} y1={padTop + plotH} x2={width - padX / 2} y2={padTop + plotH} stroke="#8e9ca3" />
-      {[25, 50, 75, 100].filter((t) => t <= scale).map((t) => {
-        const y = padTop + plotH - (t / scale) * plotH;
+      {ticks.map((t) => {
+        const y = padTop + plotH - (t / scaleMax) * plotH;
         return <line key={t} x1={padX} y1={y} x2={width - padX / 2} y2={y} stroke="#d7dcde" strokeDasharray="3 3" />;
       })}
       {items.map((item, i) => {
-        const h = (clamp(item.value, 0, scale) / scale) * plotH;
+        const h = (clamp(item.value, 0, scaleMax) / scaleMax) * plotH;
         const cx = padX + i * slot + slot / 2;
         const x = cx - bar / 2;
         const full = item.hint ?? item.label;
@@ -83,18 +109,29 @@ export function BarChart({ items, max = 100, height, ariaLabel }: {
   );
 }
 
-export function HorizontalBars({ items, max }: { items: BarItem[]; max?: number }) {
+export function HorizontalBars({ items, scale = "count", max, unit }: {
+  items: BarItem[];
+  scale?: ChartScale;
+  max?: number;
+  unit?: string;
+}) {
   if (items.length === 0) return <p className="muted chart-empty">Нет данных</p>;
-  const ceiling = max ?? Math.max(1, ...items.map((i) => i.value));
+  const ceiling = resolveCeiling(items, scale, max);
+  const suffix = unit ?? (scale === "score" ? "" : "");
   return (
     <ul className="hbar-list">
       {items.map((item) => (
         <li key={item.key}>
           <span className="hbar-label" title={item.hint}>{item.label}</span>
-          <span className="hbar-track">
-            <i style={{ width: `${(item.value / ceiling) * 100}%`, background: item.color ?? "#0784c6" }} />
+          <span
+            className="hbar-track"
+            title={`${Math.round(item.value)}${suffix ? ` ${suffix}` : ""} · ${scale === "score" ? "из 100" : `шкала до ${Math.round(ceiling)}`}`}
+          >
+            <i style={{ width: `${Math.min(100, (item.value / ceiling) * 100)}%`, background: item.color ?? "#0784c6" }} />
           </span>
-          <b className="hbar-value">{Math.round(item.value)}</b>
+          <b className="hbar-value">
+            {Math.round(item.value)}{scale === "score" ? "" : suffix ? ` ${suffix}` : ""}
+          </b>
         </li>
       ))}
     </ul>

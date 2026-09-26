@@ -179,22 +179,23 @@ export function TeacherAnalytics({ token }: { token: string }) {
         <article className="analytics-card">
           <header><b>Портфель занятий</b></header>
           <Donut center={String(bundles.length)} segments={stateMix} size={280} />
-          <p className="chart-note">Черновик / идёт / завершено</p>
+          <p className="chart-note">Доли по количеству занятий (не баллы)</p>
         </article>
 
         <article className="analytics-card wide">
           <header><b>Средний балл по занятиям</b></header>
           {byLesson.length === 0
             ? <p className="muted chart-empty">Нет оценённых занятий</p>
-            : <HorizontalBars items={byLesson} />}
+            : <HorizontalBars items={byLesson} scale="score" />}
+          <p className="chart-note">Средний итог, шкала 0–100 (полная полоса = 100)</p>
         </article>
 
         <article className="analytics-card">
           <header><b>Обучающиеся (от слабых к сильным)</b></header>
           {byTrainee.length === 0
             ? <p className="muted chart-empty">Нет оценённых сессий</p>
-            : <HorizontalBars items={byTrainee} />}
-          <p className="chart-note">Подсказка при наведении — ФИО и число занятий</p>
+            : <HorizontalBars items={byTrainee} scale="score" />}
+          <p className="chart-note">Средний балл 0–100. Подсказка — ФИО и число занятий</p>
         </article>
 
         <article className="analytics-card">
@@ -204,13 +205,13 @@ export function TeacherAnalytics({ token }: { token: string }) {
             : (
               <BarChart
                 ariaLabel="Разница оценки преподавателя и ИИ"
-                max={Math.max(20, ...aiVsTeacher.map((x) => Math.abs(x.value)))}
+                scale="score"
+                compact
                 items={aiVsTeacher.map((x) => ({ ...x, value: Math.abs(x.value) }))}
               />
             )}
           <p className="chart-note">
-            Зелёный в подсказке — вы повысили балл, красный — понизили.
-            Среднее ИИ {score(meanAi)} · ваше {score(meanTeacher)}
+            |преп. − ИИ| из 100 · зелёный ↑ / красный ↓ · ср. ИИ {score(meanAi)}, преп. {score(meanTeacher)}
           </p>
         </article>
       </div>
