@@ -120,13 +120,13 @@ public class TrainingEngine {
     private final CardActionsAssessor actionsAssessor;
     private final CardFillAssessor fillAssessor;
     private final ru.lct.arm112.persistence.JobRepository jobs;
-    private final IdempotencyService idempotency;
     private final String publicBaseUrl;
 
     private final Map<UUID, SessionState> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> cardIndex = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> callIndex = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> draftIndex = new ConcurrentHashMap<>();
+    private final IdempotencyService idempotency;
     private final ScheduledExecutorService callScheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "call-simulator");
         thread.setDaemon(true);
@@ -137,11 +137,9 @@ public class TrainingEngine {
                           LessonRepository lessonRepo, UserRepository userRepo, AssessmentRepository assessmentRepo,
                           ScenarioService scenarios, ReferenceDataService references, SettingsService settings,
                           SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor,
-                          ru.lct.arm112.persistence.JobRepository jobs,
-                          IdempotencyService idempotency,
+                          ru.lct.arm112.persistence.JobRepository jobs, IdempotencyService idempotency,
                           @Value("${arm112.public-base-url:http://localhost:8080}") String publicBaseUrl) {
         this.jobs = jobs;
-        this.idempotency = idempotency;
         this.events = events;
         this.stateStore = stateStore;
         this.sessionRepo = sessionRepo;
@@ -154,6 +152,7 @@ public class TrainingEngine {
         this.access = access;
         this.actionsAssessor = actionsAssessor;
         this.fillAssessor = fillAssessor;
+        this.idempotency = idempotency;
         this.publicBaseUrl = publicBaseUrl.endsWith("/")
                 ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
     }

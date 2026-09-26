@@ -154,7 +154,7 @@ public class DemoSeeder {
         Lesson lesson = new Lesson(lessonId, teacher.id(), group.id(), group.name(),
                 DEMO_PREFIX + " " + TITLES.get(index), kind, mode, "GENERATED", "DRAFT",
                 List.of("ticket-0" + (index % 5 + 1) + "-1"), Instant.now(), null, null, null, 0,
-                "101", mode.equals("CARD_ACTIONS") ? "MEDIUM" : "SEQUENTIAL", 70);
+                TrainingEngine.OWN_SERVICE_CODE, TrainingEngine.Intensity.MEDIUM.name(), 70);
         lessons.insertLesson(lesson);
 
         for (int participantIndex = 0; participantIndex < participants.size(); participantIndex++) {
@@ -167,7 +167,9 @@ public class DemoSeeder {
             int offset = participantIndex == 0 ? 0 : DEMO_TRAINEES.get(participantIndex - 1).scoreOffset();
             double aiTotal = clamp(PRIMARY_SCORES[index] + offset + ((index + participantIndex) % 3 - 1));
             Assessment assessment = assessment(index, participantIndex, sessionId, mode, aiTotal);
-            assessments.insert(new AssessmentResult(assessment, List.of()), sessionId, lessonId, trainee.id(), Map.of());
+            // карточек у демо-набора нет: он пишет итоги, а не прогоняет занятие
+            assessments.insert(new AssessmentResult(assessment, List.of()), sessionId,
+                    lessonId, trainee.id(), Map.of());
             if ((index + participantIndex) % 3 != 0) {
                 double correction = switch ((index + participantIndex) % 4) {
                     case 0 -> -4;
@@ -193,7 +195,8 @@ public class DemoSeeder {
         Lesson lesson = new Lesson(lessonId, teacher.id(), group.id(), group.name(),
                 "Демо: " + (index == 0 ? "разбор сложных адресов" : "тренировка ночной смены"),
                 "TRAINING", mode, "MIXED", "DRAFT", List.of("ticket-01-1", "ticket-03-1"),
-                Instant.now(), null, null, null, 0, "101", "SEQUENTIAL", 70);
+                Instant.now(), null, null, null, 0,
+                TrainingEngine.OWN_SERVICE_CODE, TrainingEngine.Intensity.MEDIUM.name(), 70);
         lessons.insertLesson(lesson);
         for (int i = 0; i < Math.min(3, participants.size()); i++) {
             AppUser trainee = participants.get(i);

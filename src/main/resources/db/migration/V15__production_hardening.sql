@@ -1,4 +1,8 @@
 -- Надёжность запросов, отзыв refresh-токенов и защита входа.
+--
+-- Была V13; переномерована в V15 при слиянии ветки надёжности с веткой оценки:
+-- под номером 13 уже лежит V13__lesson_service_intensity.sql. Создаваемые здесь
+-- таблицы ни от чего не зависят, порядок безразличен.
 create table idempotency_record (
     operation         varchar(240) not null,
     idempotency_key   uuid not null,

@@ -2,12 +2,14 @@ package ru.lct.arm112;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 import ru.lct.arm112.service.DemoSeeder;
 import tools.jackson.databind.JsonNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Проверяет, что демо-набор действительно наполняет API обеих страниц аналитики и не дублируется. */
+@TestPropertySource(properties = "arm112.seed.analytics-demo-enabled=true")
 class AnalyticsDemoDataIntegrationTest extends ApiTestSupport {
     @Autowired
     DemoSeeder seeder;

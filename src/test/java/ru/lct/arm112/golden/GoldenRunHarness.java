@@ -88,6 +88,12 @@ class GoldenRunHarness {
         String admin = login("admin", "admin");
         String teacher = login("teacher", "teacher");
 
+        // Телефония ускорена: боевые значения дают 15 секунд на один доклад руководителю,
+        // а прогонов с докладом четыре. На оценку длительность симулятора не влияет —
+        // проверяется факт доклада, а нормативы считаются по отметкам таймлайна.
+        send("PUT", "/api/v1/admin/settings", "{\"telephony.ringing_ms\":\"100\","
+                + "\"telephony.connect_ms\":\"150\",\"telephony.acknowledge_ms\":\"200\"}", admin, null);
+
         GoldenCsv csv = new GoldenCsv(stage);
         List<GoldenResult> results = new ArrayList<>();
         for (JsonNode run : runs) {

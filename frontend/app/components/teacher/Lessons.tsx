@@ -312,6 +312,9 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
             {(["SEQUENTIAL", "LOW", "MEDIUM", "HIGH"] as Intensity[]).map((i) => <option key={i} value={i}>{intensityLabels[i]}</option>)}
           </select>
           <small>{intensityHints[intensity]}</small></label>
+        <label><span>Норма, балл</span>
+          <input type="number" min={0} max={100} value={normScore} onChange={(e) => setNormScore(Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+          <small>на графиках линия: балл выше этого значения — норма</small></label>
         {mode === "CARD_ACTIONS" && (
           <label><span>Служба обучающегося</span>
             <select value={serviceCode} onChange={(e) => { setServiceCode(e.target.value); setChosenScenarios([]); }}>
@@ -319,9 +322,6 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
             </select>
             <small>за эту службу обучающийся принимает карточки и проставляет статусы</small></label>
         )}
-        <label><span>Норма, балл</span>
-          <input type="number" min={0} max={100} value={normScore} onChange={(e) => setNormScore(Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
-          <small>на графиках линия: балл выше этого значения — норма</small></label>
         {mode === "CARD_ACTIONS" && (
           <label><span>Источник карточек</span>
             <select value={cardSource} onChange={(e) => setCardSource(e.target.value as CardSource)}>

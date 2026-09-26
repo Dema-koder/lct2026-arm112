@@ -58,6 +58,7 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh",
                                     "/api/v1/auth/logout", "/actuator/health", "/ws/v1/**",
+                                    // звуки телефонии отдаются странице до входа
                                     "/telephony/**").permitAll();
                     if (swaggerPublic) {
                         auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
