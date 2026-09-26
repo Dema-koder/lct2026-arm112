@@ -198,7 +198,7 @@ function LessonStats({ lessons }: { lessons: Lesson[] }) {
       <div className="analytics-grid">
         <article className="analytics-card">
           <header><b>По состоянию</b></header>
-          <Donut center={String(lessons.length)} segments={stateMix} />
+          <Donut center={String(lessons.length)} segments={stateMix} size={280} />
         </article>
         <article className="analytics-card">
           <header><b>Создано по дням</b><small className="muted">до 14 последних</small></header>

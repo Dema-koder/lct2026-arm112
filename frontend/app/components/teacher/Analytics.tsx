@@ -110,7 +110,7 @@ export function TeacherAnalytics({ token }: { token: string }) {
         const scores = b.report!.rows.map((r) => r.finalTotal).filter((v): v is number => v !== null);
         return {
           key: b.lesson.id,
-          label: b.lesson.title.length > 18 ? `${b.lesson.title.slice(0, 16)}…` : b.lesson.title,
+          label: b.lesson.title,
           value: avg(scores) ?? 0,
           color: b.lesson.kind === "EXAM" ? "#0c6fa4" : "#5a6a72",
           hint: `${b.lesson.title} · ${kindLabels[b.lesson.kind]} · ${modeLabels[b.lesson.mode]} · ${lessonStateLabels[b.lesson.state]}`,
@@ -178,13 +178,15 @@ export function TeacherAnalytics({ token }: { token: string }) {
       <div className="analytics-grid">
         <article className="analytics-card">
           <header><b>Портфель занятий</b></header>
-          <Donut center={String(bundles.length)} segments={stateMix} />
+          <Donut center={String(bundles.length)} segments={stateMix} size={280} />
           <p className="chart-note">Черновик / идёт / завершено</p>
         </article>
 
-        <article className="analytics-card">
+        <article className="analytics-card wide">
           <header><b>Средний балл по занятиям</b></header>
-          <BarChart ariaLabel="Средний балл по занятиям" items={byLesson} />
+          {byLesson.length === 0
+            ? <p className="muted chart-empty">Нет оценённых занятий</p>
+            : <HorizontalBars items={byLesson} />}
         </article>
 
         <article className="analytics-card">

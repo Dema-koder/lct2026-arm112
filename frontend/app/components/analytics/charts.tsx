@@ -14,7 +14,24 @@ export function clamp(n: number, min = 0, max = 100) {
 
 type BarItem = { key: string; label: string; value: number; color?: string; hint?: string };
 
-export function BarChart({ items, max = 100, height = 140, ariaLabel }: {
+function wrapLabel(text: string, maxChars: number): string[] {
+  const limit = Math.max(4, maxChars);
+  const lines: string[] = [];
+  let rest = text.trim();
+  while (rest.length > 0) {
+    if (rest.length <= limit) {
+      lines.push(rest);
+      break;
+    }
+    let breakAt = rest.lastIndexOf(" ", limit);
+    if (breakAt < limit * 0.4) breakAt = limit;
+    lines.push(rest.slice(0, breakAt).trim());
+    rest = rest.slice(breakAt).trim();
+  }
+  return lines;
+}
+
+export function BarChart({ items, max = 100, height, ariaLabel }: {
   items: BarItem[];
   max?: number;
   height?: number;
@@ -22,26 +39,43 @@ export function BarChart({ items, max = 100, height = 140, ariaLabel }: {
 }) {
   if (items.length === 0) return <p className="muted chart-empty">Нет данных для диаграммы</p>;
   const width = 420;
-  const pad = 28;
-  const bar = Math.max(10, Math.min(36, (width - pad * 2) / items.length - 6));
+  const padX = 24;
+  const padTop = 18;
+  const slot = (width - padX * 2) / items.length;
+  const bar = Math.max(6, Math.min(16, slot * 0.4));
   const scale = max <= 0 ? 1 : max;
+  const labelChars = Math.max(4, Math.floor(slot / 5));
+  const wrapped = items.map((item) => wrapLabel(item.label, labelChars));
+  const maxLines = Math.max(1, ...wrapped.map((lines) => lines.length));
+  const lineH = 10;
+  const padBottom = 12 + maxLines * lineH;
+  const chartH = height ?? (110 + padBottom);
+  const plotH = chartH - padTop - padBottom;
   return (
-    <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
-      <line x1={pad} y1={height - pad} x2={width - pad / 2} y2={height - pad} stroke="#8e9ca3" />
+    <svg className="chart-svg" viewBox={`0 0 ${width} ${chartH}`} role="img" aria-label={ariaLabel}>
+      <line x1={padX} y1={padTop + plotH} x2={width - padX / 2} y2={padTop + plotH} stroke="#8e9ca3" />
       {[25, 50, 75, 100].filter((t) => t <= scale).map((t) => {
-        const y = height - pad - (t / scale) * (height - pad * 2);
-        return <line key={t} x1={pad} y1={y} x2={width - pad / 2} y2={y} stroke="#d7dcde" strokeDasharray="3 3" />;
+        const y = padTop + plotH - (t / scale) * plotH;
+        return <line key={t} x1={padX} y1={y} x2={width - padX / 2} y2={y} stroke="#d7dcde" strokeDasharray="3 3" />;
       })}
       {items.map((item, i) => {
-        const h = (clamp(item.value, 0, scale) / scale) * (height - pad * 2);
-        const x = pad + i * ((width - pad * 2) / items.length);
+        const h = (clamp(item.value, 0, scale) / scale) * plotH;
+        const cx = padX + i * slot + slot / 2;
+        const x = cx - bar / 2;
+        const full = item.hint ?? item.label;
+        const lines = wrapped[i];
         return (
           <g key={item.key}>
-            <rect x={x} y={height - pad - h} width={bar} height={Math.max(1, h)} fill={item.color ?? "#0784c6"}>
-              {item.hint && <title>{item.hint}</title>}
+            <rect x={x} y={padTop + plotH - h} width={bar} height={Math.max(1, h)} fill={item.color ?? "#0784c6"}>
+              <title>{full}</title>
             </rect>
-            <text x={x + bar / 2} y={height - pad + 12} fontSize="9" textAnchor="middle" fill="#56656c">{item.label}</text>
-            <text x={x + bar / 2} y={height - pad - h - 4} fontSize="9" textAnchor="middle" fill="#24313a">{Math.round(item.value)}</text>
+            <text x={cx} y={padTop + plotH - h - 4} fontSize="9" textAnchor="middle" fill="#24313a">{Math.round(item.value)}</text>
+            <text x={cx} y={padTop + plotH + lineH} fontSize="8" textAnchor="middle" fill="#56656c">
+              <title>{full}</title>
+              {lines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={cx} dy={lineIndex === 0 ? 0 : lineH}>{line}</tspan>
+              ))}
+            </text>
           </g>
         );
       })}

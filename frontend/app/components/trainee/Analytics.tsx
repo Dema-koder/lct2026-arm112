@@ -120,7 +120,7 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
       .slice(0, 5)
       .map(([label, value], i) => ({
         key: String(i),
-        label: label.length > 48 ? `${label.slice(0, 48)}…` : label,
+        label,
         value,
         color: "#b03f2e",
         hint: label,
