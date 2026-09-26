@@ -84,22 +84,28 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
     return () => window.clearInterval(timer);
   }, [activeCall, token]);
 
+  const activeCallId = activeCall?.id;
+  const activeCallState = activeCall?.state;
+  const ringbackUrl = activeCall?.media.ringbackUrl;
+  const answerUrl = activeCall?.media.answerUrl;
+  const acknowledgementUrl = activeCall?.media.acknowledgementUrl;
+
   useEffect(() => {
     const stopAudio = () => {
       audioRef.current?.pause();
       audioRef.current = null;
     };
-    if (!activeCall) {
+    if (!activeCallId) {
       stopAudio();
       return;
     }
 
-    const mediaUrl = ["DIALING", "RINGING"].includes(activeCall.state)
-      ? activeCall.media.ringbackUrl
-      : activeCall.state === "CONNECTED"
-        ? activeCall.media.answerUrl
-        : activeCall.state === "ACKNOWLEDGED"
-          ? activeCall.media.acknowledgementUrl
+    const mediaUrl = ["DIALING", "RINGING"].includes(activeCallState ?? "")
+      ? ringbackUrl
+      : activeCallState === "CONNECTED"
+        ? answerUrl
+        : activeCallState === "ACKNOWLEDGED"
+          ? acknowledgementUrl
           : null;
     stopAudio();
     if (!mediaUrl) return;
@@ -108,7 +114,7 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
     audioRef.current = audio;
     void audio.play().catch(() => undefined);
     return stopAudio;
-  }, [activeCall?.id, activeCall?.state, activeCall?.media.ringbackUrl, activeCall?.media.answerUrl, activeCall?.media.acknowledgementUrl]);
+  }, [activeCallId, activeCallState, ringbackUrl, answerUrl, acknowledgementUrl]);
 
   // Карточка открывается с задержкой, а чужие службы двигаются по независимым
   // таймлайнам. Короткий опрос держит плитки живыми даже без ручных действий.
@@ -379,7 +385,7 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
             const expanded = serviceMenu === service.id;
             const progress = card.serviceProgress.find((item) => item.service.code === service.code);
             return (
-              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "" : "foreign"} service-${progress?.status.toLowerCase() ?? "received"}`}>
+              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "own" : "foreign"} service-${progress?.status.toLowerCase() ?? "received"}`}>
                 <button
                   className="tile-body"
                   title={own ? "Ваша служба — здесь проставляется статус реагирования" : "Статус другой службы — только просмотр"}

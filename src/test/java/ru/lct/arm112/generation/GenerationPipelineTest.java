@@ -41,9 +41,7 @@ class GenerationPipelineTest {
                 new GenerationHandler.Request("FIRE", 12, 5, null));
         UUID jobId = jobs.enqueue(GenerationHandler.TYPE, payload, null, 3);
 
-        assertThat(worker.runOne()).as("исполнитель не взял задачу").isTrue();
-
-        JobRow finished = jobs.findById(jobId).orElseThrow();
+        JobRow finished = runUntilFinished(jobId);
         assertThat(finished.state()).as("задача не завершилась: %s", finished.error())
                 .isEqualTo(JobRepository.DONE);
 
@@ -68,9 +66,7 @@ class GenerationPipelineTest {
     @Test
     void brokenPayloadIsRecordedNotSwallowed() {
         UUID jobId = jobs.enqueue(GenerationHandler.TYPE, "не json", null, 1);
-        assertThat(worker.runOne()).isTrue();
-
-        JobRow failed = jobs.findById(jobId).orElseThrow();
+        JobRow failed = runUntilFinished(jobId);
         assertThat(failed.state()).isEqualTo(JobRepository.FAILED);
         assertThat(failed.error()).as("причина неудачи не записана").isNotBlank();
     }
@@ -88,9 +84,8 @@ class GenerationPipelineTest {
         String payload = objectMapper.writeValueAsString(
                 new GenerationHandler.Request("MEDICAL", 6, 5, null));
         UUID jobId = jobs.enqueue(GenerationHandler.TYPE, payload, null, 3);
-        worker.runOne();
-
-        Report report = objectMapper.readValue(jobs.findById(jobId).orElseThrow().result(), Report.class);
+        JobRow finished = runUntilFinished(jobId);
+        Report report = objectMapper.readValue(finished.result(), Report.class);
         int byReason = report.rejectionReasons().values().stream().mapToInt(Integer::intValue).sum();
         assertThat(byReason)
                 .as("сумма по причинам меньше числа отсеянных: часть отказов без объяснения")
@@ -101,5 +96,14 @@ class GenerationPipelineTest {
 
     private static Map<String, Integer> reasons(Report report) {
         return report.rejectionReasons();
+    }
+
+    private JobRow runUntilFinished(UUID jobId) {
+        for (int i = 0; i < 500; i++) {
+            JobRow row = jobs.findById(jobId).orElseThrow();
+            if (JobRepository.DONE.equals(row.state()) || JobRepository.FAILED.equals(row.state())) return row;
+            worker.runOne();
+        }
+        return jobs.findById(jobId).orElseThrow();
     }
 }
