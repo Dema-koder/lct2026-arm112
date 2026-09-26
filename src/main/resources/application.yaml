@@ -23,13 +23,21 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
 
 arm112:
   version: 0.3.0
   public-base-url: ${ARM112_PUBLIC_BASE_URL:http://localhost:8080}
   jwt-secret: ${ARM112_JWT_SECRET:local-training-secret-key-change-me-2026}
   token-ttl: PT8H
+  refresh-token-ttl: P7D
+  swagger:
+    public: ${ARM112_SWAGGER_PUBLIC:true}
   allowed-origins: ${ARM112_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   seed:
     admin-password: ${ARM112_SEED_ADMIN_PASSWORD:admin}
@@ -45,6 +53,8 @@ arm112:
     batch-size: ${ARM112_JOBS_BATCH_SIZE:2}
   backup:
     dir: ${ARM112_BACKUP_DIR:./backups}
+    external-dir: ${ARM112_BACKUP_EXTERNAL_DIR:}
+    retention-days: ${ARM112_BACKUP_RETENTION_DAYS:14}
     cron: ${ARM112_BACKUP_CRON:0 0 2 * * *}
   materials:
     dir: ${ARM112_MATERIALS_DIR:./materials-store}
@@ -61,7 +71,10 @@ logging:
       max-history: 30
 
 springdoc:
+  api-docs:
+    enabled: ${ARM112_SWAGGER_PUBLIC:true}
   swagger-ui:
+    enabled: ${ARM112_SWAGGER_PUBLIC:true}
     path: /swagger-ui.html
     url: /openapi.yaml
     disable-swagger-default-url: true

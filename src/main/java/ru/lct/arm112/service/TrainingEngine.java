@@ -120,13 +120,13 @@ public class TrainingEngine {
     private final CardActionsAssessor actionsAssessor;
     private final CardFillAssessor fillAssessor;
     private final ru.lct.arm112.persistence.JobRepository jobs;
+    private final IdempotencyService idempotency;
     private final String publicBaseUrl;
 
     private final Map<UUID, SessionState> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> cardIndex = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> callIndex = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> draftIndex = new ConcurrentHashMap<>();
-    private final Map<String, IdempotentResult> idempotency = new ConcurrentHashMap<>();
     private final ScheduledExecutorService callScheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "call-simulator");
         thread.setDaemon(true);
@@ -138,8 +138,10 @@ public class TrainingEngine {
                           ScenarioService scenarios, ReferenceDataService references, SettingsService settings,
                           SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor,
                           ru.lct.arm112.persistence.JobRepository jobs,
+                          IdempotencyService idempotency,
                           @Value("${arm112.public-base-url:http://localhost:8080}") String publicBaseUrl) {
         this.jobs = jobs;
+        this.idempotency = idempotency;
         this.events = events;
         this.stateStore = stateStore;
         this.sessionRepo = sessionRepo;
@@ -179,7 +181,7 @@ public class TrainingEngine {
         cardIndex.clear();
         callIndex.clear();
         draftIndex.clear();
-        idempotency.clear();
+        stateStore.resetRevisionTracking();
         initialize();
     }
 
@@ -321,7 +323,7 @@ public class TrainingEngine {
 
     public IncidentCard acceptance(UUID cardId, AcceptanceCommand command, String idempotencyKey, CurrentUser actor) {
         SessionState state = sessionOfCard(cardId, actor);
-        return idempotent(state, "acceptance:" + cardId, idempotencyKey, command.toString(), () -> {
+        return idempotent(state, "acceptance:" + cardId, idempotencyKey, command.toString(), IncidentCard.class, () -> {
             MutableCard card = state.cards.get(cardId);
             synchronized (card) {
                 requireActive(state);
@@ -354,7 +356,7 @@ public class TrainingEngine {
 
     public IncidentCard reaction(UUID cardId, ReactionCommand command, String idempotencyKey, CurrentUser actor) {
         SessionState state = sessionOfCard(cardId, actor);
-        return idempotent(state, "reaction:" + cardId, idempotencyKey, command.toString(), () -> {
+        return idempotent(state, "reaction:" + cardId, idempotencyKey, command.toString(), IncidentCard.class, () -> {
             MutableCard card = state.cards.get(cardId);
             synchronized (card) {
                 requireActive(state);
@@ -391,7 +393,7 @@ public class TrainingEngine {
 
     public OutboundCall startCall(UUID cardId, StartCallRequest request, String idempotencyKey, CurrentUser actor) {
         SessionState state = sessionOfCard(cardId, actor);
-        return idempotent(state, "start-call:" + cardId, idempotencyKey, request.toString(), () -> {
+        return idempotent(state, "start-call:" + cardId, idempotencyKey, request.toString(), OutboundCall.class, () -> {
             MutableCard card = state.cards.get(cardId);
             synchronized (card) {
                 requireActive(state);
@@ -430,7 +432,7 @@ public class TrainingEngine {
 
     public OutboundCall endCall(UUID callId, String idempotencyKey, CurrentUser actor) {
         SessionState state = sessionOfCall(callId, actor);
-        return idempotent(state, "end-call:" + callId, idempotencyKey, "END", () -> {
+        return idempotent(state, "end-call:" + callId, idempotencyKey, "END", OutboundCall.class, () -> {
             MutableCall call = state.calls.get(callId);
             synchronized (call) {
                 if (isTerminalCall(call.state)) {
@@ -448,7 +450,7 @@ public class TrainingEngine {
 
     public SubmitResponse submit(UUID sessionId, String idempotencyKey, CurrentUser actor) {
         SessionState state = requireAccessible(sessionId, actor);
-        return idempotent(state, "submit:" + sessionId, idempotencyKey, "SUBMIT", () -> {
+        return idempotent(state, "submit:" + sessionId, idempotencyKey, "SUBMIT", SubmitResponse.class, () -> {
             synchronized (state) {
                 requireActive(state);
                 if (state.mode.equals("CARD_ACTIONS")) {
@@ -1419,29 +1421,19 @@ public class TrainingEngine {
         return List.of("ENDED", "NO_ANSWER", "FAILED", "CANCELLED").contains(state);
     }
 
-    @SuppressWarnings("unchecked")
-    <T> T idempotent(SessionState state, String operation, String key, String signature, Supplier<T> action) {
+    <T> T idempotent(SessionState state, String operation, String key, String signature,
+                     Class<T> responseType, Supplier<T> action) {
+        UUID parsedKey;
         try {
-            UUID.fromString(key);
+            parsedKey = UUID.fromString(key);
         } catch (Exception ex) {
             throw validation("Idempotency-Key", "INVALID", "Ожидается UUID");
         }
-        String storageKey = operation + ":" + key;
-        IdempotentResult existing = idempotency.get(storageKey);
-        if (existing != null) {
-            if (!existing.signature.equals(signature)) {
-                throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", "Ключ уже использован с другим запросом");
-            }
-            return (T) existing.value;
-        }
-        synchronized (idempotency) {
-            existing = idempotency.get(storageKey);
-            if (existing != null) return (T) existing.value;
+        return idempotency.execute(operation, parsedKey, signature, responseType, () -> {
             T value = action.get();
-            idempotency.put(storageKey, new IdempotentResult(signature, value));
             persist(state);
             return value;
-        }
+        });
     }
 
     private List<CardState> cardStates(SessionState state) {
@@ -1609,5 +1601,4 @@ public class TrainingEngine {
         Instant endedAt;
     }
 
-    private record IdempotentResult(String signature, Object value) {}
 }
