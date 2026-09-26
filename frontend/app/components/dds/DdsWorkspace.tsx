@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Assessment, type CardListItem, type IncidentCard, type OutboundCall, type TraineeContext } from "../../../lib/api";
 import { actionLabels, callLabels, countdown, dateTime, elapsed, statusLabels, timeOnly } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useClock, useNotice, useSocket } from "../common";
@@ -40,6 +40,7 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
   const [callDialog, setCallDialog] = useState(false);
   const [shortNumber, setShortNumber] = useState("1102");
   const [activeCall, setActiveCall] = useState<OutboundCall | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [serviceMenu, setServiceMenu] = useState<string | null>(null);
   const [working, run] = useAction(setError);
@@ -82,6 +83,32 @@ export function DdsWorkspace({ token, context, onLogout, onReload, nav, label }:
     }, 500);
     return () => window.clearInterval(timer);
   }, [activeCall, token]);
+
+  useEffect(() => {
+    const stopAudio = () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+    if (!activeCall) {
+      stopAudio();
+      return;
+    }
+
+    const mediaUrl = ["DIALING", "RINGING"].includes(activeCall.state)
+      ? activeCall.media.ringbackUrl
+      : activeCall.state === "CONNECTED"
+        ? activeCall.media.answerUrl
+        : activeCall.state === "ACKNOWLEDGED"
+          ? activeCall.media.acknowledgementUrl
+          : null;
+    stopAudio();
+    if (!mediaUrl) return;
+
+    const audio = new Audio(mediaUrl);
+    audioRef.current = audio;
+    void audio.play().catch(() => undefined);
+    return stopAudio;
+  }, [activeCall?.id, activeCall?.state, activeCall?.media.ringbackUrl, activeCall?.media.answerUrl, activeCall?.media.acknowledgementUrl]);
 
   // Карточка открывается с задержкой, а чужие службы двигаются по независимым
   // таймлайнам. Короткий опрос держит плитки живыми даже без ручных действий.

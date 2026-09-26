@@ -148,6 +148,43 @@ export function score(value: number | null | undefined) {
   return value === null || value === undefined ? "—" : String(Math.round(value * 10) / 10);
 }
 
+/** Display 8-digit card id like combat АРМ without chopping the year into the middle. */
+export function displayCardNumber(number: string | null | undefined) {
+  if (!number) return "—";
+  const tail = number.match(/(\d+)$/);
+  if (tail) return tail[1].padStart(8, "0").slice(-8);
+  const digits = number.replace(/\D/g, "");
+  return digits.slice(-8) || number;
+}
+
+/** Flags inferred from incident text / feature list (DDS cards). */
+export function cardFlags(description: string | null | undefined, features: string[] = []) {
+  const blob = `${description ?? ""} ${features.join(" ")}`.toLowerCase();
+  return {
+    victims: features.includes("Пострадавшие") || /пострадав/.test(blob),
+    ambulanceRefused: features.includes("Отказ от скорой") || /отказ от скорой|отказал.*скор/.test(blob),
+    blocked: features.includes("Заблокированные") || /заблок|нет доступа/.test(blob),
+  };
+}
+
+export function flagLabel(value: boolean) {
+  return value ? "да" : "нет";
+}
+
+export function formatIssueValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    const parts = value.map((v) => formatIssueValue(v)).filter((v): v is string => Boolean(v));
+    return parts.length ? parts.join(", ") : null;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 export function getMessage(error: unknown) {
   return error instanceof Error ? error.message : "Неизвестная ошибка";
 }

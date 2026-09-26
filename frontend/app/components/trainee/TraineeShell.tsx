@@ -6,17 +6,18 @@ import { getMessage } from "../../../lib/format";
 import { ErrorBanner, TopStrip, useSocket } from "../common";
 import { DdsWorkspace } from "../dds/DdsWorkspace";
 import { FillWorkspace } from "../fill/FillWorkspace";
+import { TraineeAnalytics } from "./Analytics";
 import { Results } from "./Results";
 
 /**
  * Рабочее место обучающегося: активное занятие открывает нужный симулятор
- * (оператор 112 или ДДС), без занятия — ожидание и свои результаты.
+ * (оператор 112 или ДДС), без занятия — ожидание, результаты и аналитика.
  */
 export function TraineeShell({ token, user, onLogout }: { token: string; user: User; onLogout: () => void }) {
   const [context, setContext] = useState<TraineeContext | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"work" | "results">("work");
+  const [view, setView] = useState<"work" | "results" | "analytics">("work");
   const [version, setVersion] = useState(0);
 
   const loadContext = useCallback(async () => {
@@ -51,6 +52,7 @@ export function TraineeShell({ token, user, onLogout }: { token: string; user: U
     <>
       <button className={view === "work" ? "active" : ""} onClick={() => setView("work")}>Рабочее место</button>
       <button className={view === "results" ? "active" : ""} onClick={() => setView("results")}>Мои результаты</button>
+      <button className={view === "analytics" ? "active" : ""} onClick={() => setView("analytics")}>Аналитика</button>
     </>
   );
 
@@ -59,6 +61,16 @@ export function TraineeShell({ token, user, onLogout }: { token: string; user: U
       <main className="arm-shell">
         <TopStrip label={label} onLogout={onLogout} nav={nav} />
         <Results token={token} refreshKey={version} />
+        <ErrorBanner error={error} onClose={() => setError("")} />
+      </main>
+    );
+  }
+
+  if (view === "analytics") {
+    return (
+      <main className="arm-shell">
+        <TopStrip label={label} onLogout={onLogout} nav={nav} />
+        <TraineeAnalytics token={token} refreshKey={version} />
         <ErrorBanner error={error} onClose={() => setError("")} />
       </main>
     );

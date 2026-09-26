@@ -30,7 +30,9 @@ class TrainingFlowIntegrationTest extends ApiTestSupport {
 
         String teacher = login("teacher", "teacher");
         String admin = login("admin", "admin");
-        assertThat(put("/api/v1/admin/settings", "{\"simulation.card_open_ms\":\"20\",\"simulation.card_arrival_ms\":\"500\"}", admin).statusCode())
+        assertThat(put("/api/v1/admin/settings", "{\"simulation.card_open_ms\":\"20\","
+                + "\"simulation.card_arrival_ms\":\"500\",\"telephony.ringing_ms\":\"20\","
+                + "\"telephony.connect_ms\":\"20\",\"telephony.acknowledge_ms\":\"20\"}", admin).statusCode())
                 .isEqualTo(200);
         String token = login("trainee", "trainee");
         String traineeId = userId(token);

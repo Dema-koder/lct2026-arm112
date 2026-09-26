@@ -27,6 +27,7 @@ management:
 
 arm112:
   version: 0.3.0
+  public-base-url: ${ARM112_PUBLIC_BASE_URL:http://localhost:8080}
   jwt-secret: ${ARM112_JWT_SECRET:local-training-secret-key-change-me-2026}
   token-ttl: PT8H
   allowed-origins: ${ARM112_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
@@ -34,6 +35,7 @@ arm112:
     admin-password: ${ARM112_SEED_ADMIN_PASSWORD:admin}
     teacher-password: ${ARM112_SEED_TEACHER_PASSWORD:teacher}
     trainee-password: ${ARM112_SEED_TRAINEE_PASSWORD:trainee}
+    analytics-demo-enabled: ${ARM112_SEED_ANALYTICS_DEMO_ENABLED:true}
   llm:
     # Пусто — генерация работает на перестановке билетов. Сайдкар подключается
     # через compose.llm.yaml, см. docs/assessment/LLM_EXPERIMENT.md

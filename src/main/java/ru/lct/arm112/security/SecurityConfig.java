@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/login", "/actuator/health", "/ws/v1/**",
                                 "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-                                "/openapi.yaml", "/webjars/**").permitAll()
+                                "/openapi.yaml", "/webjars/**", "/telephony/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/teacher/**").hasRole("TEACHER")

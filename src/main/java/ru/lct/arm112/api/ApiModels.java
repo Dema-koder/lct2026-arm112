@@ -252,13 +252,14 @@ public final class ApiModels {
                          String kind, String mode, String cardSource, String state,
                          List<String> scenarioIds, Instant createdAt, Instant startedAt,
                          Instant completedAt, Instant resultsPublishedAt, int sessionCount,
-                         String serviceCode, String intensity) {}
+                         String serviceCode, String intensity, int normScore) {}
 
     /** serviceCode — служба обучающегося в режиме действий (по умолчанию 101); intensity — поток вводных. */
     public record LessonCreate(@NotBlank @Size(max = 200) String title, UUID groupId,
                                @NotBlank String kind, @NotBlank String mode, @NotBlank String cardSource,
                                @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds,
-                               String serviceCode, String intensity) {}
+                               String serviceCode, String intensity,
+                               @Min(0) @Max(100) Integer normScore) {}
 
     public record LessonMonitor(Lesson lesson, List<MonitorRow> sessions) {}
     public record MonitorRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,

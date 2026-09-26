@@ -409,6 +409,7 @@ export type Lesson = {
   sessionCount: number;
   serviceCode: string;
   intensity: Intensity;
+  normScore: number;
 };
 
 export type LessonCreate = {
@@ -421,6 +422,7 @@ export type LessonCreate = {
   traineeIds: string[];
   serviceCode: string | null;
   intensity: Intensity;
+  normScore: number;
 };
 
 export type MonitorRow = {
