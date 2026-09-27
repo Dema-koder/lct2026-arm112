@@ -189,6 +189,18 @@ public class TrainingEngine {
         callScheduler.shutdownNow();
     }
 
+    /** Продолжить незавершённые звонки после включения телефонии администратором. */
+    public void resumeTelephony() {
+        resumeActiveCalls();
+    }
+
+    public int activeCallCount() {
+        return (int) sessions.values().stream()
+                .flatMap(state -> state.calls.values().stream())
+                .filter(call -> !isTerminalCall(call.state) && !call.state.equals("ACKNOWLEDGED"))
+                .count();
+    }
+
     // ================================================================= lifecycle (LessonService)
 
     /** Открывает персональную сессию: очередь сценариев, первая карточка (для ДДС) — сразу в журнал. */
@@ -391,6 +403,10 @@ public class TrainingEngine {
     }
 
     public OutboundCall startCall(UUID cardId, StartCallRequest request, String idempotencyKey, CurrentUser actor) {
+        if (!settings.enabled(SettingsService.SERVICE_TELEPHONY_ENABLED)) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_DISABLED",
+                    "Симулятор телефонии остановлен администратором");
+        }
         SessionState state = sessionOfCard(cardId, actor);
         return idempotent(state, "start-call:" + cardId, idempotencyKey, request.toString(), OutboundCall.class, () -> {
             MutableCard card = state.cards.get(cardId);
@@ -800,6 +816,7 @@ public class TrainingEngine {
 
     @Scheduled(fixedRate = 1000)
     void detectOverdue() {
+        if (!settings.enabled(SettingsService.SERVICE_SIMULATION_ENABLED)) return;
         Instant now = Instant.now();
         for (SessionState state : sessions.values()) {
             if (!state.state.equals("ACTIVE")) continue;
@@ -1107,6 +1124,7 @@ public class TrainingEngine {
 
     private void scheduleCallState(SessionState state, UUID callId, String next, long delayMs) {
         callScheduler.schedule(() -> {
+            if (!settings.enabled(SettingsService.SERVICE_TELEPHONY_ENABLED)) return;
             MutableCall call = state.calls.get(callId);
             if (call == null) return;
             synchronized (call) {

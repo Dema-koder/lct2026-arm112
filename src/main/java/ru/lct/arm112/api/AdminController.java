@@ -13,6 +13,7 @@ import ru.lct.arm112.service.BackupService;
 import ru.lct.arm112.service.EventService;
 import ru.lct.arm112.service.LessonService;
 import ru.lct.arm112.service.SettingsService;
+import ru.lct.arm112.service.ServiceManagementService;
 import ru.lct.arm112.service.TrainingEngine;
 import ru.lct.arm112.service.UserService;
 
@@ -39,13 +40,14 @@ public class AdminController {
     private final EventService events;
     private final SessionRepository sessions;
     private final TrainingEngine engine;
+    private final ServiceManagementService serviceManagement;
     private final JdbcTemplate jdbc;
     private final String version;
     private final Path logFile;
 
     public AdminController(UserService users, LessonService lessons, SettingsService settings, AuditService audit,
                            BackupService backups, EventService events, SessionRepository sessions,
-                           TrainingEngine engine, JdbcTemplate jdbc,
+                           TrainingEngine engine, ServiceManagementService serviceManagement, JdbcTemplate jdbc,
                            @Value("${arm112.version:0.3.0}") String version,
                            @Value("${arm112.log-file:./logs/arm112.log}") String logFile) {
         this.users = users;
@@ -56,6 +58,7 @@ public class AdminController {
         this.events = events;
         this.sessions = sessions;
         this.engine = engine;
+        this.serviceManagement = serviceManagement;
         this.jdbc = jdbc;
         this.version = version;
         this.logFile = Path.of(logFile);
@@ -163,6 +166,17 @@ public class AdminController {
         }
         return new SystemHealth(database.equals("UP") ? "UP" : "DOWN", database, events.openSockets(),
                 sessions.findByState("ACTIVE").size(), version, Instant.now());
+    }
+
+    @GetMapping("/system/services")
+    public List<ManagedService> services() {
+        return serviceManagement.list();
+    }
+
+    @PostMapping("/system/services/{id}/actions")
+    public ManagedService serviceAction(@PathVariable String id, @Valid @RequestBody ServiceAction request,
+                                        CurrentUser actor) {
+        return serviceManagement.execute(id, request.action(), actor.id());
     }
 
     @GetMapping("/backups")

@@ -388,6 +388,11 @@ public final class ApiModels {
 
     public record SystemHealth(String status, String database, int openSockets,
                                int activeSessions, String version, Instant serverTime) {}
+    public record ServiceMetric(String label, String value) {}
+    public record ManagedService(String id, String label, String description, String state,
+                                 boolean controllable, boolean critical,
+                                 List<ServiceMetric> metrics, List<String> allowedActions) {}
+    public record ServiceAction(@NotBlank String action) {}
     public record BackupInfo(String fileName, long sizeBytes, Instant createdAt) {}
     public record RestoreRequest(@NotBlank String confirm) {}
     public record LogTail(List<String> lines) {}

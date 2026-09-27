@@ -29,12 +29,20 @@ public class SettingsService {
     public static final String CARD_ARRIVAL_MS = "simulation.card_arrival_ms";
     public static final String SERVICE_TIME_SCALE_PERCENT = "simulation.service_time_scale_percent";
     public static final String LOGGING_LEVEL = "logging.level";
+    public static final String SERVICE_SIMULATION_ENABLED = "service.simulation.enabled";
+    public static final String SERVICE_TELEPHONY_ENABLED = "service.telephony.enabled";
+    public static final String SERVICE_REALTIME_ENABLED = "service.realtime.enabled";
+    public static final String SERVICE_JOBS_ENABLED = "service.jobs.enabled";
 
     /** ТЗ: хранение журналов безопасности не менее 6 месяцев — ниже опустить нельзя. */
     public static final int MIN_AUDIT_RETENTION_DAYS = 180;
     private static final Set<String> KNOWN = Set.of(AUDIT_RETENTION_DAYS, RINGING_MS, CONNECT_MS,
             ACKNOWLEDGE_MS, ACCEPTANCE_SECONDS, PROCESSING_SECONDS, MIN_REACTION_SECONDS,
-            CARD_OPEN_MS, CARD_ARRIVAL_MS, SERVICE_TIME_SCALE_PERCENT, LOGGING_LEVEL);
+            CARD_OPEN_MS, CARD_ARRIVAL_MS, SERVICE_TIME_SCALE_PERCENT, LOGGING_LEVEL,
+            SERVICE_SIMULATION_ENABLED, SERVICE_TELEPHONY_ENABLED,
+            SERVICE_REALTIME_ENABLED, SERVICE_JOBS_ENABLED);
+    private static final Set<String> BOOLEAN = Set.of(SERVICE_SIMULATION_ENABLED, SERVICE_TELEPHONY_ENABLED,
+            SERVICE_REALTIME_ENABLED, SERVICE_JOBS_ENABLED);
 
     private final SettingsRepository repository;
     private final LoggingSystem loggingSystem;
@@ -72,6 +80,10 @@ public class SettingsService {
         return cache.getOrDefault(key, fallback);
     }
 
+    public boolean enabled(String key) {
+        return Boolean.parseBoolean(cache.getOrDefault(key, "true"));
+    }
+
     public Map<String, String> update(Map<String, String> patch, UUID actor) {
         for (Map.Entry<String, String> entry : patch.entrySet()) {
             String key = entry.getKey();
@@ -80,7 +92,13 @@ public class SettingsService {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
                         "Неизвестная настройка: " + key);
             }
-            if (key.equals(LOGGING_LEVEL)) {
+            if (BOOLEAN.contains(key)) {
+                if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false")) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                            "Настройка " + key + " должна иметь значение true или false");
+                }
+                value = value.toLowerCase();
+            } else if (key.equals(LOGGING_LEVEL)) {
                 if (LogLevel.valueOf(value.toUpperCase()) == null) {
                     throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Некорректный уровень логирования");
                 }

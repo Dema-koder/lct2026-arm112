@@ -108,6 +108,22 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .health-grid b.ok { color: #2f9a5a; }
 .health-grid b.bad { color: #b03f2e; }
 .log-tail { max-height: 260px; overflow: auto; padding: 10px; margin: 0; font-size: 11px; color: #dfe5e7; background: #253139; }
+.managed-services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.managed-service { display: flex; flex-direction: column; min-height: 190px; padding: 12px; background: white; border: 1px solid #d7dcde; border-left: 4px solid #2f9a5a; }
+.managed-service.stopped { border-left-color: #8e9ca3; }
+.managed-service.failed { border-left-color: #b03f2e; }
+.managed-service > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.managed-service > header b { font-size: 14px; }
+.managed-service > header p { min-height: 34px; margin: 4px 0 0; color: #6d797f; font-size: 11px; line-height: 1.4; }
+.service-state { flex: none; padding: 3px 8px; color: white; background: #2f9a5a; font-size: 10px; text-transform: uppercase; }
+.service-state.stopped { background: #8e9ca3; }
+.service-state.failed { background: #b03f2e; }
+.managed-service dl { display: flex; flex-wrap: wrap; gap: 5px 14px; margin: 12px 0; }
+.managed-service dl div { min-width: 90px; }
+.managed-service dt { color: #6d797f; font-size: 10px; }
+.managed-service dd { margin: 2px 0 0; font-weight: bold; }
+.managed-service footer { display: flex; align-items: center; gap: 7px; min-height: 30px; margin-top: auto; }
+.managed-service footer small { color: #6d797f; }
 .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span { position: absolute; inset: 0; background: #b1babf; transition: .15s; }
@@ -233,6 +249,7 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
   .address-fields .af-4 { grid-column: span 3; }
   .address-fields .af-5,
   .address-fields .af-6 { grid-column: span 6; }
+  .managed-services { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
@@ -325,6 +342,10 @@ body { zoom: var(--ui-scale); }
   .analytics-page .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analytics-grid { grid-template-columns: 1fr; }
   .donut-wrap { grid-template-columns: 1fr; justify-items: start; }
+}
+
+@media (max-width: 760px) {
+  .managed-services { grid-template-columns: 1fr; }
 }
 
 /* --- оператор 112: главный экран с журналом и входящими вызовами (замечания 3, 5) --- */

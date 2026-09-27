@@ -86,4 +86,6 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(teacher, /непрофильные/);
   assert.match(teacher, /EXAM/);
   assert.match(admin, /RESTORE/);
+  assert.match(admin, /Управление сервисами/);
+  assert.match(api, /\/admin\/system\/services/);
 });

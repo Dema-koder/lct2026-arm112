@@ -32,14 +32,16 @@ public class EventService {
     private final RealtimeEventStore eventStore;
     private final SessionAccess access;
     private final OperationalMetrics metrics;
+    private final SettingsService settings;
     private final CopyOnWriteArrayList<WebSocketSession> sockets = new CopyOnWriteArrayList<>();
 
     public EventService(ObjectMapper objectMapper, RealtimeEventStore eventStore, SessionAccess access,
-                        OperationalMetrics metrics, MeterRegistry registry) {
+                        OperationalMetrics metrics, SettingsService settings, MeterRegistry registry) {
         this.objectMapper = objectMapper;
         this.eventStore = eventStore;
         this.access = access;
         this.metrics = metrics;
+        this.settings = settings;
         Gauge.builder("arm112.websocket.connections", this, EventService::openSockets).register(registry);
     }
 
@@ -64,6 +66,7 @@ public class EventService {
 
     /** Служебное событие одному пользователю без записи в журнал сессии (например, «занятие началось»). */
     public void notifyUser(UUID userId, String type, Map<String, Object> payload) {
+        if (!settings.enabled(SettingsService.SERVICE_REALTIME_ENABLED)) return;
         Instant now = Instant.now();
         RealtimeEvent event = new RealtimeEvent(UUID.randomUUID(), type, now, now, null, 0, null, payload);
         deliver(event, Set.of(userId));
@@ -87,6 +90,7 @@ public class EventService {
 
     @Scheduled(fixedDelayString = "${arm112.realtime.retry-ms:5000}")
     void retryPending() {
+        if (!settings.enabled(SettingsService.SERVICE_REALTIME_ENABLED)) return;
         for (RealtimeEvent event : eventStore.pending(100)) {
             Set<UUID> recipients = access.recipientsOf(event.sessionId())
                     .map(SessionAccess.Recipients::userIds).orElse(Set.of());
@@ -99,6 +103,7 @@ public class EventService {
     }
 
     private void deliverPersisted(RealtimeEvent event, Set<UUID> recipients) {
+        if (!settings.enabled(SettingsService.SERVICE_REALTIME_ENABLED)) return;
         if (deliver(event, recipients)) eventStore.markDelivered(event.eventId());
         else {
             eventStore.markAttempt(event.eventId());

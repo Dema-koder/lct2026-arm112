@@ -508,6 +508,17 @@ export type AuditEntry = {
 
 export type AuditPage = { items: AuditEntry[]; nextCursor: string | null };
 export type SystemHealth = { status: string; database: string; openSockets: number; activeSessions: number; version: string; serverTime: string };
+export type ServiceMetric = { label: string; value: string };
+export type ManagedService = {
+  id: string;
+  label: string;
+  description: string;
+  state: "RUNNING" | "STOPPED" | "FAILED";
+  controllable: boolean;
+  critical: boolean;
+  metrics: ServiceMetric[];
+  allowedActions: Array<"START" | "STOP" | "RESTART">;
+};
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
 
 // ------------------------------------------------------------------ transport
@@ -693,6 +704,11 @@ export const api = {
     audit: (token: string, filter: { role?: string; action?: string; cursor?: string; limit?: number } = {}) =>
       request<AuditPage>(`/admin/audit${q(filter)}`, {}, token),
     health: (token: string) => request<SystemHealth>("/admin/system/health", {}, token),
+    services: (token: string) => request<ManagedService[]>("/admin/system/services", {}, token),
+    serviceAction: (token: string, id: string, action: "START" | "STOP" | "RESTART") =>
+      request<ManagedService>(`/admin/system/services/${encodeURIComponent(id)}/actions`, {
+        method: "POST", body: json({ action }),
+      }, token),
     log: (token: string, lines = 200) => request<{ lines: string[] }>(`/admin/system/log${q({ lines })}`, {}, token),
     backups: (token: string) => request<BackupInfo[]>("/admin/backups", {}, token),
     createBackup: (token: string) => request<BackupInfo>("/admin/backups", { method: "POST" }, token),

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.6
+  version: 0.3.7
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -1146,6 +1146,38 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SystemHealth'}
+  /admin/system/services:
+    get:
+      tags: [Admin]
+      operationId: listManagedServices
+      responses:
+        '200':
+          description: Состояние инфраструктурных и управляемых runtime-компонентов
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ManagedService'}
+  /admin/system/services/{id}/actions:
+    post:
+      tags: [Admin]
+      operationId: executeServiceAction
+      description: Запускает, останавливает или перезапускает управляемый runtime-компонент. Backend, frontend и БД управляются только через Docker/CI.
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ServiceAction'}
+      responses:
+        '200':
+          description: Новое состояние компонента
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagedService'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/log:
     get:
       tags: [Admin]
@@ -2441,6 +2473,34 @@ components:
         activeSessions: {type: integer}
         version: {type: string}
         serverTime: {type: string, format: date-time}
+    ServiceMetric:
+      type: object
+      additionalProperties: false
+      required: [label, value]
+      properties:
+        label: {type: string}
+        value: {type: string}
+    ManagedService:
+      type: object
+      additionalProperties: false
+      required: [id, label, description, state, controllable, critical, metrics, allowedActions]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        description: {type: string}
+        state: {type: string, enum: [RUNNING, STOPPED, FAILED]}
+        controllable: {type: boolean}
+        critical: {type: boolean}
+        metrics: {type: array, items: {$ref: '#/components/schemas/ServiceMetric'}}
+        allowedActions:
+          type: array
+          items: {type: string, enum: [START, STOP, RESTART]}
+    ServiceAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: {type: string, enum: [START, STOP, RESTART]}
     BackupInfo:
       type: object
       additionalProperties: false

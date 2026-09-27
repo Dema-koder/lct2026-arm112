@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.lct.arm112.persistence.JobRepository;
 import ru.lct.arm112.persistence.JobRepository.JobRow;
+import ru.lct.arm112.service.SettingsService;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,10 +36,13 @@ public class JobWorker {
     private final JobRepository jobs;
     private final Map<String, JobHandler> handlers;
     private final int batchSize;
+    private final SettingsService settings;
 
     public JobWorker(JobRepository jobs, List<JobHandler> handlers,
+                     SettingsService settings,
                      @Value("${arm112.jobs.batch-size:2}") int batchSize) {
         this.jobs = jobs;
+        this.settings = settings;
         this.batchSize = Math.max(1, batchSize);
         this.handlers = handlers.stream().collect(Collectors.toMap(
                 JobHandler::type, Function.identity(), (a, b) -> a, LinkedHashMap::new));
@@ -49,6 +53,7 @@ public class JobWorker {
 
     @Scheduled(fixedDelayString = "${arm112.jobs.poll-ms:1000}")
     public void poll() {
+        if (!settings.enabled(SettingsService.SERVICE_JOBS_ENABLED)) return;
         if (handlers.isEmpty()) return;
         for (int i = 0; i < batchSize; i++) {
             if (!runOne()) return;
