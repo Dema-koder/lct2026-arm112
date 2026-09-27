@@ -120,7 +120,7 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
       .slice(0, 5)
       .map(([label, value], i) => ({
         key: String(i),
-        label: label.length > 48 ? `${label.slice(0, 48)}…` : label,
+        label,
         value,
         color: "#b03f2e",
         hint: label,
@@ -179,24 +179,25 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
           </header>
           <BarChart
             ariaLabel="Итоги по занятиям"
+            scale="score"
             items={history.slice(-12).map((h, i) => ({
               key: h.sessionId,
               label: String(i + 1),
               value: h.total,
               color: h.source === "TEACHER" ? "#0784c6" : "#5a6a72",
-              hint: `${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]}`,
+              hint: `${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]} · ${Math.round(h.total)} из 100`,
             }))}
           />
-          <p className="chart-note">Синий — оценка преподавателя, серый — оценка системы</p>
+          <p className="chart-note">Шкала 0–100. Синий — оценка преподавателя, серый — оценка системы</p>
         </article>
 
         <article className="analytics-card">
           <header><b>По режимам и видам</b></header>
-          <HorizontalBars items={byMode} />
+          <HorizontalBars items={byMode} scale="score" />
           {byKind.length > 0 && (
             <>
-              <p className="chart-note">Средний балл по виду занятия</p>
-              <HorizontalBars items={byKind} />
+              <p className="chart-note">Средний балл по виду занятия (0–100)</p>
+              <HorizontalBars items={byKind} scale="score" />
             </>
           )}
         </article>
@@ -205,8 +206,8 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
           <header><b>Слабые места (критерии)</b></header>
           {criteria.length === 0
             ? <p className="muted chart-empty">Откройте завершённые занятия — критерии появятся после оценок</p>
-            : <HorizontalBars items={criteria} />}
-          <p className="chart-note">Чем левее / ниже полоса — тем больше внимания этому навыку</p>
+            : <HorizontalBars items={criteria} scale="score" />}
+          <p className="chart-note">Шкала 0–100. Чем короче полоса — тем слабее критерий</p>
         </article>
 
         <article className="analytics-card">
@@ -219,10 +220,11 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
               { key: "i", value: issueStats.counts.INFO, color: "#8e9ca3", label: "Инфо" },
             ]}
           />
+          <p className="chart-note">Круг — доли по тяжести (количество)</p>
           {issueStats.frequent.length > 0 && (
             <>
-              <p className="chart-note">Чаще всего</p>
-              <HorizontalBars items={issueStats.frequent} max={Math.max(1, ...issueStats.frequent.map((f) => f.value))} />
+              <p className="chart-note">Чаще всего — сколько раз встретилось (не баллы)</p>
+              <HorizontalBars items={issueStats.frequent} scale="count" unit="раз" />
             </>
           )}
         </article>

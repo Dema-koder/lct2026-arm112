@@ -198,20 +198,23 @@ function LessonStats({ lessons }: { lessons: Lesson[] }) {
       <div className="analytics-grid">
         <article className="analytics-card">
           <header><b>По состоянию</b></header>
-          <Donut center={String(lessons.length)} segments={stateMix} />
+          <Donut center={String(lessons.length)} segments={stateMix} size={280} />
+          <p className="chart-note">Доли по количеству занятий</p>
         </article>
         <article className="analytics-card">
           <header><b>Создано по дням</b><small className="muted">до 14 последних</small></header>
-          <BarChart ariaLabel="Число занятий по дням создания" items={byDay} max={dayMax} />
+          <BarChart ariaLabel="Число занятий по дням создания" items={byDay} scale="count" max={dayMax} />
+          <p className="chart-note">Количество созданных занятий за день</p>
         </article>
         <article className="analytics-card">
           <header><b>По группам</b></header>
-          <HorizontalBars items={byGroup} />
+          <HorizontalBars items={byGroup} scale="count" unit="зан." />
+          <p className="chart-note">Сколько занятий на группу (полная полоса = максимум в списке)</p>
         </article>
         <article className="analytics-card">
           <header><b>Вид и режим</b></header>
-          <HorizontalBars items={[...byKind, ...byMode]} />
-          <p className="chart-note">Сначала вид занятия, ниже — режим работы с карточкой</p>
+          <HorizontalBars items={[...byKind, ...byMode]} scale="count" unit="зан." />
+          <p className="chart-note">Количество занятий. Сначала вид, ниже — режим карточки</p>
         </article>
       </div>
     </div>

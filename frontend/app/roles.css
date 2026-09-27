@@ -277,17 +277,41 @@ body { zoom: var(--ui-scale); }
 .analytics-card.wide { grid-column: 1 / -1; }
 .analytics-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; min-height: 28px; }
 .analytics-card > header b { font-size: 13px; }
-.chart-svg { width: 100%; height: auto; display: block; }
+.chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-empty { margin: 18px 0; text-align: center; }
 .chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
-.hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.hbar-list li { display: grid; grid-template-columns: 110px 1fr 36px; gap: 8px; align-items: center; font-size: 12px; }
-.hbar-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #3c4a51; }
-.hbar-track { height: 10px; background: #e4ebef; border-radius: 2px; overflow: hidden; }
-.hbar-track > i { display: block; height: 100%; background: #0784c6; }
-.hbar-value { text-align: right; font-size: 12px; }
-.donut-wrap { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
-.donut-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+.hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hbar-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 80%) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  min-width: 0;
+}
+.hbar-label {
+  min-width: 0;
+  color: #3c4a51;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  justify-self: start;
+}
+.hbar-track {
+  width: 100%;
+  min-width: 0;
+  height: 10px;
+  background: #e4ebef;
+  border-radius: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
+  justify-self: stretch;
+}
+.hbar-track > i { display: block; height: 100%; background: #0784c6; margin-left: auto; }
+.hbar-value { min-width: 1.5em; text-align: right; font-size: 12px; }
+.donut-wrap { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.donut-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
 .donut-legend li { display: flex; align-items: center; gap: 8px; }
 .donut-legend i { width: 10px; height: 10px; border-radius: 2px; }
 .donut-legend b { margin-left: auto; }
