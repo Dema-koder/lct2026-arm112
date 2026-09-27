@@ -441,7 +441,7 @@ function CardWorkspace({ card, now, activeCall, serviceMenu, setServiceMenu, onB
             const expanded = serviceMenu === service.id;
             const progress = card.serviceProgress.find((item) => item.service.code === service.code);
             return (
-              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "" : "foreign"} service-${progress?.status.toLowerCase() ?? "received"}`}>
+              <div key={service.id} className={`service-tile ${expanded ? "active" : ""} ${own ? "own" : "foreign"} service-${progress?.status.toLowerCase() ?? "received"}`}>
                 <button
                   className="tile-body"
                   title={own ? "Ваша служба — здесь проставляется статус реагирования" : "Статус другой службы — только просмотр"}
