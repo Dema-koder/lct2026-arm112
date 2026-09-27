@@ -55,8 +55,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AnalyticsLoadTest {
 
-    /** Сколько раз дёргается каждая ручка в последовательной части. */
-    private static final int REPEATS = 7;
+    /**
+     * Сколько раз дёргается каждая ручка в последовательной части.
+     *
+     * <p>Значение по умолчанию даёт только медиану: ранг оценки квантиля имеет разброс
+     * порядка {@code sqrt(n*q*(1-q))}, поэтому на семи наблюдениях «p95» и «p99» — это
+     * максимум, а не перцентиль. Осмысленная оценка начинается примерно с
+     * {@code 10/(1-q)}: 200 наблюдений для p95 и 1000 для p99.
+     */
+    private static final int DEFAULT_REPEATS = 7;
 
     @LocalServerPort
     int port;
@@ -75,6 +82,10 @@ class AnalyticsLoadTest {
         Assumptions.assumeTrue(!external.isBlank(), "Замер аналитики пропущен: не задан -Dload.url");
         String base = external;
         int users = Integer.getInteger("analytics.users", 30);
+        int repeats = Integer.getInteger("analytics.repeats", DEFAULT_REPEATS);
+        // Каждый повтор пачки даёт по одному наблюдению на обучающегося: чтобы получить
+        // сотни наблюдений на малой группе, пачку надо повторить.
+        int bursts = Integer.getInteger("analytics.bursts", 1);
 
         String admin = login(base, "admin", "admin");
         String teacher = login(base, "teacher", "teacher");
@@ -89,7 +100,7 @@ class AnalyticsLoadTest {
         double setupSeconds = (System.nanoTime() - preparedAt) / 1e9;
 
         // --- 1. преподаватель открывает экраны по очереди
-        for (int i = 0; i < REPEATS; i++) {
+        for (int i = 0; i < repeats; i++) {
             timed("GET обзор занятия", () -> get(base, "/api/v1/teacher/lessons/" + lessonId + "/overview", teacher));
             timed("GET профиль обучающегося",
                     () -> get(base, "/api/v1/teacher/trainees/" + trainees.get(0)[1] + "/profile", teacher));
@@ -99,10 +110,21 @@ class AnalyticsLoadTest {
         }
 
         // --- 2. вся группа открывает свой разбор, преподаватель смотрит обзор
+        long burstAt = System.nanoTime();
+        for (int burst = 0; burst < bursts; burst++) runBurst(base, teacher, lessonId, trainees);
+        double burstSeconds = (System.nanoTime() - burstAt) / 1e9;
+
+        report(base, users, repeats, bursts, setupSeconds, burstSeconds);
+
+        assertThat(errors.get()).as("ошибок при чтении аналитики").isZero();
+    }
+
+    /** Одна пачка: вся группа разом открывает свой разбор, преподаватель — обзор занятия. */
+    private void runBurst(String base, String teacher, String lessonId, List<String[]> trainees)
+            throws Exception {
         ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
         CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch done = new CountDownLatch(users + 1);
-        long burstAt = System.nanoTime();
+        CountDownLatch done = new CountDownLatch(trainees.size() + 1);
         for (String[] trainee : trainees) {
             pool.submit(() -> {
                 try {
@@ -129,13 +151,8 @@ class AnalyticsLoadTest {
         });
         start.countDown();
         boolean finished = done.await(5, TimeUnit.MINUTES);
-        double burstSeconds = (System.nanoTime() - burstAt) / 1e9;
         pool.shutdown();
-
-        report(base, users, setupSeconds, burstSeconds, finished);
-
         assertThat(finished).as("группа не открыла разбор за 5 минут").isTrue();
-        assertThat(errors.get()).as("ошибок при чтении аналитики").isZero();
     }
 
     // ------------------------------------------------------------------ подготовка
@@ -215,15 +232,16 @@ class AnalyticsLoadTest {
         return sorted.get(Math.max(0, Math.min(index, sorted.size() - 1)));
     }
 
-    private void report(String base, int users, double setupSeconds, double burstSeconds, boolean finished)
-            throws Exception {
+    private void report(String base, int users, int repeats, int bursts,
+                        double setupSeconds, double burstSeconds) throws Exception {
         StringBuilder out = new StringBuilder(String.format(Locale.ROOT,
                 "%n=== Экраны аналитики: группа %d человек ===%n"
                         + "адрес: %s%nзанятие проведено за %.1f с (вне замера)%n"
-                        + "разбор всей группой разом: %.1f с, ошибок %d, завершились %s%n%n"
-                        + "%-36s %6s %7s %7s %7s %7s%n",
-                users, base, setupSeconds, burstSeconds, errors.get(), finished ? "все" : "НЕ ВСЕ",
-                "запрос", "кол-во", "p50", "p95", "p99", "макс"));
+                        + "повторов по очереди: %d, пачек разом: %d%n"
+                        + "все пачки заняли %.1f с, ошибок %d%n%n"
+                        + "%-36s %6s %7s %7s %7s %7s  %s%n",
+                users, base, setupSeconds, repeats, bursts, burstSeconds, errors.get(),
+                "запрос", "кол-во", "p50", "p95", "p99", "макс", "оценка"));
 
         List<String> rows = new ArrayList<>();
         List<Map.Entry<String, List<Long>>> ordered = new ArrayList<>(latencies.entrySet());
@@ -234,14 +252,20 @@ class AnalyticsLoadTest {
             long p95 = percentile(values, 95);
             long p99 = percentile(values, 99);
             long max = values.stream().mapToLong(Long::longValue).max().orElse(0);
-            out.append(String.format(Locale.ROOT, "%-36s %6d %7d %7d %7d %7d%n",
-                    entry.getKey(), values.size(), p50, p95, p99, max));
+            // Ранг квантиля имеет разброс sqrt(n*q*(1-q)); ниже 10/(1-q) наблюдений
+            // «перцентиль» — это максимум, и выдавать его как перцентиль нельзя.
+            String verdict = values.size() >= 1000 ? "p50 p95 p99"
+                    : values.size() >= 200 ? "p50 p95, p99 шум"
+                    : values.size() >= 20 ? "только p50" : "мало данных";
+            out.append(String.format(Locale.ROOT, "%-36s %6d %7d %7d %7d %7d  %s%n",
+                    entry.getKey(), values.size(), p50, p95, p99, max, verdict));
             rows.add(String.join(";", String.valueOf(users), entry.getKey(), String.valueOf(values.size()),
                     String.valueOf(p50), String.valueOf(p95), String.valueOf(p99), String.valueOf(max)));
         }
         System.out.println(out);
 
-        Path file = Path.of("benchmarks", "analytics-" + users + "-users.csv");
+        Path file = Path.of("benchmarks", "analytics-" + users + "-users"
+                + (repeats > DEFAULT_REPEATS ? "-deep" : "") + ".csv");
         Files.createDirectories(file.getParent());
         Files.write(file, ("﻿" + "users;request;count;p50_ms;p95_ms;p99_ms;max_ms\n"
                 + String.join("\n", rows) + "\n").getBytes(StandardCharsets.UTF_8));
