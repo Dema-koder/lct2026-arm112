@@ -13,3 +13,4 @@ logs/
 benchmarks/golden-ci.csv
 models/
 improvements/ChatExport_*/
+offsite-backups/

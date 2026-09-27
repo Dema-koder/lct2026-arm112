@@ -17,6 +17,7 @@ import ru.lct.arm112.service.assessment.AssessmentWeights;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -222,11 +223,27 @@ public class LessonService {
         Lesson lesson = require(id, teacher);
         Map<UUID, AssessmentRow> byLessonSession = assessments.findByLesson(id).stream()
                 .collect(Collectors.toMap(AssessmentRow::sessionId, a -> a, (a, b) -> b));
+        List<SessionRow> sessionRows = sessions.findByLesson(id);
+        Map<UUID, AppUser> trainees = new LinkedHashMap<>();
+        for (SessionRow row : sessionRows) {
+            users.findById(row.traineeId()).ifPresent(u -> trainees.put(row.traineeId(), u));
+        }
+        // Рейтинги считаются пачкой: раньше здесь был вызов на каждого обучающегося,
+        // и каждый читал всю таблицу оценок целиком.
+        Map<UUID, Rating> ratingByTrainee = new LinkedHashMap<>();
+        Map<UUID, List<UUID>> byGroup = new LinkedHashMap<>();
+        for (SessionRow row : sessionRows) {
+            AppUser trainee = trainees.get(row.traineeId());
+            byGroup.computeIfAbsent(trainee == null ? null : trainee.groupId(), k -> new ArrayList<>())
+                    .add(row.traineeId());
+        }
+        byGroup.forEach((groupId, ids) -> ratingByTrainee.putAll(ratings.ratingsOf(ids, groupId)));
+
         List<ReportRow> rows = new ArrayList<>();
-        for (SessionRow row : sessions.findByLesson(id)) {
-            AppUser trainee = users.findById(row.traineeId()).orElse(null);
+        for (SessionRow row : sessionRows) {
+            AppUser trainee = trainees.get(row.traineeId());
             AssessmentRow a = byLessonSession.get(row.id());
-            Rating rating = ratings.traineeRating(row.traineeId(), trainee == null ? null : trainee.groupId());
+            Rating rating = ratingByTrainee.get(row.traineeId());
             rows.add(new ReportRow(row.id(), row.traineeId(), trainee == null ? "—" : trainee.displayName(),
                     row.workstationNumber(), a == null ? null : a.timingScore(), a == null ? null : a.syntaxErrors(),
                     rating.value(), a == null ? null : a.aiTotal(), a == null ? null : a.teacherTotal(),
