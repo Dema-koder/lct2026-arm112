@@ -44,6 +44,20 @@ export const modeLabels: Record<string, string> = {
   CARD_ACTIONS: "Действия с карточкой",
 };
 
+/** Интенсивность потока вводных (замечания 3, 5): подпись и пояснение для формы занятия. */
+export const intensityLabels: Record<string, string> = {
+  SEQUENTIAL: "по одной",
+  LOW: "низкая",
+  MEDIUM: "средняя",
+  HIGH: "высокая",
+};
+export const intensityHints: Record<string, string> = {
+  SEQUENTIAL: "следующая вводная — после закрытия или сохранения текущей",
+  LOW: "новая вводная каждые 1,5–3 минуты, независимо от текущей",
+  MEDIUM: "новая вводная каждые 45–90 секунд, независимо от текущей",
+  HIGH: "новая вводная каждые 15–40 секунд — поток как в пиковую смену",
+};
+
 export const sourceLabels: Record<string, string> = {
   GENERATED: "Сгенерированные системой",
   TRAINEE_MADE: "Сформированные обучающимися",
@@ -132,6 +146,43 @@ export function mmss(seconds: number) {
 
 export function score(value: number | null | undefined) {
   return value === null || value === undefined ? "—" : String(Math.round(value * 10) / 10);
+}
+
+/** Display 8-digit card id like combat АРМ without chopping the year into the middle. */
+export function displayCardNumber(number: string | null | undefined) {
+  if (!number) return "—";
+  const tail = number.match(/(\d+)$/);
+  if (tail) return tail[1].padStart(8, "0").slice(-8);
+  const digits = number.replace(/\D/g, "");
+  return digits.slice(-8) || number;
+}
+
+/** Flags inferred from incident text / feature list (DDS cards). */
+export function cardFlags(description: string | null | undefined, features: string[] = []) {
+  const blob = `${description ?? ""} ${features.join(" ")}`.toLowerCase();
+  return {
+    victims: features.includes("Пострадавшие") || /пострадав/.test(blob),
+    ambulanceRefused: features.includes("Отказ от скорой") || /отказ от скорой|отказал.*скор/.test(blob),
+    blocked: features.includes("Заблокированные") || /заблок|нет доступа/.test(blob),
+  };
+}
+
+export function flagLabel(value: boolean) {
+  return value ? "да" : "нет";
+}
+
+export function formatIssueValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    const parts = value.map((v) => formatIssueValue(v)).filter((v): v is string => Boolean(v));
+    return parts.length ? parts.join(", ") : null;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }
 
 export function getMessage(error: unknown) {

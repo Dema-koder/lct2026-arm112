@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.1
+  version: 0.3.7
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -43,6 +43,38 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/AuthResponse'}
         '401': {$ref: '#/components/responses/ErrorResponse'}
+        '429': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      security:
+        - contractVersion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RefreshRequest'}
+      responses:
+        '200':
+          description: Токены ротированы; переданный refresh-токен отозван
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthResponse'}
+        '401': {$ref: '#/components/responses/ErrorResponse'}
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      security:
+        - contractVersion: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LogoutRequest'}
+      responses:
+        '204': {description: Refresh-токен отозван}
   /auth/me:
     get:
       tags: [Auth]
@@ -87,6 +119,25 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/TraineeContext'}
+  /assessments/{assessmentId}/debrief:
+    get:
+      tags: [Trainee]
+      operationId: assessmentDebrief
+      summary: Персональный разбор занятия
+      description: >
+        Считается в фоновой очереди, поэтому может быть ещё не готов — тогда state PENDING.
+        Поле source говорит, писала текст модель (LLM) или правила (RULES).
+      parameters:
+        - name: assessmentId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Разбор
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Debrief'}
   /trainee/results:
     get:
       tags: [Trainee]
@@ -170,10 +221,64 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/IncidentTypeItem'}
+  /references/card-types:
+    get:
+      tags: [References]
+      operationId: listCardTypes
+      description: |
+        Список «что случилось?» карточки оператора 112 — типы верхнего уровня ПОВ-112
+        (источник: materials/КАРТОЧКА 112.docx). Тип ЕКП выводится из ответов опросной карты.
+      parameters:
+        - in: query
+          name: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: Типы верхнего уровня
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/TopTypeItem'}
+  /references/survey-trees/{topTypeId}:
+    get:
+      tags: [References]
+      operationId: getSurveyTree
+      description: Опросная карта типа верхнего уровня; вопросы ветвятся по ответам (`showWhen`).
+      parameters:
+        - in: path
+          name: topTypeId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Опросная карта
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SurveyTree'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /references/services:
+    get:
+      tags: [References]
+      operationId: listServiceCatalog
+      description: |
+        Полный справочник служб ПОВ-112 с видом и территорией обслуживания
+        (источник: materials/СЛУЖБЫ 112.docx): экстренные, городские, ведомственные,
+        ДДС районов, поселений и префектур округов.
+      responses:
+        '200':
+          description: Службы
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ServiceItem'}
   /references/survey-cards/{incidentTypeId}:
     get:
       tags: [References]
       operationId: getSurveyCard
+      deprecated: true
+      description: Совместимость с 0.3.x — плоская опросная карта по типу ЕКП. Используйте `/references/survey-trees/{topTypeId}`.
       parameters:
         - in: path
           name: incidentTypeId
@@ -238,6 +343,19 @@ paths:
               schema: {$ref: '#/components/schemas/SubmitResponse'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
+  /training-sessions/{sessionId}/journal:
+    get:
+      tags: [Training]
+      operationId: getTrainingJournal
+      description: Журнал оператора 112 — свои сохранённые карточки и фоновые карточки смены, новые сверху.
+      parameters:
+        - {$ref: '#/components/parameters/SessionId'}
+      responses:
+        '200':
+          description: Строки журнала
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/JournalPage'}
   /training-sessions/{sessionId}/events:
     get:
       tags: [Training]
@@ -397,7 +515,10 @@ paths:
     post:
       tags: [Drafts]
       operationId: createCardDraft
-      description: Следующая вводная из очереди занятия. Если есть незакрытый черновик — возвращается он.
+      description: |
+        Принять входящий вызов: черновик по сценарию звонящего вызова (`TrainingSession.incomingCall`).
+        Если есть незакрытый черновик — возвращается он. Если никто не звонит — `409 NO_INCOMING_CALL`;
+        если все вводные отработаны — `409 NO_MORE_SCENARIOS`.
       requestBody:
         required: true
         content:
@@ -686,6 +807,77 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/LessonReport'}
+  /teacher/lessons/{id}/overview:
+    get:
+      tags: [Teacher]
+      operationId: lessonOverview
+      summary: Обзор занятия для разбора с группой
+      description: >
+        Средние по критериям с потерей в баллах, типовые ошибки и разрез по сценариям.
+        Отдельно от /report: тот отдаёт строки по обучающимся, и его форма не меняется.
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Обзор занятия
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/LessonOverview'}
+  /teacher/trainees/{traineeId}/profile:
+    get:
+      tags: [Teacher]
+      operationId: traineeProfile
+      summary: Профиль обучающегося
+      description: >
+        Критерии, время внутри карточки на фоне группы, устойчивые недочёты,
+        кривая обучения и покрытие категорий. Преподаватель видит только тех,
+        кто участвовал в его занятиях.
+      parameters:
+        - name: traineeId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TraineeProfile'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /teacher/scenarios/quality:
+    get:
+      tags: [Teacher]
+      operationId: scenarioQuality
+      summary: Качество библиотеки сценариев
+      description: >
+        Эмпирическая сложность по модели Раша против заявленной и дискриминативность.
+        Сценарии с числом наблюдений меньше десяти в выдачу не попадают.
+      responses:
+        '200':
+          description: Качество сценариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ScenarioQuality'}
+  /teacher/calibration:
+    get:
+      tags: [Teacher]
+      operationId: calibrationReport
+      summary: Расхождение оценки ИИ с оценкой преподавателя
+      description: >
+        Предложение по калибровке, а не применённое изменение: решение за преподавателем.
+        Критерии, где калибровать нечего, попадают в skipped с объяснением.
+      parameters:
+        - name: mode
+          in: query
+          schema: {type: string, enum: [CARD_FILL, CARD_ACTIONS], default: CARD_FILL}
+      responses:
+        '200':
+          description: Отчёт о калибровке
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CalibrationReport'}
   /teacher/lessons/{id}/report.csv:
     get:
       tags: [Teacher]
@@ -954,6 +1146,38 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/SystemHealth'}
+  /admin/system/services:
+    get:
+      tags: [Admin]
+      operationId: listManagedServices
+      responses:
+        '200':
+          description: Состояние инфраструктурных и управляемых runtime-компонентов
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ManagedService'}
+  /admin/system/services/{id}/actions:
+    post:
+      tags: [Admin]
+      operationId: executeServiceAction
+      description: Запускает, останавливает или перезапускает управляемый runtime-компонент. Backend, frontend и БД управляются только через Docker/CI.
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ServiceAction'}
+      responses:
+        '200':
+          description: Новое состояние компонента
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagedService'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/log:
     get:
       tags: [Admin]
@@ -1096,11 +1320,25 @@ components:
     AuthResponse:
       type: object
       additionalProperties: false
-      required: [accessToken, expiresAt, user]
+      required: [accessToken, expiresAt, user, refreshToken, refreshExpiresAt]
       properties:
         accessToken: {type: string}
         expiresAt: {type: string, format: date-time}
         user: {$ref: '#/components/schemas/User'}
+        refreshToken: {type: string, description: Одноразовый токен для ротации пары токенов}
+        refreshExpiresAt: {type: string, format: date-time}
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string, minLength: 1}
+    LogoutRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string, minLength: 1}
     PasswordChangeRequest:
       type: object
       additionalProperties: false
@@ -1150,7 +1388,7 @@ components:
     TrainingSession:
       type: object
       additionalProperties: false
-      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds, draftIds, lessonId, lessonKind, pendingScenarios]
+      required: [id, mode, state, title, difficulty, referenceVersion, serverTime, startedAt, completedAt, cardIds, draftIds, lessonId, lessonKind, pendingScenarios, ownServiceCode, intensity, incomingCall, queuedCalls]
       properties:
         id: {type: string, format: uuid}
         mode: {$ref: '#/components/schemas/LessonMode'}
@@ -1169,7 +1407,49 @@ components:
           items: {type: string, format: uuid}
         lessonId: {type: string, format: uuid}
         lessonKind: {$ref: '#/components/schemas/LessonKind'}
-        pendingScenarios: {type: integer, minimum: 0, description: "Сколько вводных ещё в очереди"}
+        pendingScenarios: {type: integer, minimum: 0, description: "Сколько вводных ещё не пришло"}
+        ownServiceCode: {type: string, description: "Служба, за которую играет обучающийся-диспетчер (режим действий)"}
+        intensity: {$ref: '#/components/schemas/Intensity'}
+        incomingCall: {anyOf: [{$ref: '#/components/schemas/IncomingCall'}, {type: 'null'}], description: "Вызов, который сейчас звонит оператору 112"}
+        queuedCalls: {type: integer, minimum: 0, description: "Вызовы, ожидающие в очереди АСО (режим заполнения)"}
+    Intensity:
+      type: string
+      enum: [SEQUENTIAL, LOW, MEDIUM, HIGH]
+      description: |
+        Поток вводных: SEQUENTIAL — по одной, следующая после закрытия/сохранения текущей;
+        LOW — интервал 90–180 с, MEDIUM — 45–90 с, HIGH — 15–40 с, независимо от текущей карточки.
+    IncomingCall:
+      type: object
+      additionalProperties: false
+      required: [id, phone, callerName, ringingSince, missedCount]
+      properties:
+        id: {type: string, format: uuid}
+        phone: {type: [string, 'null']}
+        callerName: {type: [string, 'null']}
+        ringingSince: {type: string, format: date-time}
+        missedCount: {type: integer, minimum: 0, description: "Сколько раз этот заявитель уже не дозвонился"}
+    JournalRow:
+      type: object
+      additionalProperties: false
+      required: [id, kind, number, receivedAt, workstationNumber, incidentTypeLabel, addressLabel, description, callerName, services, status]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string, enum: [OWN, BACKGROUND], description: "OWN — карточка обучающегося, BACKGROUND — фоновая карточка смены"}
+        number: {type: string}
+        receivedAt: {type: string, format: date-time}
+        workstationNumber: {type: [string, 'null']}
+        incidentTypeLabel: {type: string}
+        addressLabel: {type: [string, 'null']}
+        description: {type: string}
+        callerName: {type: [string, 'null']}
+        services: {type: array, items: {type: string}}
+        status: {type: string}
+    JournalPage:
+      type: object
+      additionalProperties: false
+      required: [rows]
+      properties:
+        rows: {type: array, items: {$ref: '#/components/schemas/JournalRow'}}
     SessionSummary:
       type: object
       additionalProperties: false
@@ -1463,7 +1743,7 @@ components:
     SurveyQuestion:
       type: object
       additionalProperties: false
-      required: [id, text, kind, options]
+      required: [id, text, kind, options, showWhen, synthetic]
       properties:
         id: {type: string}
         text: {type: string}
@@ -1471,6 +1751,48 @@ components:
         options:
           type: array
           items: {$ref: '#/components/schemas/DictionaryItem'}
+        showWhen:
+          type: array
+          description: "Вопрос показывается, если выполнено хотя бы одно условие: {идентификатор вопроса: [допустимые ответы]}"
+          items:
+            type: object
+            additionalProperties:
+              type: array
+              items: {type: string}
+        synthetic: {type: boolean, description: "Ветка достроена по смыслу — скриншота этой карты заказчик не присылал"}
+    TopTypeItem:
+      type: object
+      additionalProperties: false
+      required: [id, label, frequent]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        frequent: {type: boolean, description: "Показывается плашкой под полем «что случилось?»"}
+    SurveyTree:
+      type: object
+      additionalProperties: false
+      required: [topTypeId, label, questions, defaultType]
+      properties:
+        topTypeId: {type: string}
+        label: {type: string}
+        questions:
+          type: array
+          items: {$ref: '#/components/schemas/SurveyQuestion'}
+        defaultType: {type: [string, 'null'], description: "Тип ЕКП, если ни одно правило не подошло"}
+    ServiceItem:
+      type: object
+      additionalProperties: false
+      required: [code, label, fullName, kind, okrug, district, settlement]
+      properties:
+        code: {type: string}
+        label: {type: string, description: "Короткая подпись плитки"}
+        fullName: {type: string, description: "Название как в диалоге «Добавьте службы»"}
+        kind:
+          type: string
+          enum: [EMERGENCY, CITY, DEPARTMENT, DISTRICT, OKRUG, SETTLEMENT, ROADS, FEDERAL, REGION, GROUP]
+        okrug: {type: [string, 'null']}
+        district: {type: [string, 'null']}
+        settlement: {type: [string, 'null']}
     # ---------------------------------------------------------------- scenarios / drafts
     FormalAddress:
       type: object
@@ -1621,7 +1943,7 @@ components:
     CardDraft:
       type: object
       additionalProperties: false
-      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints, scenarioTitle]
+      required: [id, sessionId, scenarioId, number, startedAt, savedAt, deadlineAt, state, callerText, phones, caller, address, flags, incidentTypeIds, surveyAnswers, description, services, hints, scenarioTitle, callerAddress, topTypeId]
       properties:
         id: {type: string, format: uuid}
         sessionId: {type: string, format: uuid}
@@ -1642,6 +1964,8 @@ components:
         services: {type: array, items: {$ref: '#/components/schemas/DraftService'}}
         hints: {type: array, items: {$ref: '#/components/schemas/Hint'}}
         scenarioTitle: {type: [string, 'null'], description: "Название сценария — для преподавателя"}
+        callerAddress: {type: [string, 'null'], description: "Адрес со слов заявителя — оператор «уточняет» его у заявителя"}
+        topTypeId: {type: [string, 'null'], description: "Выбранный тип верхнего уровня; по ответам его карты выводится incidentTypeIds"}
     CardDraftPatch:
       type: object
       additionalProperties: false
@@ -1654,6 +1978,7 @@ components:
         surveyAnswers: {type: [array, 'null'], items: {$ref: '#/components/schemas/SurveyAnswer'}}
         description: {type: [string, 'null'], maxLength: 1999}
         extraServiceCodes: {type: [array, 'null'], items: {type: string}, description: "Службы, добавленные вручную"}
+        topTypeId: {type: [string, 'null'], description: "Тип верхнего уровня «что случилось?»; пустая строка снимает выбор"}
     # ---------------------------------------------------------------- assessment
     Assessment:
       type: object
@@ -1770,7 +2095,7 @@ components:
     Lesson:
       type: object
       additionalProperties: false
-      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount]
+      required: [id, teacherId, groupId, groupName, title, kind, mode, cardSource, state, scenarioIds, createdAt, startedAt, completedAt, resultsPublishedAt, sessionCount, serviceCode, intensity, normScore]
       properties:
         id: {type: string, format: uuid}
         teacherId: {type: string, format: uuid}
@@ -1787,6 +2112,9 @@ components:
         completedAt: {type: [string, 'null'], format: date-time}
         resultsPublishedAt: {type: [string, 'null'], format: date-time}
         sessionCount: {type: integer}
+        serviceCode: {type: string, description: "Служба обучающегося в режиме действий (по умолчанию 101)"}
+        intensity: {$ref: '#/components/schemas/Intensity'}
+        normScore: {type: integer, minimum: 0, maximum: 100, description: "Балл, от которого результат занятия считается нормой"}
     LessonCreate:
       type: object
       additionalProperties: false
@@ -1799,6 +2127,9 @@ components:
         cardSource: {$ref: '#/components/schemas/CardSource'}
         scenarioIds: {type: array, minItems: 1, items: {type: string}}
         traineeIds: {type: array, minItems: 1, items: {type: string, format: uuid}}
+        serviceCode: {type: [string, 'null'], description: "Код службы из справочника; пусто — 101"}
+        intensity: {anyOf: [{$ref: '#/components/schemas/Intensity'}, {type: 'null'}], description: "Пусто — SEQUENTIAL"}
+        normScore: {type: [integer, 'null'], minimum: 0, maximum: 100, description: "Порог нормы, по умолчанию 60"}
     LessonMonitor:
       type: object
       additionalProperties: false
@@ -1826,6 +2157,183 @@ components:
         completedCards: {type: integer}
         totalCards: {type: integer}
         finalTotal: {type: [number, 'null']}
+    CriterionSummary:
+      type: object
+      additionalProperties: false
+      required: [code, label, weight]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        average: {type: number, nullable: true}
+        weight: {type: number}
+        lostPoints:
+          type: number
+          nullable: true
+          description: (100 − балл) × вес / 100 — вклад критерия в потерю итога
+    IssueSummary:
+      type: object
+      additionalProperties: false
+      required: [code, severity, occurrences, trainees]
+      properties:
+        code: {type: string}
+        severity: {type: string, enum: [CRITICAL, WARNING, INFO]}
+        message: {type: string, nullable: true}
+        occurrences: {type: integer}
+        trainees: {type: integer}
+    ScenarioIssues:
+      type: object
+      additionalProperties: false
+      required: [scenarioId, cards, withIssues]
+      properties:
+        scenarioId: {type: string}
+        title: {type: string, nullable: true}
+        cards: {type: integer}
+        withIssues: {type: integer}
+    LessonOverview:
+      type: object
+      additionalProperties: false
+      required: [lesson, trainees, criticalIssues, criteria, topIssues, byScenario]
+      properties:
+        lesson: {$ref: '#/components/schemas/Lesson'}
+        trainees: {type: integer}
+        medianTotal: {type: number, nullable: true}
+        spread: {type: number, nullable: true}
+        inNormPercent: {type: number, nullable: true}
+        criticalIssues: {type: integer}
+        criteria:
+          type: array
+          description: по убыванию потери в баллах, а не по баллу
+          items: {$ref: '#/components/schemas/CriterionSummary'}
+        topIssues:
+          type: array
+          items: {$ref: '#/components/schemas/IssueSummary'}
+        byScenario:
+          type: array
+          items: {$ref: '#/components/schemas/ScenarioIssues'}
+    TimingMetric:
+      type: object
+      additionalProperties: false
+      required: [code, label]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        value: {type: number, nullable: true}
+        groupMedian: {type: number, nullable: true}
+        percentile:
+          type: integer
+          nullable: true
+          description: null при группе меньше восьми человек — на малой группе ранг это шум
+        hint: {type: string, nullable: true}
+    PersistentIssue:
+      type: object
+      additionalProperties: false
+      required: [code, severity, lessons, occurrences, trend]
+      properties:
+        code: {type: string}
+        severity: {type: string, enum: [CRITICAL, WARNING, INFO]}
+        message: {type: string, nullable: true}
+        lessons: {type: integer}
+        occurrences: {type: integer}
+        trend: {type: string, enum: [PERSISTENT, IMPROVING, RESOLVED]}
+    ProgressPoint:
+      type: object
+      additionalProperties: false
+      required: [sessionNumber, lessonId]
+      properties:
+        sessionNumber: {type: integer}
+        lessonId: {type: string, format: uuid}
+        lessonTitle: {type: string, nullable: true}
+        lessonKind: {type: string, nullable: true}
+        total: {type: number, nullable: true}
+        completedAt: {type: string, format: date-time, nullable: true}
+    CategoryCoverage:
+      type: object
+      additionalProperties: false
+      required: [category, cards]
+      properties:
+        category: {type: string}
+        cards: {type: integer}
+    TraineeProfile:
+      type: object
+      additionalProperties: false
+      required: [trainee, criteria, timing, persistentIssues, progress, coverage]
+      properties:
+        trainee: {$ref: '#/components/schemas/User'}
+        rating: {$ref: '#/components/schemas/Rating'}
+        criteria:
+          type: array
+          items: {$ref: '#/components/schemas/CriterionSummary'}
+        timing:
+          type: array
+          items: {$ref: '#/components/schemas/TimingMetric'}
+        persistentIssues:
+          type: array
+          items: {$ref: '#/components/schemas/PersistentIssue'}
+        progress:
+          type: array
+          items: {$ref: '#/components/schemas/ProgressPoint'}
+        coverage:
+          type: array
+          items: {$ref: '#/components/schemas/CategoryCoverage'}
+    ScenarioQuality:
+      type: object
+      additionalProperties: false
+      required: [scenarioId, observations, passed, referenceConfirmed]
+      properties:
+        scenarioId: {type: string}
+        title: {type: string, nullable: true}
+        category: {type: string, nullable: true}
+        declaredDifficulty: {type: integer, nullable: true}
+        suggestedDifficulty:
+          type: integer
+          nullable: true
+          description: сложность по Рашу на шкале 1–10
+        difficultyLogit: {type: number, nullable: true}
+        standardError: {type: number, nullable: true}
+        observations: {type: integer}
+        passed: {type: integer}
+        discrimination:
+          type: number
+          nullable: true
+          description: около нуля — сценарий ничего не различает
+        referenceConfirmed: {type: boolean}
+    CriterionCalibration:
+      type: object
+      additionalProperties: false
+      required: [code, label, slope, intercept, maeBefore, maeAfter, improvementPercent, pairs]
+      properties:
+        code: {type: string}
+        label: {type: string}
+        slope: {type: number}
+        intercept: {type: number}
+        maeBefore: {type: number}
+        maeAfter: {type: number}
+        improvementPercent: {type: number}
+        pairs: {type: integer}
+    CalibrationReport:
+      type: object
+      additionalProperties: false
+      required: [mode, assessments, criteria, skipped]
+      properties:
+        mode: {type: string}
+        assessments: {type: integer}
+        criteria:
+          type: array
+          items: {$ref: '#/components/schemas/CriterionCalibration'}
+        skipped:
+          type: array
+          description: критерии без калибровки с объяснением причины
+          items: {type: string}
+    Debrief:
+      type: object
+      additionalProperties: false
+      required: [assessmentId, state]
+      properties:
+        assessmentId: {type: string, format: uuid}
+        state: {type: string, enum: [READY, PENDING]}
+        text: {type: string, nullable: true}
+        source: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time, nullable: true}
     LessonReport:
       type: object
       additionalProperties: false
@@ -1965,6 +2473,34 @@ components:
         activeSessions: {type: integer}
         version: {type: string}
         serverTime: {type: string, format: date-time}
+    ServiceMetric:
+      type: object
+      additionalProperties: false
+      required: [label, value]
+      properties:
+        label: {type: string}
+        value: {type: string}
+    ManagedService:
+      type: object
+      additionalProperties: false
+      required: [id, label, description, state, controllable, critical, metrics, allowedActions]
+      properties:
+        id: {type: string}
+        label: {type: string}
+        description: {type: string}
+        state: {type: string, enum: [RUNNING, STOPPED, FAILED]}
+        controllable: {type: boolean}
+        critical: {type: boolean}
+        metrics: {type: array, items: {$ref: '#/components/schemas/ServiceMetric'}}
+        allowedActions:
+          type: array
+          items: {type: string, enum: [START, STOP, RESTART]}
+    ServiceAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: {type: string, enum: [START, STOP, RESTART]}
     BackupInfo:
       type: object
       additionalProperties: false
@@ -1994,7 +2530,7 @@ components:
         eventId: {type: string, format: uuid}
         type:
           type: string
-          enum: [card.created, card.opening_started, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
+          enum: [card.created, card.opening_started, card.updated, card.acceptance_overdue, card.processing_overdue, outbound_call.updated, draft.created, draft.updated, draft.saved, call.incoming, call.answered, call.missed, call.lost, training.session_state_changed, training.session_started, assessment.completed, assessment.updated, results.published, system.connected, system.connection_warning]
         occurredAt: {type: string, format: date-time}
         serverTime: {type: string, format: date-time}
         sessionId: {type: [string, 'null'], format: uuid, description: "null у служебных событий пользователю"}

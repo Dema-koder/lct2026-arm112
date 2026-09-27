@@ -1,20 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type AuditEntry, type BackupInfo, type Group, type Role, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
+import { api, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
-type View = "users" | "groups" | "settings" | "audit" | "system";
+type View = "users" | "groups" | "services" | "settings" | "audit" | "system";
 
 /** Рабочее место администратора — всё через UI (решение №9), в стиле остальных экранов. */
 export function AdminShell({ token, user, onLogout }: { token: string; user: User; onLogout: () => void }) {
   const [view, setView] = useState<View>("users");
   const nav = (
     <>
-      {(["users", "groups", "settings", "audit", "system"] as View[]).map((v) => (
+      {(["users", "groups", "services", "settings", "audit", "system"] as View[]).map((v) => (
         <button key={v} className={view === v ? "active" : ""} onClick={() => setView(v)}>
-          {{ users: "Пользователи", groups: "Группы", settings: "Настройки", audit: "Журнал", system: "Система" }[v]}
+          {{ users: "Пользователи", groups: "Группы", services: "Сервисы", settings: "Настройки", audit: "Журнал", system: "Система" }[v]}
         </button>
       ))}
     </>
@@ -24,10 +24,84 @@ export function AdminShell({ token, user, onLogout }: { token: string; user: Use
       <TopStrip label={`${user.displayName} · администратор`} onLogout={onLogout} nav={nav} />
       {view === "users" && <Users token={token} self={user} />}
       {view === "groups" && <Groups token={token} />}
+      {view === "services" && <Services token={token} />}
       {view === "settings" && <Settings token={token} />}
       {view === "audit" && <Audit token={token} />}
       {view === "system" && <System token={token} />}
     </main>
+  );
+}
+
+const SERVICE_ACTION_LABELS = { START: "Запустить", STOP: "Остановить", RESTART: "Перезапустить" } as const;
+
+function Services({ token }: { token: string }) {
+  const [items, setItems] = useState<ManagedService[]>([]);
+  const [pending, setPending] = useState<{ service: ManagedService; action: "START" | "STOP" | "RESTART" } | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useNotice();
+  const [working, run] = useAction(setError);
+
+  const load = useCallback(async () => setItems(await api.admin.services(token)), [token]);
+  useEffect(() => { void run(load); }, [load, run]);
+
+  const execute = () => pending && run(async () => {
+    await api.admin.serviceAction(token, pending.service.id, pending.action);
+    setNotice(`${pending.service.label}: ${SERVICE_ACTION_LABELS[pending.action].toLowerCase()} — выполнено`);
+    setPending(null);
+    await load();
+  });
+
+  return (
+    <section className="panel-page">
+      <div className="panel-head">
+        <b>Управление сервисами</b>
+        <small className="muted">остановленные модули не обрабатывают новые события, их данные сохраняются</small>
+        <span className="spacer" />
+        <button className="ghost" disabled={working} onClick={() => run(load)}>обновить</button>
+      </div>
+      <div className="managed-services">
+        {items.map((service) => (
+          <article className={`managed-service ${service.state.toLowerCase()} ${service.critical ? "critical" : ""}`} key={service.id}>
+            <header>
+              <div><b>{service.label}</b><p>{service.description}</p></div>
+              <span className={`service-state ${service.state.toLowerCase()}`}>
+                {service.state === "RUNNING" ? "работает" : service.state === "STOPPED" ? "остановлен" : "ошибка"}
+              </span>
+            </header>
+            <dl>
+              {service.metrics.map((metric) => <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>)}
+            </dl>
+            <footer>
+              {service.controllable ? service.allowedActions.map((action) => (
+                <button key={action} className={action === "STOP" ? "danger-button" : action === "START" ? "primary-button" : "secondary"}
+                  disabled={working} onClick={() => setPending({ service, action })}>
+                  {SERVICE_ACTION_LABELS[action]}
+                </button>
+              )) : <small>Управляется через Docker/CI</small>}
+            </footer>
+          </article>
+        ))}
+      </div>
+      {pending && (
+        <Modal title={`${SERVICE_ACTION_LABELS[pending.action]}: ${pending.service.label}`} onClose={() => setPending(null)}>
+          <p className="dialog-copy">
+            {pending.action === "STOP"
+              ? "Модуль перестанет обрабатывать новые события. Текущие данные останутся в базе."
+              : pending.action === "RESTART"
+                ? "Модуль будет кратковременно остановлен и запущен снова."
+                : "Модуль продолжит обработку накопленных и новых событий."}
+          </p>
+          <div className="dialog-actions">
+            <button className="secondary" onClick={() => setPending(null)}>Отмена</button>
+            <button className={pending.action === "STOP" ? "call-button danger" : "primary"} disabled={working} onClick={execute}>
+              {SERVICE_ACTION_LABELS[pending.action]}
+            </button>
+          </div>
+        </Modal>
+      )}
+      <ErrorBanner error={error} onClose={() => setError("")} />
+      <Notice text={notice} />
+    </section>
   );
 }
 
@@ -250,7 +324,7 @@ function Settings({ token }: { token: string }) {
     <section className="panel-page">
       <div className="panel-head"><b>Настройки</b><small className="muted">применяются сразу, сохраняются при уходе из поля</small></div>
       <div className="form-grid two">
-        {Object.entries(values).map(([key, value]) => (
+        {Object.entries(values).filter(([key]) => !key.startsWith("service.")).map(([key, value]) => (
           <label key={key}><span>{SETTING_LABELS[key] ?? key}</span>
             <input defaultValue={value} key={key + value} onBlur={(e) => { if (e.target.value !== value) void commit(key, e.target.value); }} />
           </label>

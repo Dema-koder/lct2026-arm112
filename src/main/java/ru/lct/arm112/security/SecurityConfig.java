@@ -48,21 +48,31 @@ import java.util.UUID;
 @EnableMethodSecurity
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,
+            @Value("${arm112.swagger.public:true}") boolean swaggerPublic) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/auth/login", "/actuator/health", "/ws/v1/**",
-                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-                                "/openapi.yaml", "/webjars/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").authenticated()
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/teacher/**").hasRole("TEACHER")
-                        .requestMatchers("/api/v1/**").hasAnyRole("TRAINEE", "TEACHER")
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh",
+                                    "/api/v1/auth/logout", "/actuator/health", "/ws/v1/**",
+                                    // звуки телефонии отдаются странице до входа
+                                    "/telephony/**").permitAll();
+                    if (swaggerPublic) {
+                        auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/openapi.yaml", "/webjars/**").permitAll();
+                    } else {
+                        auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/openapi.yaml", "/webjars/**", "/actuator/prometheus").hasRole("ADMIN");
+                    }
+                    auth.requestMatchers("/api/v1/auth/**").authenticated()
+                            .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                            .requestMatchers("/api/v1/teacher/**").hasRole("TEACHER")
+                            .requestMatchers("/api/v1/**").hasAnyRole("TRAINEE", "TEACHER")
+                            .anyRequest().authenticated();
+                })
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(roleConverter())))
                 .build();
     }

@@ -22,7 +22,10 @@ public final class ApiModels {
     public record LoginRequest(@NotBlank @Size(max = 100) String username,
                                @NotBlank @Size(max = 200) String password) {}
 
-    public record AuthResponse(String accessToken, Instant expiresAt, User user) {}
+    public record AuthResponse(String accessToken, Instant expiresAt, User user,
+                               String refreshToken, Instant refreshExpiresAt) {}
+    public record RefreshRequest(@NotBlank String refreshToken) {}
+    public record LogoutRequest(@NotBlank String refreshToken) {}
     public record User(UUID id, String displayName, String role, String login,
                        String workstationNumber, UUID groupId) {}
     public record PasswordChangeRequest(@NotBlank String current,
@@ -38,7 +41,17 @@ public final class ApiModels {
                                   @Min(1) @Max(10) int difficulty, String referenceVersion,
                                   Instant serverTime, Instant startedAt, Instant completedAt,
                                   List<UUID> cardIds, List<UUID> draftIds, UUID lessonId,
-                                  String lessonKind, int pendingScenarios) {}
+                                  String lessonKind, int pendingScenarios, String ownServiceCode,
+                                  String intensity, IncomingCall incomingCall, int queuedCalls) {}
+
+    /** Входящий вызов оператору 112: звонит, пока обучающийся не примет его (POST /card-drafts). */
+    public record IncomingCall(UUID id, String phone, String callerName, Instant ringingSince, int missedCount) {}
+
+    /** Строка журнала оператора 112: своя сохранённая карточка или фоновая карточка смены. */
+    public record JournalRow(UUID id, String kind, String number, Instant receivedAt, String workstationNumber,
+                             String incidentTypeLabel, String addressLabel, String description,
+                             String callerName, List<String> services, String status) {}
+    public record JournalPage(List<JournalRow> rows) {}
 
     public record SessionSummary(UUID id, UUID lessonId, String lessonTitle, String lessonKind,
                                  String mode, String state, Instant startedAt, Instant completedAt) {}
@@ -165,7 +178,8 @@ public final class ApiModels {
                             String callerText, DraftPhones phones, DraftCaller caller,
                             FormalAddress address, DraftFlags flags, List<String> incidentTypeIds,
                             List<SurveyAnswer> surveyAnswers, String description,
-                            List<DraftService> services, List<Hint> hints, String scenarioTitle) {}
+                            List<DraftService> services, List<Hint> hints, String scenarioTitle,
+                            String callerAddress, String topTypeId) {}
 
     public record DraftPhones(String ani, String provided, String onSite) {}
     public record DraftCaller(String fullName, String status) {}
@@ -178,14 +192,22 @@ public final class ApiModels {
                                  DraftFlags flags, List<String> incidentTypeIds,
                                  List<SurveyAnswer> surveyAnswers,
                                  @Size(max = 1999) String description,
-                                 List<String> extraServiceCodes) {}
+                                 List<String> extraServiceCodes, String topTypeId) {}
 
     public record CreateDraftRequest(@NotNull UUID sessionId) {}
 
     public record IncidentTypeItem(String id, String label, String category,
                                    boolean frequent, boolean significant) {}
+    /** Позиция списка «что случилось?» (КАРТОЧКА 112.docx). */
+    public record TopTypeItem(String id, String label, boolean frequent) {}
+    /** Опросная карта типа верхнего уровня: вопросы ветвятся по ответам (showWhen). */
+    public record SurveyTree(String topTypeId, String label, List<SurveyQuestion> questions, String defaultType) {}
     public record SurveyCard(String id, String incidentTypeId, List<SurveyQuestion> questions) {}
-    public record SurveyQuestion(String id, String text, String kind, List<DictionaryItem> options) {}
+    public record SurveyQuestion(String id, String text, String kind, List<DictionaryItem> options,
+                                 List<Map<String, List<String>>> showWhen, boolean synthetic) {}
+    /** Служба из справочника ПОВ-112 (СЛУЖБЫ 112.docx): вид и территория обслуживания. */
+    public record ServiceItem(String code, String label, String fullName, String kind,
+                              String okrug, String district, String settlement) {}
 
     // ---------------------------------------------------------------- assessment
 
@@ -209,6 +231,15 @@ public final class ApiModels {
                                     @Size(max = 2000) String comment,
                                     List<@Valid CriterionScore> criteria) {}
 
+    /**
+     * Персональный разбор занятия.
+     *
+     * @param state  READY — готов; PENDING — считается в фоне
+     * @param source LLM или RULES: обучающийся вправе знать, кто писал текст
+     */
+    public record Debrief(UUID assessmentId, String state, String text, String source,
+                          Instant createdAt) {}
+
     public record ResultItem(UUID sessionId, UUID lessonId, String lessonTitle, String lessonKind,
                              String mode, Instant completedAt, boolean visible,
                              Double finalTotal, String source, UUID assessmentId) {}
@@ -223,11 +254,15 @@ public final class ApiModels {
     public record Lesson(UUID id, UUID teacherId, UUID groupId, String groupName, String title,
                          String kind, String mode, String cardSource, String state,
                          List<String> scenarioIds, Instant createdAt, Instant startedAt,
-                         Instant completedAt, Instant resultsPublishedAt, int sessionCount) {}
+                         Instant completedAt, Instant resultsPublishedAt, int sessionCount,
+                         String serviceCode, String intensity, int normScore) {}
 
+    /** serviceCode — служба обучающегося в режиме действий (по умолчанию 101); intensity — поток вводных. */
     public record LessonCreate(@NotBlank @Size(max = 200) String title, UUID groupId,
                                @NotBlank String kind, @NotBlank String mode, @NotBlank String cardSource,
-                               @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds) {}
+                               @NotEmpty List<String> scenarioIds, @NotEmpty List<UUID> traineeIds,
+                               String serviceCode, String intensity,
+                               @Min(0) @Max(100) Integer normScore) {}
 
     public record LessonMonitor(Lesson lesson, List<MonitorRow> sessions) {}
     public record MonitorRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,
@@ -239,6 +274,90 @@ public final class ApiModels {
     public record ReportRow(UUID sessionId, UUID traineeId, String traineeName, String workstationNumber,
                             Double timingScore, Integer syntaxErrors, Double level,
                             Double aiTotal, Double teacherTotal, Double finalTotal, String state) {}
+
+    // ---------------------------------------------------------------- аналитика (экраны разбора)
+    //
+    // Записи добавлены под экраны из DASHBOARDS.md. Существующие ответы не менялись:
+    // в контракте additionalProperties: false, и новое поле сломало бы строгих клиентов.
+
+    /**
+     * Балл по критерию и его вклад в потерю итога.
+     *
+     * @param lostPoints (100 − балл) × вес / 100 — сколько баллов итога стоила эта ошибка.
+     *                   Сортировать экран надо по нему, а не по баллу: время 61 при весе 15
+     *                   стоит меньше, чем адрес 72 при весе 40
+     */
+    public record CriterionSummary(String code, String label, Double average,
+                                   double weight, Double lostPoints) {}
+
+    /** Как часто встречается код замечания и скольких обучающихся задел. */
+    public record IssueSummary(String code, String severity, String message,
+                               int occurrences, int trainees) {}
+
+    /** Ошибки в разрезе сценария: отделяет плохой сценарий от неусвоенной темы. */
+    public record ScenarioIssues(String scenarioId, String title, int cards, int withIssues) {}
+
+    /**
+     * Обзор занятия для преподавателя.
+     *
+     * @param inNormPercent доля карточек, уложившихся в норматив
+     * @param criteria      по убыванию потери в баллах, а не по баллу
+     */
+    public record LessonOverview(Lesson lesson, int trainees, Double medianTotal, Double spread,
+                                 Double inNormPercent, int criticalIssues,
+                                 List<CriterionSummary> criteria, List<IssueSummary> topIssues,
+                                 List<ScenarioIssues> byScenario) {}
+
+    /** Показатель времени внутри карточки на фоне группы; перцентиль null при группе меньше восьми. */
+    public record TimingMetric(String code, String label, Double value, Double groupMedian,
+                               Integer percentile, String hint) {}
+
+    /**
+     * Недочёт, повторяющийся из занятия в занятие.
+     *
+     * @param trend PERSISTENT — не уходит, IMPROVING — реже, RESOLVED — нет в последних занятиях
+     */
+    public record PersistentIssue(String code, String severity, String message,
+                                  int lessons, int occurrences, String trend) {}
+
+    /** Точка кривой обучения. */
+    public record ProgressPoint(int sessionNumber, UUID lessonId, String lessonTitle, String lessonKind,
+                                Double total, Instant completedAt) {}
+
+    /** Сколько карточек отработано по категории происшествий — видно пробелы в подготовке. */
+    public record CategoryCoverage(String category, int cards) {}
+
+    /** Профиль обучающегося: то, с чего преподаватель пишет характеристику. */
+    public record TraineeProfile(User trainee, Rating rating, List<CriterionSummary> criteria,
+                                 List<TimingMetric> timing, List<PersistentIssue> persistentIssues,
+                                 List<ProgressPoint> progress, List<CategoryCoverage> coverage) {}
+
+    /**
+     * Качество сценария по накопленной статистике.
+     *
+     * @param suggestedDifficulty сложность по Рашу, приведённая к шкале 1–10; null — наблюдений мало
+     * @param discrimination      связь балла за сценарий с итогом сессии; около нуля означает,
+     *                            что сценарий ничего не различает
+     */
+    public record ScenarioQuality(String scenarioId, String title, String category,
+                                  Integer declaredDifficulty, Integer suggestedDifficulty,
+                                  Double difficultyLogit, Double standardError,
+                                  int observations, int passed, Double discrimination,
+                                  boolean referenceConfirmed) {}
+
+    /** Калибровка по одному критерию: предложение, а не применённое изменение. */
+    public record CriterionCalibration(String code, String label, double slope, double intercept,
+                                       double maeBefore, double maeAfter, double improvementPercent,
+                                       int pairs) {}
+
+    /**
+     * Расхождение оценки ИИ с оценкой преподавателя.
+     *
+     * @param skipped критерии, для которых калибровка не предлагается, с причиной:
+     *                мало пар, ИИ уже согласен с преподавателем, улучшение не окупается
+     */
+    public record CalibrationReport(String mode, int assessments,
+                                    List<CriterionCalibration> criteria, List<String> skipped) {}
 
     public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
                                 List<CardDraft> drafts, Assessment assessment) {}
@@ -269,6 +388,11 @@ public final class ApiModels {
 
     public record SystemHealth(String status, String database, int openSockets,
                                int activeSessions, String version, Instant serverTime) {}
+    public record ServiceMetric(String label, String value) {}
+    public record ManagedService(String id, String label, String description, String state,
+                                 boolean controllable, boolean critical,
+                                 List<ServiceMetric> metrics, List<String> allowedActions) {}
+    public record ServiceAction(@NotBlank String action) {}
     public record BackupInfo(String fileName, long sizeBytes, Instant createdAt) {}
     public record RestoreRequest(@NotBlank String confirm) {}
     public record LogTail(List<String> lines) {}

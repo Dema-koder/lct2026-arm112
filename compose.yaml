@@ -31,11 +31,16 @@ services:
       ARM112_SEED_ADMIN_PASSWORD: ${ARM112_SEED_ADMIN_PASSWORD:-admin}
       ARM112_SEED_TEACHER_PASSWORD: ${ARM112_SEED_TEACHER_PASSWORD:-teacher}
       ARM112_SEED_TRAINEE_PASSWORD: ${ARM112_SEED_TRAINEE_PASSWORD:-trainee}
+      ARM112_SEED_ANALYTICS_DEMO_ENABLED: ${ARM112_SEED_ANALYTICS_DEMO_ENABLED:-true}
       ARM112_BACKUP_DIR: /data/backups
+      ARM112_BACKUP_EXTERNAL_DIR: /offsite-backups
+      ARM112_BACKUP_RETENTION_DAYS: ${ARM112_BACKUP_RETENTION_DAYS:-14}
+      ARM112_SWAGGER_PUBLIC: ${ARM112_SWAGGER_PUBLIC:-false}
       ARM112_MATERIALS_DIR: /data/materials
       ARM112_LOG_FILE: /data/logs/arm112.log
     volumes:
       - backend_data:/data
+      - ${ARM112_OFFSITE_BACKUP_DIR:-./offsite-backups}:/offsite-backups
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:

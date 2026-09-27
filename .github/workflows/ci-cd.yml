@@ -33,7 +33,15 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Build and test
-        run: mvn --batch-mode clean verify
+        # golden.strict: эталонные прогоны валят сборку при расхождении с ожиданиями.
+        # Включено после того, как ожидания сверены с поведением на нескольких этапах подряд.
+        # Симулятор когорты в CI не гоняется — это генератор данных, а не тест.
+        run: >
+          mvn --batch-mode clean verify
+          -Dtest='!CohortSimulator'
+          -Dgolden.strict=true
+          -Dgolden.stage=ci
+          -Dgolden.commit=${{ github.sha }}
 
   frontend:
     name: Frontend checks

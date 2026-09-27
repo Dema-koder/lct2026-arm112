@@ -38,6 +38,28 @@ export type TrainingSession = {
   lessonId: string;
   lessonKind: LessonKind;
   pendingScenarios: number;
+  ownServiceCode: string;
+  intensity: Intensity;
+  incomingCall: IncomingCall | null;
+  queuedCalls: number;
+};
+
+export type Intensity = "SEQUENTIAL" | "LOW" | "MEDIUM" | "HIGH";
+
+export type IncomingCall = { id: string; phone: string | null; callerName: string | null; ringingSince: string; missedCount: number };
+
+export type JournalRow = {
+  id: string;
+  kind: "OWN" | "BACKGROUND";
+  number: string;
+  receivedAt: string;
+  workstationNumber: string | null;
+  incidentTypeLabel: string;
+  addressLabel: string | null;
+  description: string;
+  callerName: string | null;
+  services: string[];
+  status: string;
 };
 
 export type TraineeContext = {
@@ -220,6 +242,8 @@ export type CardDraft = {
   services: DraftService[];
   hints: Hint[];
   scenarioTitle: string | null;
+  callerAddress: string | null;
+  topTypeId: string | null;
 };
 
 export type CardDraftPatch = Partial<{
@@ -231,11 +255,33 @@ export type CardDraftPatch = Partial<{
   surveyAnswers: SurveyAnswer[];
   description: string;
   extraServiceCodes: string[];
+  topTypeId: string;
 }>;
 
 export type IncidentTypeItem = { id: string; label: string; category: string; frequent: boolean; significant: boolean };
-export type SurveyQuestion = { id: string; text: string; kind: "CHOICE" | "TEXT"; options: DictionaryItem[] };
+/** Позиция списка «что случилось?» в ПОВ-112 (49 типов верхнего уровня + справки). */
+export type TopTypeItem = { id: string; label: string; frequent: boolean };
+export type SurveyQuestion = {
+  id: string;
+  text: string;
+  kind: "CHOICE" | "TEXT";
+  options: DictionaryItem[];
+  /** Вопрос показывается, если выполнено хотя бы одно условие: {вопрос: [допустимые ответы]}. */
+  showWhen: Array<Record<string, string[]>>;
+  /** Ветка не подтверждена скриншотами заказчика — достроена по смыслу. */
+  synthetic: boolean;
+};
+export type SurveyTree = { topTypeId: string; label: string; questions: SurveyQuestion[]; defaultType: string | null };
 export type SurveyCard = { id: string; incidentTypeId: string; questions: SurveyQuestion[] };
+export type ServiceItem = {
+  code: string;
+  label: string;
+  fullName: string;
+  kind: "EMERGENCY" | "CITY" | "DEPARTMENT" | "DISTRICT" | "OKRUG" | "SETTLEMENT" | "ROADS" | "FEDERAL" | "REGION" | "GROUP";
+  okrug: string | null;
+  district: string | null;
+  settlement: string | null;
+};
 
 // ------------------------------------------------------------------ assessment / results
 
@@ -361,6 +407,9 @@ export type Lesson = {
   completedAt: string | null;
   resultsPublishedAt: string | null;
   sessionCount: number;
+  serviceCode: string;
+  intensity: Intensity;
+  normScore: number;
 };
 
 export type LessonCreate = {
@@ -371,6 +420,9 @@ export type LessonCreate = {
   cardSource: CardSource;
   scenarioIds: string[];
   traineeIds: string[];
+  serviceCode: string | null;
+  intensity: Intensity;
+  normScore: number;
 };
 
 export type MonitorRow = {
@@ -456,6 +508,17 @@ export type AuditEntry = {
 
 export type AuditPage = { items: AuditEntry[]; nextCursor: string | null };
 export type SystemHealth = { status: string; database: string; openSockets: number; activeSessions: number; version: string; serverTime: string };
+export type ServiceMetric = { label: string; value: string };
+export type ManagedService = {
+  id: string;
+  label: string;
+  description: string;
+  state: "RUNNING" | "STOPPED" | "FAILED";
+  controllable: boolean;
+  critical: boolean;
+  metrics: ServiceMetric[];
+  allowedActions: Array<"START" | "STOP" | "RESTART">;
+};
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
 
 // ------------------------------------------------------------------ transport
@@ -557,6 +620,10 @@ export const api = {
 
   // card fill
   drafts: (token: string, sessionId: string) => request<CardDraft[]>(`/card-drafts${q({ sessionId })}`, {}, token),
+  cardTypes: (token: string, query?: string) => request<TopTypeItem[]>(`/references/card-types${q({ query })}`, {}, token),
+  surveyTree: (token: string, topTypeId: string) => request<SurveyTree>(`/references/survey-trees/${topTypeId}`, {}, token),
+  serviceCatalog: (token: string) => request<ServiceItem[]>("/references/services", {}, token),
+  journal: (token: string, sessionId: string) => request<{ rows: JournalRow[] }>(`/training-sessions/${sessionId}/journal`, {}, token),
   createDraft: (token: string, sessionId: string) =>
     request<CardDraft>("/card-drafts", { method: "POST", body: json({ sessionId }) }, token),
   patchDraft: (token: string, draftId: string, patch: CardDraftPatch) =>
@@ -637,6 +704,11 @@ export const api = {
     audit: (token: string, filter: { role?: string; action?: string; cursor?: string; limit?: number } = {}) =>
       request<AuditPage>(`/admin/audit${q(filter)}`, {}, token),
     health: (token: string) => request<SystemHealth>("/admin/system/health", {}, token),
+    services: (token: string) => request<ManagedService[]>("/admin/system/services", {}, token),
+    serviceAction: (token: string, id: string, action: "START" | "STOP" | "RESTART") =>
+      request<ManagedService>(`/admin/system/services/${encodeURIComponent(id)}/actions`, {
+        method: "POST", body: json({ action }),
+      }, token),
     log: (token: string, lines = 200) => request<{ lines: string[] }>(`/admin/system/log${q({ lines })}`, {}, token),
     backups: (token: string) => request<BackupInfo[]>("/admin/backups", {}, token),
     createBackup: (token: string) => request<BackupInfo>("/admin/backups", { method: "POST" }, token),

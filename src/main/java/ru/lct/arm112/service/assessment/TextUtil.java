@@ -2,10 +2,10 @@ package ru.lct.arm112.service.assessment;
 
 import java.util.Locale;
 
-final class TextUtil {
+public final class TextUtil {
     private TextUtil() {}
 
-    static String normalize(String value) {
+    public static String normalize(String value) {
         if (value == null) return "";
         String lower = value.toLowerCase(Locale.ROOT).replace('ё', 'е');
         lower = lower.replaceAll("[«»\"'.,;:()\\[\\]]", " ");

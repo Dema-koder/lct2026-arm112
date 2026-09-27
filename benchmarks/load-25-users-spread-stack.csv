@@ -1,0 +1,5 @@
+﻿request;count;p50_ms;p95_ms;p99_ms;max_ms
+POST card-drafts;50;43;83;97;97
+POST save;50;42;92;114;114
+PATCH card-drafts;250;29;37;38;62
+GET context;25;8;11;16;16

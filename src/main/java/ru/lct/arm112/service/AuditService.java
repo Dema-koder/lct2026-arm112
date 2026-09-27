@@ -21,7 +21,8 @@ public class AuditService {
     private static final Logger log = LoggerFactory.getLogger(AuditService.class);
     private static final int PAYLOAD_LIMIT = 4096;
     private static final Pattern SECRETS = Pattern.compile(
-            "\"(password|current|next|passwordHash)\"\\s*:\\s*\"[^\"]*\"", Pattern.CASE_INSENSITIVE);
+            "\"(password|current|next|passwordHash|refreshToken|accessToken)\"\\s*:\\s*\"[^\"]*\"",
+            Pattern.CASE_INSENSITIVE);
 
     private final AuditRepository repository;
     private final SettingsService settings;

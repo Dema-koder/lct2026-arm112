@@ -3,7 +3,12 @@ WORKDIR /workspace
 COPY pom.xml ./
 COPY docs/contracts/ docs/contracts/
 COPY src/ src/
-RUN mvn -q clean package
+# Cache .m2 across builds so a flaky Maven Central timeout does not re-download everything.
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -B -Dhttps.protocols=TLSv1.2 \
+    -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+    clean package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

@@ -10,13 +10,21 @@ arm112:
   version: 0.3.0-test
   jwt-secret: local-training-secret-key-change-me-2026
   token-ttl: PT8H
+  refresh-token-ttl: P7D
+  swagger:
+    public: true
   allowed-origins: http://localhost:3000,http://localhost:5173
   seed:
+    # Демо-набор аналитики включается только в своём тесте: в общем прогоне он
+    # подмешивал бы двенадцать выдуманных занятий в агрегаты дашбордов.
+    analytics-demo-enabled: false
     admin-password: admin
     teacher-password: teacher
     trainee-password: trainee
   backup:
     dir: ./target/test-backups
+    external-dir: ./target/test-offsite-backups
+    retention-days: 2
     cron: "0 0 2 * * *"
   materials:
     dir: ./target/test-materials
@@ -30,7 +38,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 springdoc:
   swagger-ui:

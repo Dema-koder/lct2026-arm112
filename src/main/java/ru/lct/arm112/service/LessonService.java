@@ -17,6 +17,7 @@ import ru.lct.arm112.service.assessment.AssessmentWeights;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,10 +39,12 @@ public class LessonService {
     private final TrainingEngine engine;
     private final EventService events;
     private final RatingService ratings;
+    private final ReferenceDataService references;
 
     public LessonService(LessonRepository lessons, SessionRepository sessions, UserRepository users,
                          AssessmentRepository assessments, ScenarioService scenarios, TrainingEngine engine,
-                         EventService events, RatingService ratings) {
+                         EventService events, RatingService ratings, ReferenceDataService references) {
+        this.references = references;
         this.lessons = lessons;
         this.sessions = sessions;
         this.users = users;
@@ -113,6 +116,18 @@ public class LessonService {
         if (!MODES.contains(request.mode())) throw invalid("Режим: CARD_FILL или CARD_ACTIONS");
         if (!SOURCES.contains(request.cardSource())) throw invalid("Источник карточек: GENERATED, TRAINEE_MADE или MIXED");
         scenarios.requireAll(request.scenarioIds());
+        // Умолчание разное по режиму: в ДДС карточки идут потоком по расписанию — на этом
+        // построено рабочее место диспетчера, где их ведут несколько сразу. У оператора 112
+        // вызов ждёт ответа, и поток без выбора преподавателя означал бы шквал с первой секунды.
+        String intensity = request.intensity() != null ? request.intensity()
+                : "CARD_ACTIONS".equals(request.mode())
+                ? TrainingEngine.Intensity.MEDIUM.name() : TrainingEngine.Intensity.SEQUENTIAL.name();
+        if (!TrainingEngine.Intensity.isValid(intensity)) throw invalid("Интенсивность: SEQUENTIAL, LOW, MEDIUM или HIGH");
+        String serviceCode = request.serviceCode() == null || request.serviceCode().isBlank()
+                ? TrainingEngine.OWN_SERVICE_CODE : request.serviceCode().trim();
+        if (references.allServices().stream().noneMatch(s -> s.code().equals(serviceCode))) {
+            throw invalid("Неизвестная служба: " + serviceCode);
+        }
         List<AppUser> trainees = users.findByIds(request.traineeIds());
         if (trainees.size() != request.traineeIds().size()
                 || trainees.stream().anyMatch(u -> u.role() != Role.TRAINEE || !u.active())) {
@@ -122,9 +137,11 @@ public class LessonService {
             Group group = group(request.groupId());
             if (!group.teacherId().equals(teacher.id())) throw invalid("Группа другого преподавателя");
         }
+        int normScore = request.normScore() == null ? 60 : request.normScore();
         UUID id = UUID.randomUUID();
         Lesson lesson = new Lesson(id, teacher.id(), request.groupId(), null, request.title().trim(), request.kind(),
-                request.mode(), request.cardSource(), "DRAFT", request.scenarioIds(), Instant.now(), null, null, null, 0);
+                request.mode(), request.cardSource(), "DRAFT", request.scenarioIds(), Instant.now(), null, null, null, 0,
+                serviceCode, intensity, normScore);
         lessons.insertLesson(lesson);
         for (AppUser trainee : trainees) {
             sessions.insert(new SessionRow(UUID.randomUUID(), id, trainee.id(), trainee.workstationNumber(),
@@ -206,11 +223,27 @@ public class LessonService {
         Lesson lesson = require(id, teacher);
         Map<UUID, AssessmentRow> byLessonSession = assessments.findByLesson(id).stream()
                 .collect(Collectors.toMap(AssessmentRow::sessionId, a -> a, (a, b) -> b));
+        List<SessionRow> sessionRows = sessions.findByLesson(id);
+        Map<UUID, AppUser> trainees = new LinkedHashMap<>();
+        for (SessionRow row : sessionRows) {
+            users.findById(row.traineeId()).ifPresent(u -> trainees.put(row.traineeId(), u));
+        }
+        // Рейтинги считаются пачкой: раньше здесь был вызов на каждого обучающегося,
+        // и каждый читал всю таблицу оценок целиком.
+        Map<UUID, Rating> ratingByTrainee = new LinkedHashMap<>();
+        Map<UUID, List<UUID>> byGroup = new LinkedHashMap<>();
+        for (SessionRow row : sessionRows) {
+            AppUser trainee = trainees.get(row.traineeId());
+            byGroup.computeIfAbsent(trainee == null ? null : trainee.groupId(), k -> new ArrayList<>())
+                    .add(row.traineeId());
+        }
+        byGroup.forEach((groupId, ids) -> ratingByTrainee.putAll(ratings.ratingsOf(ids, groupId)));
+
         List<ReportRow> rows = new ArrayList<>();
-        for (SessionRow row : sessions.findByLesson(id)) {
-            AppUser trainee = users.findById(row.traineeId()).orElse(null);
+        for (SessionRow row : sessionRows) {
+            AppUser trainee = trainees.get(row.traineeId());
             AssessmentRow a = byLessonSession.get(row.id());
-            Rating rating = ratings.traineeRating(row.traineeId(), trainee == null ? null : trainee.groupId());
+            Rating rating = ratingByTrainee.get(row.traineeId());
             rows.add(new ReportRow(row.id(), row.traineeId(), trainee == null ? "—" : trainee.displayName(),
                     row.workstationNumber(), a == null ? null : a.timingScore(), a == null ? null : a.syntaxErrors(),
                     rating.value(), a == null ? null : a.aiTotal(), a == null ? null : a.teacherTotal(),

@@ -3,8 +3,13 @@ package ru.lct.arm112.persistence;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.lct.arm112.api.ApiModels.Assessment;
+import ru.lct.arm112.api.ApiModels.AssessmentIssue;
 import ru.lct.arm112.api.ApiModels.CriterionScore;
+import ru.lct.arm112.service.assessment.AssessmentResult;
+import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 import ru.lct.arm112.service.assessment.AssessmentWeights;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -23,6 +28,8 @@ import java.util.UUID;
 /** Оценка ИИ (JSON) и оценка преподавателя рядом; итог выбирается при чтении (решение №5). */
 @Repository
 public class AssessmentRepository {
+    private static final Logger log = LoggerFactory.getLogger(AssessmentRepository.class);
+
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
     private final RowMapper<AssessmentRow> mapper = this::map;
@@ -41,6 +48,14 @@ public class AssessmentRepository {
                 .stream().findFirst();
     }
 
+    /** Все оценки обучающегося по времени — для кривой обучения и профиля. */
+    public List<AssessmentRow> findByTrainee(UUID traineeId) {
+        return jdbc.query("""
+                select a.* from assessment a join training_session s on s.id = a.session_id
+                 where s.trainee_id = ? order by a.created_at
+                """, mapper, traineeId);
+    }
+
     public List<AssessmentRow> findByLesson(UUID lessonId) {
         return jdbc.query("""
                 select a.* from assessment a join training_session s on s.id = a.session_id
@@ -48,12 +63,137 @@ public class AssessmentRepository {
                 """, mapper, lessonId);
     }
 
-    public void insert(Assessment ai, UUID sessionId) {
+    /**
+     * Оценка целиком (JSON) плюс её замечания отдельными строками для агрегатов дашбордов.
+     *
+     * @param cardScenarios карточка или черновик → сценарий: у замечания есть только cardId,
+     *                      а разрез «ошибки по сценариям» нужен в отчёте занятия
+     */
+    public void insert(AssessmentResult result, UUID sessionId, UUID lessonId, UUID traineeId,
+                       Map<UUID, String> cardScenarios) {
+        Assessment ai = result.assessment();
+        long startedAt = System.nanoTime();
         jdbc.update("""
                 insert into assessment (id, session_id, mode, ai_payload, ai_total, timing_score, language_score, syntax_errors)
                 values (?, ?, ?, ?, ?, ?, ?, ?)
                 """, ai.id(), sessionId, ai.mode(), encode(ai), ai.totalScore(), ai.timingScore(),
                 ai.languageScore(), ai.syntaxErrors() == null ? 0 : ai.syntaxErrors());
+
+        List<AssessmentIssue> issues = ai.issues() == null ? List.of() : ai.issues();
+        if (!issues.isEmpty()) {
+            jdbc.batchUpdate("""
+                    insert into assessment_issue (id, assessment_id, session_id, lesson_id, trainee_id, mode,
+                                                  card_id, scenario_id, code, severity, message, expected, actual)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, issues.stream().map(issue -> new Object[]{
+                    UUID.randomUUID(), ai.id(), sessionId, lessonId, traineeId, ai.mode(),
+                    issue.cardId(), issue.cardId() == null ? null : cardScenarios.get(issue.cardId()),
+                    issue.code(), issue.severity(), issue.message(),
+                    text(issue.expected()), text(issue.actual())}).toList());
+        }
+
+        List<CardBreakdown> cards = result.cards();
+        if (!cards.isEmpty()) {
+            jdbc.batchUpdate("""
+                    insert into assessment_card (id, assessment_id, session_id, lesson_id, trainee_id, mode,
+                                                 card_id, scenario_id, address, classification, services, timing,
+                                                 language, actions, communication, spent_seconds,
+                                                 seconds_to_address, seconds_to_type, type_changes, idle_seconds,
+                                                 issues, critical_issues)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, cards.stream().map(card -> new Object[]{
+                    UUID.randomUUID(), ai.id(), sessionId, lessonId, traineeId, ai.mode(),
+                    card.cardId(), card.scenarioId() != null ? card.scenarioId() : cardScenarios.get(card.cardId()),
+                    card.address(), card.classification(), card.services(), card.timing(), card.language(),
+                    card.actions(), card.communication(), card.spentSeconds(),
+                    card.secondsToAddress(), card.secondsToType(), card.typeChanges(), card.idleSeconds(),
+                    card.issues(), card.criticalIssues()}).toList());
+        }
+
+        long spentMs = (System.nanoTime() - startedAt) / 1_000_000;
+        // Одна строка на завершённую сессию: по ней собирается статистика оценки без разбора JSON.
+        log.info("assessment saved: session={} mode={} total={} cards={} issues={} critical={} syntaxErrors={} spentMs={}",
+                sessionId, ai.mode(), ai.totalScore(), cards.size(), issues.size(),
+                issues.stream().filter(i -> "CRITICAL".equals(i.severity())).count(),
+                ai.syntaxErrors() == null ? 0 : ai.syntaxErrors(), spentMs);
+    }
+
+    /** Замечания одной оценки — для экрана разбора и агрегатов. */
+    public List<IssueRow> findIssues(UUID assessmentId) {
+        return jdbc.query("select * from assessment_issue where assessment_id = ? order by created_at",
+                (rs, row) -> new IssueRow(
+                        rs.getObject("id", UUID.class), rs.getObject("assessment_id", UUID.class),
+                        rs.getObject("lesson_id", UUID.class), rs.getObject("trainee_id", UUID.class),
+                        rs.getString("mode"), rs.getObject("card_id", UUID.class), rs.getString("scenario_id"),
+                        rs.getString("code"), rs.getString("severity"), rs.getString("message"),
+                        rs.getString("expected"), rs.getString("actual"),
+                        rs.getTimestamp("created_at").toInstant()),
+                assessmentId);
+    }
+
+    /** Частота кодов замечаний по занятию — «типовые ошибки» в отчёте (DASHBOARDS.md §3.3). */
+    public List<IssueCount> countByLesson(UUID lessonId) {
+        return jdbc.query("""
+                select code, severity, count(*) as total, count(distinct trainee_id) as trainees
+                  from assessment_issue where lesson_id = ?
+                 group by code, severity order by count(distinct trainee_id) desc, count(*) desc
+                """, (rs, row) -> new IssueCount(rs.getString("code"), rs.getString("severity"),
+                rs.getInt("total"), rs.getInt("trainees")), lessonId);
+    }
+
+    /** Замечания обучающегося по занятиям — «устойчивые недочёты» в профиле (DASHBOARDS.md §3.4). */
+    public List<IssueCount> countByTrainee(UUID traineeId) {
+        return jdbc.query("""
+                select code, severity, count(*) as total, count(distinct lesson_id) as lessons
+                  from assessment_issue where trainee_id = ?
+                 group by code, severity order by count(distinct lesson_id) desc, count(*) desc
+                """, (rs, row) -> new IssueCount(rs.getString("code"), rs.getString("severity"),
+                rs.getInt("total"), rs.getInt("lessons")), traineeId);
+    }
+
+    /** Исходы по карточкам для матрицы «обучающийся × сценарий» (оценка сложности по Рашу). */
+    public List<CardOutcome> findCardOutcomes() {
+        return jdbc.query("""
+                select trainee_id, scenario_id, mode, address, classification, services,
+                       timing, language, actions, communication
+                  from assessment_card where scenario_id is not null
+                """, (rs, row) -> new CardOutcome(
+                rs.getObject("trainee_id", UUID.class), rs.getString("scenario_id"), rs.getString("mode"),
+                value(rs.getBigDecimal("address")), value(rs.getBigDecimal("classification")),
+                value(rs.getBigDecimal("services")), value(rs.getBigDecimal("timing")),
+                value(rs.getBigDecimal("language")), value(rs.getBigDecimal("actions")),
+                value(rs.getBigDecimal("communication"))));
+    }
+
+    public record CardOutcome(UUID traineeId, String scenarioId, String mode,
+                              Double address, Double classification, Double services,
+                              Double timing, Double language, Double actions, Double communication) {}
+
+    private static Double value(BigDecimal value) {
+        return value == null ? null : value.doubleValue();
+    }
+
+    public record IssueRow(UUID id, UUID assessmentId, UUID lessonId, UUID traineeId, String mode,
+                           UUID cardId, String scenarioId, String code, String severity,
+                           String message, String expected, String actual, Instant createdAt) {}
+
+    /** Код замечания и его частота; {@code group} — число обучающихся или занятий в зависимости от запроса. */
+    public record IssueCount(String code, String severity, int total, int group) {}
+
+    private static String text(Object value) {
+        if (value == null) return null;
+        String result = value instanceof List<?> list ? String.join(", ", list.stream().map(String::valueOf).toList())
+                : String.valueOf(value);
+        return result.length() > 2000 ? result.substring(0, 2000) : result;
+    }
+
+    /** Оценки, которые преподаватель правил по критериям — вход для калибровки. */
+    public List<AssessmentRow> findTeacherAssessed(String mode) {
+        return jdbc.query("""
+                select * from assessment
+                 where mode = ? and teacher_assessed_at is not null and teacher_payload is not null
+                 order by teacher_assessed_at
+                """, mapper, mode);
     }
 
     public void setTeacher(UUID id, UUID teacherId, double total, String comment, List<CriterionScore> criteria) {

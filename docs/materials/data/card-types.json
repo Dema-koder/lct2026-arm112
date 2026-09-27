@@ -1,0 +1,2384 @@
+{
+ "source": "materials/КАРТОЧКА 112.docx (список «что случилось?» и карта «Происшествие 101», 21.09.2026)",
+ "topTypes": [
+  {
+   "id": "t101",
+   "label": "101",
+   "frequent": true
+  },
+  {
+   "id": "t102",
+   "label": "102",
+   "frequent": true
+  },
+  {
+   "id": "t103",
+   "label": "103",
+   "frequent": true
+  },
+  {
+   "id": "t104",
+   "label": "104",
+   "frequent": true
+  },
+  {
+   "id": "accident_utility",
+   "label": "Аварии и происшествия в городском хозяйстве",
+   "frequent": false
+  },
+  {
+   "id": "accident_transport",
+   "label": "Аварии и происшествия на транспортных объектах",
+   "frequent": false
+  },
+  {
+   "id": "accident_hydro",
+   "label": "Аварии на гидротехнических сооружениях",
+   "frequent": false
+  },
+  {
+   "id": "accident_hazard",
+   "label": "Аварии на опасных и производственных объектах",
+   "frequent": false
+  },
+  {
+   "id": "gratitude",
+   "label": "Благодарность службам",
+   "frequent": false
+  },
+  {
+   "id": "uav",
+   "label": "БПЛА",
+   "frequent": false
+  },
+  {
+   "id": "explosion",
+   "label": "Взрыв",
+   "frequent": false
+  },
+  {
+   "id": "internal_call",
+   "label": "Внутренний звонок (звонок от работников)",
+   "frequent": false
+  },
+  {
+   "id": "foreign",
+   "label": "Вызов на иностранном языке",
+   "frequent": true
+  },
+  {
+   "id": "repeat_call",
+   "label": "Дополнительный звонок от заявителя",
+   "frequent": false
+  },
+  {
+   "id": "road_obstacle",
+   "label": "Дорожные помехи",
+   "frequent": false
+  },
+  {
+   "id": "dtp",
+   "label": "ДТП",
+   "frequent": true
+  },
+  {
+   "id": "complaint",
+   "label": "Жалоба на действие или бездействие служб",
+   "frequent": false
+  },
+  {
+   "id": "animals",
+   "label": "Животные",
+   "frequent": false
+  },
+  {
+   "id": "consult",
+   "label": "Консультация",
+   "frequent": true
+  },
+  {
+   "id": "non_target",
+   "label": "Нецелевой вызов",
+   "frequent": false
+  },
+  {
+   "id": "collapse",
+   "label": "Обрушение",
+   "frequent": false
+  },
+  {
+   "id": "feedback",
+   "label": "Отзыв о работе 112 Москва",
+   "frequent": false
+  },
+  {
+   "id": "cancel",
+   "label": "Отмена вызова",
+   "frequent": true
+  },
+  {
+   "id": "wrong_number",
+   "label": "Ошибочно набран номер",
+   "frequent": true
+  },
+  {
+   "id": "shift_handover",
+   "label": "Передача дежурства",
+   "frequent": true
+  },
+  {
+   "id": "help_services",
+   "label": "Помощь службам",
+   "frequent": false
+  },
+  {
+   "id": "nature",
+   "label": "Природная стихия",
+   "frequent": false
+  },
+  {
+   "id": "other",
+   "label": "Прочие происшествия",
+   "frequent": false
+  },
+  {
+   "id": "radiation",
+   "label": "Радиация",
+   "frequent": false
+  },
+  {
+   "id": "thermometer",
+   "label": "Разбитый градусник",
+   "frequent": false
+  },
+  {
+   "id": "child_danger",
+   "label": "Ребенок в опасности",
+   "frequent": false
+  },
+  {
+   "id": "gathering",
+   "label": "Сбор",
+   "frequent": false
+  },
+  {
+   "id": "water_accum",
+   "label": "Скопление воды",
+   "frequent": false
+  },
+  {
+   "id": "death",
+   "label": "Смертельный исход",
+   "frequent": false
+  },
+  {
+   "id": "social_help",
+   "label": "Социальная помощь",
+   "frequent": false
+  },
+  {
+   "id": "info_101",
+   "label": "Справка 101",
+   "frequent": true
+  },
+  {
+   "id": "info_102",
+   "label": "Справка 102",
+   "frequent": false
+  },
+  {
+   "id": "info_103",
+   "label": "Справка 103",
+   "frequent": false
+  },
+  {
+   "id": "info_104",
+   "label": "Справка 104",
+   "frequent": false
+  },
+  {
+   "id": "info_gibdd",
+   "label": "Справка ГИБДД",
+   "frequent": false
+  },
+  {
+   "id": "info_gorhoz",
+   "label": "Справка Городское хозяйство",
+   "frequent": false
+  },
+  {
+   "id": "info_mchs",
+   "label": "Справка МЧС",
+   "frequent": false
+  },
+  {
+   "id": "test_call",
+   "label": "Тестовый вызов",
+   "frequent": true
+  },
+  {
+   "id": "tech_failure",
+   "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
+   "frequent": false
+  },
+  {
+   "id": "training",
+   "label": "Тренировка",
+   "frequent": false
+  },
+  {
+   "id": "emergency_notice",
+   "label": "Уведомление о ЧС",
+   "frequent": false
+  },
+  {
+   "id": "terror_threat",
+   "label": "Угроза взрыва/террористического акта",
+   "frequent": false
+  },
+  {
+   "id": "hazmat_threat",
+   "label": "Угроза выброса опасных веществ и радиации",
+   "frequent": false
+  },
+  {
+   "id": "collapse_threat",
+   "label": "Угроза обрушения",
+   "frequent": false
+  },
+  {
+   "id": "person_danger",
+   "label": "Человек в опасности",
+   "frequent": true
+  },
+  {
+   "id": "eco",
+   "label": "Экологическое происшествие",
+   "frequent": false
+  }
+ ],
+ "surveyTrees": [
+  {
+   "topTypeId": "t101",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "street",
+       "label": "Улица"
+      },
+      {
+       "id": "transport",
+       "label": "Транспорт"
+      },
+      {
+       "id": "house",
+       "label": "Дом"
+      },
+      {
+       "id": "building",
+       "label": "Здание / объект"
+      },
+      {
+       "id": "hazard",
+       "label": "Опасный объект"
+      }
+     ]
+    },
+    {
+     "id": "sign_street",
+     "text": "Признак пожара (улица)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "flame",
+       "label": "Открытое пламя / Дым"
+      },
+      {
+       "id": "smell",
+       "label": "Запах гари"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "street"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sign_transport",
+     "text": "Признак пожара (транспорт)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "flame",
+       "label": "Открытое пламя / Дым"
+      },
+      {
+       "id": "alarm",
+       "label": "Сработала пожарная сигнализация"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "transport"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sign_house",
+     "text": "Признак пожара (дом)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "flame",
+       "label": "Открытое пламя / Дым"
+      },
+      {
+       "id": "smoke",
+       "label": "Задымление (подъезд, мусоропровод)"
+      },
+      {
+       "id": "smell",
+       "label": "Запах гари"
+      },
+      {
+       "id": "alarm",
+       "label": "Сработала пожарная сигнализация"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "house"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "sign_building",
+     "text": "Признак пожара (здание / объект)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "flame",
+       "label": "Открытое пламя / Дым"
+      },
+      {
+       "id": "smoke",
+       "label": "Задымление"
+      },
+      {
+       "id": "smell",
+       "label": "Запах гари"
+      },
+      {
+       "id": "alarm",
+       "label": "Сработала пожарная сигнализация"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "building",
+        "hazard"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "access",
+     "text": "Доступ",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "no_access",
+       "label": "Нет доступа"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "street",
+        "transport"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "street_object",
+     "text": "Улица (пламя, дым)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "garbage",
+       "label": "Мусор"
+      },
+      {
+       "id": "grass",
+       "label": "Трава, пух"
+      },
+      {
+       "id": "park",
+       "label": "Парк"
+      },
+      {
+       "id": "forest",
+       "label": "Лес"
+      },
+      {
+       "id": "peat",
+       "label": "Торф"
+      },
+      {
+       "id": "light_pole",
+       "label": "Мачта освещения"
+      },
+      {
+       "id": "contact_pole",
+       "label": "Опора контактной сети"
+      },
+      {
+       "id": "power_line",
+       "label": "ЛЭП"
+      },
+      {
+       "id": "wires",
+       "label": "Провода"
+      },
+      {
+       "id": "tree",
+       "label": "Дерево, деревья"
+      },
+      {
+       "id": "person",
+       "label": "Горит человек"
+      },
+      {
+       "id": "unknown",
+       "label": "Что горит неизвестно"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_street": [
+        "flame"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "transport_object",
+     "text": "Транспорт (пламя, дым)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "public",
+       "label": "Общественный транспорт"
+      },
+      {
+       "id": "car",
+       "label": "Автомашина"
+      },
+      {
+       "id": "dtp_fire",
+       "label": "ДТП с пожаром"
+      },
+      {
+       "id": "hazmat",
+       "label": "Опасный груз"
+      },
+      {
+       "id": "air",
+       "label": "Воздушный транспорт"
+      },
+      {
+       "id": "airport",
+       "label": "Аэропорт"
+      },
+      {
+       "id": "rail",
+       "label": "Ж/Д транспорт"
+      },
+      {
+       "id": "station",
+       "label": "Вокзал Ж/Д, платформа Ж/Д"
+      },
+      {
+       "id": "other",
+       "label": "Транспорт прочее"
+      },
+      {
+       "id": "water",
+       "label": "Водный"
+      },
+      {
+       "id": "bridge",
+       "label": "Мост"
+      },
+      {
+       "id": "overpass",
+       "label": "Эстакада"
+      },
+      {
+       "id": "tunnel",
+       "label": "Тоннель"
+      },
+      {
+       "id": "crossing",
+       "label": "Переход подземный/наземный"
+      },
+      {
+       "id": "metro",
+       "label": "Метро"
+      },
+      {
+       "id": "mck",
+       "label": "МЦК, МЦД"
+      },
+      {
+       "id": "tracks",
+       "label": "Ж/Д пути"
+      },
+      {
+       "id": "relay",
+       "label": "Релейный шкаф Ж/Д"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_transport": [
+        "flame"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "house_place",
+     "text": "Дом (что горит)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "apartment",
+       "label": "Квартира"
+      },
+      {
+       "id": "entrance",
+       "label": "Подъезд"
+      },
+      {
+       "id": "basement",
+       "label": "Подвал"
+      },
+      {
+       "id": "attic",
+       "label": "Чердак, кровля"
+      },
+      {
+       "id": "balcony",
+       "label": "Балкон"
+      },
+      {
+       "id": "chute",
+       "label": "Мусоропровод"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "house"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "building_place",
+     "text": "Здание / объект (что горит)",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "office",
+       "label": "Административное здание"
+      },
+      {
+       "id": "shop",
+       "label": "Торговый объект"
+      },
+      {
+       "id": "school",
+       "label": "Образовательное учреждение"
+      },
+      {
+       "id": "hospital",
+       "label": "Медицинское учреждение"
+      },
+      {
+       "id": "industrial",
+       "label": "Производство, склад"
+      },
+      {
+       "id": "garage",
+       "label": "Гараж, стоянка"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "building",
+        "hazard"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "place",
+     "text": "Место происшествия",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "tunnel",
+       "label": "Тоннель"
+      },
+      {
+       "id": "crossing",
+       "label": "Пешеходный переход"
+      }
+     ],
+     "showWhen": [
+      {
+       "where": [
+        "street"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "threat",
+     "text": "Угроза людям",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_street": [
+        "flame"
+       ]
+      },
+      {
+       "sign_transport": [
+        "flame"
+       ]
+      },
+      {
+       "where": [
+        "house",
+        "building",
+        "hazard"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "offence",
+     "text": "Правонарушение",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Есть правонарушение"
+      }
+     ],
+     "showWhen": [
+      {
+       "street_object": [
+        "garbage"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "medical",
+     "text": "Медицинская помощь",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_street": [
+        "flame"
+       ]
+      },
+      {
+       "sign_transport": [
+        "flame"
+       ]
+      },
+      {
+       "where": [
+        "house",
+        "building",
+        "hazard"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "offence_text",
+     "text": "Описание правонарушения",
+     "kind": "TEXT",
+     "options": [],
+     "showWhen": [
+      {
+       "offence": [
+        "yes"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "evacuation",
+     "text": "Требуется эвакуация",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_street": [
+        "flame"
+       ]
+      },
+      {
+       "sign_transport": [
+        "flame"
+       ]
+      },
+      {
+       "where": [
+        "house",
+        "building",
+        "hazard"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "gasified",
+     "text": "Проведена ли газификация",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      },
+      {
+       "id": "unknown",
+       "label": "Нет данных"
+      }
+     ],
+     "showWhen": [
+      {
+       "sign_street": [
+        "flame"
+       ]
+      },
+      {
+       "where": [
+        "house",
+        "building",
+        "hazard"
+       ]
+      }
+     ]
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "where": [
+       "street"
+      ],
+      "sign_street": [
+       "smell"
+      ]
+     },
+     "type": "fire.smoke"
+    },
+    {
+     "when": {
+      "where": [
+       "street"
+      ],
+      "street_object": [
+       "grass",
+       "park",
+       "forest",
+       "peat",
+       "tree"
+      ]
+     },
+     "type": "fire.grass"
+    },
+    {
+     "when": {
+      "where": [
+       "street"
+      ]
+     },
+     "type": "fire.garbage"
+    },
+    {
+     "when": {
+      "where": [
+       "transport"
+      ],
+      "sign_transport": [
+       "alarm"
+      ]
+     },
+     "type": "fire.alarm"
+    },
+    {
+     "when": {
+      "where": [
+       "transport"
+      ]
+     },
+     "type": "fire.vehicle"
+    },
+    {
+     "when": {
+      "where": [
+       "house"
+      ],
+      "sign_house": [
+       "smoke",
+       "smell"
+      ]
+     },
+     "type": "fire.smoke"
+    },
+    {
+     "when": {
+      "where": [
+       "house"
+      ],
+      "sign_house": [
+       "alarm"
+      ]
+     },
+     "type": "fire.alarm"
+    },
+    {
+     "when": {
+      "where": [
+       "house"
+      ],
+      "house_place": [
+       "chute"
+      ]
+     },
+     "type": "fire.smoke"
+    },
+    {
+     "when": {
+      "where": [
+       "house"
+      ]
+     },
+     "type": "fire.apartment"
+    },
+    {
+     "when": {
+      "where": [
+       "building",
+       "hazard"
+      ],
+      "sign_building": [
+       "alarm"
+      ]
+     },
+     "type": "fire.alarm"
+    },
+    {
+     "when": {
+      "where": [
+       "building",
+       "hazard"
+      ]
+     },
+     "type": "fire.building"
+    }
+   ],
+   "defaultType": "fire.building"
+  },
+  {
+   "topTypeId": "t102",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что происходит",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "fight",
+       "label": "Драка"
+      },
+      {
+       "id": "robbery",
+       "label": "Грабёж, кража, угон"
+      },
+      {
+       "id": "hooligan",
+       "label": "Хулиганство, нарушение тишины"
+      },
+      {
+       "id": "missing",
+       "label": "Пропал человек"
+      },
+      {
+       "id": "body",
+       "label": "Обнаружен труп"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "victims",
+     "text": "Пострадавшие",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "weapon",
+     "text": "Оружие, предметы",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Есть"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "showWhen": [
+      {
+       "what": [
+        "fight",
+        "robbery"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "what": [
+       "fight"
+      ]
+     },
+     "type": "fight"
+    },
+    {
+     "when": {
+      "what": [
+       "robbery"
+      ]
+     },
+     "type": "crime.robbery"
+    },
+    {
+     "when": {
+      "what": [
+       "missing"
+      ]
+     },
+     "type": "person.missing"
+    },
+    {
+     "when": {
+      "what": [
+       "body"
+      ]
+     },
+     "type": "person.body"
+    }
+   ],
+   "defaultType": "crime.hooligan"
+  },
+  {
+   "topTypeId": "t103",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что с пострадавшим",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "trauma",
+       "label": "Травма"
+      },
+      {
+       "id": "illness",
+       "label": "Внезапное заболевание"
+      },
+      {
+       "id": "unconscious",
+       "label": "Без сознания, не дышит"
+      },
+      {
+       "id": "suicide",
+       "label": "Попытка суицида"
+      },
+      {
+       "id": "birth",
+       "label": "Роды"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "conscious",
+     "text": "В сознании",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "count",
+     "text": "Сколько пострадавших",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "one",
+       "label": "Один"
+      },
+      {
+       "id": "several",
+       "label": "Несколько"
+      },
+      {
+       "id": "many",
+       "label": "Много"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "what": [
+       "trauma"
+      ]
+     },
+     "type": "medical.trauma"
+    },
+    {
+     "when": {
+      "what": [
+       "suicide"
+      ]
+     },
+     "type": "medical.suicide"
+    }
+   ],
+   "defaultType": "medical.illness"
+  },
+  {
+   "topTypeId": "t104",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где запах газа",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "indoor",
+       "label": "В помещении"
+      },
+      {
+       "id": "outdoor",
+       "label": "На улице"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "victims",
+     "text": "Пострадавшие",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "gas.smell"
+  },
+  {
+   "topTypeId": "accident_utility",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что случилось",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "water",
+       "label": "Прорыв воды, залив"
+      },
+      {
+       "id": "elevator",
+       "label": "Застревание в лифте"
+      },
+      {
+       "id": "power",
+       "label": "Отключение электроэнергии"
+      },
+      {
+       "id": "manhole",
+       "label": "Открытый люк"
+      },
+      {
+       "id": "tree",
+       "label": "Поваленное дерево"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "people_inside",
+     "text": "Люди заблокированы",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "showWhen": [
+      {
+       "what": [
+        "elevator"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "what": [
+       "water"
+      ]
+     },
+     "type": "utility.water"
+    },
+    {
+     "when": {
+      "what": [
+       "elevator"
+      ]
+     },
+     "type": "utility.elevator"
+    },
+    {
+     "when": {
+      "what": [
+       "power"
+      ]
+     },
+     "type": "utility.power"
+    },
+    {
+     "when": {
+      "what": [
+       "manhole"
+      ]
+     },
+     "type": "manhole.open"
+    },
+    {
+     "when": {
+      "what": [
+       "tree"
+      ]
+     },
+     "type": "tree.fallen"
+    }
+   ],
+   "defaultType": "top.accident_utility"
+  },
+  {
+   "topTypeId": "accident_transport",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что случилось",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "dtp",
+       "label": "ДТП"
+      },
+      {
+       "id": "water",
+       "label": "Падение транспорта в воду"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "what": [
+       "dtp"
+      ]
+     },
+     "type": "dtp.injured"
+    },
+    {
+     "when": {
+      "what": [
+       "water"
+      ]
+     },
+     "type": "dtp.water"
+    }
+   ],
+   "defaultType": "top.accident_transport"
+  },
+  {
+   "topTypeId": "dtp",
+   "questions": [
+    {
+     "id": "victims",
+     "text": "Пострадавшие",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      },
+      {
+       "id": "water",
+       "label": "Транспорт в воде"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "blocked",
+     "text": "Заблокированные в транспорте",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "showWhen": [
+      {
+       "victims": [
+        "yes"
+       ]
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "vehicles",
+     "text": "Транспорт",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "cars",
+       "label": "Легковые"
+      },
+      {
+       "id": "truck",
+       "label": "Грузовой"
+      },
+      {
+       "id": "public",
+       "label": "Общественный"
+      },
+      {
+       "id": "pedestrian",
+       "label": "Наезд на пешехода"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "victims": [
+       "no"
+      ]
+     },
+     "type": "dtp.no_injured"
+    },
+    {
+     "when": {
+      "victims": [
+       "water"
+      ]
+     },
+     "type": "dtp.water"
+    }
+   ],
+   "defaultType": "dtp.injured"
+  },
+  {
+   "topTypeId": "person_danger",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "water",
+       "label": "На воде, в воде"
+      },
+      {
+       "id": "height",
+       "label": "На высоте"
+      },
+      {
+       "id": "locked",
+       "label": "Заблокирован в помещении"
+      },
+      {
+       "id": "street",
+       "label": "На улице"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "conscious",
+     "text": "В сознании",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      },
+      {
+       "id": "unknown",
+       "label": "Неизвестно"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "where": [
+       "water"
+      ]
+     },
+     "type": "water.rescue"
+    }
+   ],
+   "defaultType": "person.danger"
+  },
+  {
+   "topTypeId": "child_danger",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "street",
+       "label": "На улице"
+      },
+      {
+       "id": "home",
+       "label": "Дома"
+      },
+      {
+       "id": "water",
+       "label": "На воде"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "where": [
+       "water"
+      ]
+     },
+     "type": "water.rescue"
+    }
+   ],
+   "defaultType": "person.danger"
+  },
+  {
+   "topTypeId": "explosion",
+   "questions": [
+    {
+     "id": "victims",
+     "text": "Пострадавшие",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "fire",
+     "text": "Есть возгорание",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "explosion"
+  },
+  {
+   "topTypeId": "terror_threat",
+   "questions": [
+    {
+     "id": "source",
+     "text": "Источник информации",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "caller",
+       "label": "Заявитель видел"
+      },
+      {
+       "id": "phone",
+       "label": "Сообщение по телефону"
+      },
+      {
+       "id": "found",
+       "label": "Обнаружен предмет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "explosion.threat"
+  },
+  {
+   "topTypeId": "collapse",
+   "questions": [
+    {
+     "id": "victims",
+     "text": "Пострадавшие",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "blocked",
+     "text": "Люди под завалом",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "yes",
+       "label": "Да"
+      },
+      {
+       "id": "no",
+       "label": "Нет"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "collapse.threat"
+  },
+  {
+   "topTypeId": "collapse_threat",
+   "questions": [
+    {
+     "id": "object",
+     "text": "Объект",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "house",
+       "label": "Жилой дом"
+      },
+      {
+       "id": "building",
+       "label": "Здание"
+      },
+      {
+       "id": "structure",
+       "label": "Сооружение"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "collapse.threat"
+  },
+  {
+   "topTypeId": "animals",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что происходит",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "attack",
+       "label": "Нападение животного"
+      },
+      {
+       "id": "stray",
+       "label": "Бродячее животное"
+      },
+      {
+       "id": "wild",
+       "label": "Дикое животное в городе"
+      },
+      {
+       "id": "dead",
+       "label": "Труп животного"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "animal"
+  },
+  {
+   "topTypeId": "death",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "home",
+       "label": "В квартире"
+      },
+      {
+       "id": "street",
+       "label": "На улице"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "person.body"
+  },
+  {
+   "topTypeId": "water_accum",
+   "questions": [
+    {
+     "id": "where",
+     "text": "Где",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "road",
+       "label": "На проезжей части"
+      },
+      {
+       "id": "yard",
+       "label": "Во дворе"
+      },
+      {
+       "id": "basement",
+       "label": "В подвале"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "utility.water"
+  },
+  {
+   "topTypeId": "nature",
+   "questions": [
+    {
+     "id": "what",
+     "text": "Что случилось",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "tree",
+       "label": "Поваленное дерево"
+      },
+      {
+       "id": "wind",
+       "label": "Ураган, сорвана кровля"
+      },
+      {
+       "id": "flood",
+       "label": "Подтопление"
+      },
+      {
+       "id": "other",
+       "label": "Другое"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "what": [
+       "flood"
+      ]
+     },
+     "type": "utility.water"
+    }
+   ],
+   "defaultType": "tree.fallen"
+  },
+  {
+   "topTypeId": "wrong_number",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "wrong_number"
+  },
+  {
+   "topTypeId": "cancel",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "cancel"
+  },
+  {
+   "topTypeId": "test_call",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "test_call"
+  },
+  {
+   "topTypeId": "consult",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "consult"
+  },
+  {
+   "topTypeId": "foreign",
+   "questions": [
+    {
+     "id": "language",
+     "text": "Язык",
+     "kind": "CHOICE",
+     "options": [
+      {
+       "id": "en",
+       "label": "Английский"
+      },
+      {
+       "id": "other",
+       "label": "Другой"
+      }
+     ],
+     "synthetic": true
+    },
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "foreign"
+  },
+  {
+   "topTypeId": "accident_hydro",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.accident_hydro"
+  },
+  {
+   "topTypeId": "accident_hazard",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.accident_hazard"
+  },
+  {
+   "topTypeId": "gratitude",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.gratitude"
+  },
+  {
+   "topTypeId": "uav",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.uav"
+  },
+  {
+   "topTypeId": "internal_call",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.internal_call"
+  },
+  {
+   "topTypeId": "repeat_call",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.repeat_call"
+  },
+  {
+   "topTypeId": "road_obstacle",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.road_obstacle"
+  },
+  {
+   "topTypeId": "complaint",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.complaint"
+  },
+  {
+   "topTypeId": "non_target",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.non_target"
+  },
+  {
+   "topTypeId": "feedback",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.feedback"
+  },
+  {
+   "topTypeId": "shift_handover",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.shift_handover"
+  },
+  {
+   "topTypeId": "help_services",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.help_services"
+  },
+  {
+   "topTypeId": "other",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.other"
+  },
+  {
+   "topTypeId": "radiation",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.radiation"
+  },
+  {
+   "topTypeId": "thermometer",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.thermometer"
+  },
+  {
+   "topTypeId": "gathering",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.gathering"
+  },
+  {
+   "topTypeId": "social_help",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.social_help"
+  },
+  {
+   "topTypeId": "info_101",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_101"
+  },
+  {
+   "topTypeId": "info_102",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_102"
+  },
+  {
+   "topTypeId": "info_103",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_103"
+  },
+  {
+   "topTypeId": "info_104",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_104"
+  },
+  {
+   "topTypeId": "info_gibdd",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_gibdd"
+  },
+  {
+   "topTypeId": "info_gorhoz",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_gorhoz"
+  },
+  {
+   "topTypeId": "info_mchs",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.info_mchs"
+  },
+  {
+   "topTypeId": "tech_failure",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.tech_failure"
+  },
+  {
+   "topTypeId": "training",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.training"
+  },
+  {
+   "topTypeId": "emergency_notice",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.emergency_notice"
+  },
+  {
+   "topTypeId": "hazmat_threat",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.hazmat_threat"
+  },
+  {
+   "topTypeId": "eco",
+   "questions": [
+    {
+     "id": "description",
+     "text": "Описание",
+     "kind": "TEXT",
+     "options": []
+    }
+   ],
+   "rules": [],
+   "defaultType": "top.eco"
+  }
+ ]
+}

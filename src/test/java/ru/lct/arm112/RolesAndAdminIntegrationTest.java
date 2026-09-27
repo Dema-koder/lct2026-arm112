@@ -53,6 +53,34 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
     }
 
     @Test
+    void managesRuntimeServicesAndKeepsInfrastructureReadOnly() throws Exception {
+        String admin = login("admin", "admin");
+        String teacher = login("teacher", "teacher");
+
+        HttpResponse<String> services = get("/api/v1/admin/system/services", admin);
+        assertThat(services.statusCode()).as(services.body()).isEqualTo(200);
+        assertThat(services.body()).contains("\"id\":\"backend\"", "\"id\":\"database\"",
+                "\"id\":\"simulation\"", "\"id\":\"telephony\"", "\"id\":\"realtime\"",
+                "\"id\":\"jobs\"");
+        assertThat(get("/api/v1/admin/system/services", teacher).statusCode()).isEqualTo(403);
+
+        HttpResponse<String> stopped = post("/api/v1/admin/system/services/jobs/actions",
+                "{\"action\":\"STOP\"}", admin, null);
+        assertThat(stopped.statusCode()).as(stopped.body()).isEqualTo(200);
+        assertThat(json(stopped).get("state").asText()).isEqualTo("STOPPED");
+        assertThat(json(stopped).get("allowedActions").toString()).contains("START");
+
+        HttpResponse<String> started = post("/api/v1/admin/system/services/jobs/actions",
+                "{\"action\":\"START\"}", admin, null);
+        assertThat(started.statusCode()).as(started.body()).isEqualTo(200);
+        assertThat(json(started).get("state").asText()).isEqualTo("RUNNING");
+
+        HttpResponse<String> protectedService = post("/api/v1/admin/system/services/backend/actions",
+                "{\"action\":\"STOP\"}", admin, null);
+        assertThat(protectedService.statusCode()).isEqualTo(409);
+    }
+
+    @Test
     void managesUsersAndBackups() throws Exception {
         String admin = login("admin", "admin");
         String loginName = createTrainee(admin, "4");

@@ -41,7 +41,9 @@
     "synonyms": [
       "пожар",
       "101",
-      "здание"
+      "здание",
+      "строение",
+      "постройка"
     ],
     "classifierNumber": "1060301",
     "classifierType": "пожар: административное здание",
@@ -320,7 +322,10 @@
       "суицид",
       "самоубий",
       "хочет прыгнуть",
-      "повесил"
+      "повесил",
+      "спрыгн",
+      "на парапете",
+      "сброситься"
     ],
     "classifierNumber": "17100800",
     "classifierType": "Попытка суицида",
@@ -583,5 +588,253 @@
     "classifierNumber": null,
     "classifierType": null,
     "surveyCardId": "foreign"
+  },
+  {
+    "id": "top.accident_utility",
+    "label": "Аварии и происшествия в городском хозяйстве",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_transport",
+    "label": "Аварии и происшествия на транспортных объектах",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_hydro",
+    "label": "Аварии на гидротехнических сооружениях",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.accident_hazard",
+    "label": "Аварии на опасных и производственных объектах",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.gratitude",
+    "label": "Благодарность службам",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.uav",
+    "label": "БПЛА",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.internal_call",
+    "label": "Внутренний звонок (звонок от работников)",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.repeat_call",
+    "label": "Дополнительный звонок от заявителя",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.road_obstacle",
+    "label": "Дорожные помехи",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.complaint",
+    "label": "Жалоба на действие или бездействие служб",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.non_target",
+    "label": "Нецелевой вызов",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.feedback",
+    "label": "Отзыв о работе 112 Москва",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.shift_handover",
+    "label": "Передача дежурства",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.help_services",
+    "label": "Помощь службам",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.other",
+    "label": "Прочие происшествия",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.radiation",
+    "label": "Радиация",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.thermometer",
+    "label": "Разбитый градусник",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.gathering",
+    "label": "Сбор",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.social_help",
+    "label": "Социальная помощь",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_101",
+    "label": "Справка 101",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_102",
+    "label": "Справка 102",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_103",
+    "label": "Справка 103",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_104",
+    "label": "Справка 104",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_gibdd",
+    "label": "Справка ГИБДД",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_gorhoz",
+    "label": "Справка Городское хозяйство",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.info_mchs",
+    "label": "Справка МЧС",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.tech_failure",
+    "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.training",
+    "label": "Тренировка",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.emergency_notice",
+    "label": "Уведомление о ЧС",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.hazmat_threat",
+    "label": "Угроза выброса опасных веществ и радиации",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
+  },
+  {
+    "id": "top.eco",
+    "label": "Экологическое происшествие",
+    "category": "OTHER",
+    "frequent": false,
+    "significant": false,
+    "synonyms": []
   }
 ]

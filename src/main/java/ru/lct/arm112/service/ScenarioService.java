@@ -35,9 +35,14 @@ public class ScenarioService {
     private final ObjectMapper objectMapper;
     private final ReferenceDataService references;
     private final LanguageChecker language;
+    private final AddressReferenceService addresses;
+    private final ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier;
 
     public ScenarioService(ScenarioRepository repository, ObjectMapper objectMapper, ReferenceDataService references,
-                           LanguageChecker language) {
+                           LanguageChecker language, AddressReferenceService addresses,
+                           ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier) {
+        this.addresses = addresses;
+        this.classifier = classifier;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.references = references;
@@ -51,7 +56,23 @@ public class ScenarioService {
             learnPlaces();
             return;
         }
-        try (InputStream stream = new ClassPathResource("seed/scenarios.json").getInputStream()) {
+        int total = load("seed/scenarios.json") + load("seed/scenarios-generated.json");
+        log.info("Загружено сценариев в библиотеку: {}", total);
+        learnPlaces();
+    }
+
+    /**
+     * Загрузка набора сценариев из ресурса.
+     *
+     * <p>Наборов два: билеты заказчика и банк, сгенерированный заранее вне контура.
+     * Второй поставляется неподтверждённым — заказчик требовал, чтобы сгенерированное
+     * всегда проходило через преподавателя (q-and-a.md §3). Отсутствие файла не ошибка:
+     * банк необязателен, приложение работает и на одних билетах.
+     */
+    private int load(String resource) {
+        ClassPathResource file = new ClassPathResource(resource);
+        if (!file.exists()) return 0;
+        try (InputStream stream = file.getInputStream()) {
             JsonNode root = objectMapper.readTree(stream);
             int count = 0;
             for (JsonNode node : root) {
@@ -69,11 +90,10 @@ public class ScenarioService {
                 repository.insert(scenario);
                 count++;
             }
-            log.info("Загружено {} сценариев из билетов", count);
+            return count;
         } catch (IOException exception) {
-            throw new IllegalStateException("Не удалось загрузить seed/scenarios.json", exception);
+            throw new IllegalStateException("Не удалось загрузить " + resource, exception);
         }
-        learnPlaces();
     }
 
     /** Сценарии, засеянные до появления названий (V7): проставить название по умолчанию один раз. */
@@ -104,6 +124,8 @@ public class ScenarioService {
             names.add(a.locality());
         }
         language.learnPlaces(names);
+        // тот же список названий — справочник существующих улиц для сверки адреса
+        addresses.learn(names);
     }
 
     private static List<String> toList(JsonNode node) {
@@ -162,8 +184,11 @@ public class ScenarioService {
     }
 
     public Scenario confirm(String id, UUID actor) {
-        require(id);
+        Scenario scenario = require(id);
         repository.confirmReference(id, actor);
+        // Подтверждённый преподавателем эталон — надёжная разметка: она доучивает подбор типа.
+        // Так правки преподавателя влияют на систему, как и просил заказчик (q-and-a.md §8).
+        classifier.learn(scenario.callerText(), scenario.expectedIncidentTypes());
         return require(id);
     }
 

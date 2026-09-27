@@ -1,0 +1,6 @@
+﻿code;label;value;group_median;percentile;hint
+seconds_to_address;Время до ввода адреса;67,90;64,00;50;
+seconds_to_type;Время до выбора типа;67,90;64,00;50;
+type_changes;Смен типа за карточку;0,00;0,00;0;
+idle_seconds;Паузы без работы;0,00;0,00;0;
+spent_seconds;Время на карточку;67,90;64,00;50;

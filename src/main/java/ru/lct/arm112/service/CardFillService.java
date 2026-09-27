@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.*;
 import ru.lct.arm112.security.CurrentUser;
+import ru.lct.arm112.persistence.TrainingStateStore.IncomingCallState;
 import ru.lct.arm112.service.TrainingEngine.SessionState;
 import ru.lct.arm112.service.assessment.CardFillAssessor;
 
@@ -53,7 +54,10 @@ public class CardFillService {
         }
     }
 
-    /** Следующая вводная из очереди: черновик с таймером 3 минуты. Незакрытый черновик возвращается как есть. */
+    /**
+     * Принятие входящего вызова: черновик по сценарию звонящего вызова, таймер 3 минуты.
+     * Незакрытый черновик возвращается как есть; без звонящего вызова — 409.
+     */
     public CardDraft start(UUID sessionId, CurrentUser actor) {
         SessionState state = engine.state(sessionId, actor);
         synchronized (state) {
@@ -63,11 +67,14 @@ public class CardFillService {
             }
             CardDraft open = state.drafts.values().stream().filter(d -> "DRAFT".equals(d.state())).findFirst().orElse(null);
             if (open != null) return withHints(state, open);
-            String scenarioId = engine.nextScenario(state);
-            if (scenarioId == null) {
-                throw new ApiException(HttpStatus.CONFLICT, "NO_MORE_SCENARIOS", "Все вводные занятия отработаны");
+            IncomingCallState call = engine.answerCall(state);
+            if (call == null) {
+                if (state.pending.isEmpty() && state.callQueue.isEmpty()) {
+                    throw new ApiException(HttpStatus.CONFLICT, "NO_MORE_SCENARIOS", "Все вводные занятия отработаны");
+                }
+                throw new ApiException(HttpStatus.CONFLICT, "NO_INCOMING_CALL", "Входящего вызова сейчас нет — дождитесь звонка");
             }
-            Scenario scenario = scenarios.require(scenarioId);
+            Scenario scenario = scenarios.require(call.scenarioId());
             Instant now = Instant.now();
             UUID id = UUID.randomUUID();
             ScenarioCaller caller = scenario.caller();
@@ -75,11 +82,11 @@ public class CardFillService {
                     "112-2026-" + String.format("%06d", (int) (Math.abs(id.getLeastSignificantBits()) % 1_000_000)),
                     now, null, now.plusSeconds(settings.integer(SettingsService.PROCESSING_SECONDS, 180)), "DRAFT",
                     scenario.callerText(),
-                    new DraftPhones(caller == null ? null : caller.phone(), null, null),
+                    new DraftPhones(call.phone(), null, null),
                     new DraftCaller(caller == null ? null : caller.fullName(), "заявитель"),
                     new FormalAddress("Россия", null, null, null, null, null, null, null, null, null, null, null, null, null, null),
                     new DraftFlags(false, null, false, false, false, false),
-                    List.of(), List.of(), "", List.of(), List.of(), scenario.title());
+                    List.of(), List.of(), "", List.of(), List.of(), scenario.title(), scenario.rawAddress(), null);
             engine.registerDraft(state, draft);
             engine.publishDraft(state, draft, "draft.created");
             engine.persist(state);
@@ -95,33 +102,66 @@ public class CardFillService {
             if (!"DRAFT".equals(current.state())) {
                 throw new ApiException(HttpStatus.CONFLICT, "DRAFT_SAVED", "Карточка уже сохранена");
             }
-            List<String> types = patch.incidentTypeIds() != null ? patch.incidentTypeIds() : current.incidentTypeIds();
+            String topTypeId = patch.topTypeId() != null ? patch.topTypeId() : current.topTypeId();
+            if (patch.topTypeId() != null && references.surveyTree(patch.topTypeId()) == null) {
+                throw TrainingEngine.validation("topTypeId", "UNKNOWN", "Неизвестный тип происшествия: " + patch.topTypeId());
+            }
+            List<SurveyAnswer> answers = patch.surveyAnswers() != null ? patch.surveyAnswers() : current.surveyAnswers();
+            List<String> types;
+            if (patch.incidentTypeIds() != null) {
+                types = patch.incidentTypeIds();
+            } else if (topTypeId != null) {
+                // тип ЕКП выводится из ответов опросной карты, как в ПОВ-112
+                String resolved = references.resolveIncidentType(topTypeId, answerMap(answers));
+                types = resolved == null ? current.incidentTypeIds() : List.of(resolved);
+            } else {
+                types = current.incidentTypeIds();
+            }
             for (String typeId : types) {
                 if (references.incidentType(typeId) == null) {
                     throw TrainingEngine.validation("incidentTypeIds", "UNKNOWN", "Неизвестный тип происшествия: " + typeId);
                 }
             }
-            List<DraftService> services = recomputeServices(current.services(), types, patch.extraServiceCodes());
+            FormalAddress address = patch.address() != null ? patch.address() : current.address();
+            List<DraftService> services = recomputeServices(current.services(), types, patch.extraServiceCodes(), address);
             CardDraft updated = new CardDraft(current.id(), current.sessionId(), current.scenarioId(), current.number(),
                     current.startedAt(), null, current.deadlineAt(), "DRAFT", current.callerText(),
                     patch.phones() != null ? patch.phones() : current.phones(),
                     patch.caller() != null ? patch.caller() : current.caller(),
                     patch.address() != null ? patch.address() : current.address(),
                     patch.flags() != null ? patch.flags() : current.flags(),
-                    List.copyOf(types),
-                    patch.surveyAnswers() != null ? patch.surveyAnswers() : current.surveyAnswers(),
+                    List.copyOf(types), answers,
                     patch.description() != null ? patch.description() : current.description(),
-                    services, List.of(), current.scenarioTitle());
+                    services, List.of(), current.scenarioTitle(), current.callerAddress(), topTypeId);
             state.drafts.put(draftId, updated);
-            engine.publishDraft(state, updated, "draft.updated");
+            engine.trackDraftChange(state, current, updated, changedFields(current, updated));
             engine.persist(state);
             return withHints(state, updated);
         }
     }
 
+    /**
+     * Какие поля карточки изменила эта правка.
+     *
+     * <p>Имя поля уходит в событие {@code draft.updated}: по нему восстанавливается
+     * порядок заполнения — сначала адрес и тип или сразу описание.
+     */
+    private static List<String> changedFields(CardDraft before, CardDraft after) {
+        List<String> changed = new ArrayList<>();
+        if (!java.util.Objects.equals(before.address(), after.address())) changed.add("address");
+        if (!before.incidentTypeIds().equals(after.incidentTypeIds())) changed.add("incidentTypeIds");
+        if (!java.util.Objects.equals(before.description(), after.description())) changed.add("description");
+        if (!java.util.Objects.equals(before.phones(), after.phones())) changed.add("phones");
+        if (!java.util.Objects.equals(before.caller(), after.caller())) changed.add("caller");
+        if (!java.util.Objects.equals(before.flags(), after.flags())) changed.add("flags");
+        if (!before.surveyAnswers().equals(after.surveyAnswers())) changed.add("surveyAnswers");
+        if (!before.services().equals(after.services())) changed.add("services");
+        return changed;
+    }
+
     public CardDraft save(UUID draftId, String idempotencyKey, CurrentUser actor) {
         SessionState state = engine.sessionOfDraft(draftId, actor);
-        return engine.idempotent(state, "save-draft:" + draftId, idempotencyKey, "SAVE", () -> {
+        return engine.idempotent(state, "save-draft:" + draftId, idempotencyKey, "SAVE", CardDraft.class, () -> {
             synchronized (state) {
                 requireActive(state);
                 CardDraft current = state.drafts.get(draftId);
@@ -135,7 +175,8 @@ public class CardFillService {
                 CardDraft saved = new CardDraft(current.id(), current.sessionId(), current.scenarioId(), current.number(),
                         current.startedAt(), Instant.now(), current.deadlineAt(), "SAVED", current.callerText(),
                         current.phones(), current.caller(), current.address(), current.flags(), current.incidentTypeIds(),
-                        current.surveyAnswers(), current.description(), current.services(), List.of(), current.scenarioTitle());
+                        current.surveyAnswers(), current.description(), current.services(), List.of(), current.scenarioTitle(),
+                        current.callerAddress(), current.topTypeId());
                 state.drafts.put(draftId, saved);
                 // Сохранённая карточка становится сценарием для режима действий (ТЗ, сценарий 3).
                 Scenario base = scenarios.require(saved.scenarioId());
@@ -143,9 +184,11 @@ public class CardFillService {
                         saved.services().stream().map(DraftService::code).toList(), actor.id());
                 engine.publishDraft(state, saved, "draft.saved");
                 // Последняя вводная сохранена — занятие завершается само, без лишней кнопки (решение №11).
-                if (state.pending.isEmpty() && state.drafts.values().stream().allMatch(d -> "SAVED".equals(d.state()))) {
+                if (engine.fillFlowFinished(state)) {
                     engine.complete(state);
                 } else {
+                    // оператор освободился — следующая вводная приходит и дозванивается сразу
+                    engine.afterDraftSaved(state, Instant.now());
                     engine.persist(state);
                 }
                 return saved;
@@ -157,8 +200,19 @@ public class CardFillService {
      * Службы подбираются автоматически по ЕКП для выбранных типов; добавленные вручную остаются,
      * удалить автоматическую нельзя — как в оригинале.
      */
-    private List<DraftService> recomputeServices(List<DraftService> current, List<String> types, List<String> extra) {
-        Set<String> auto = new LinkedHashSet<>(references.servicesFor(types));
+    /** Ответы опросной карты в вид «вопрос → выбранные варианты» для правил вывода типа. */
+    private static java.util.Map<String, List<String>> answerMap(List<SurveyAnswer> answers) {
+        java.util.Map<String, List<String>> map = new java.util.LinkedHashMap<>();
+        for (SurveyAnswer a : answers) {
+            if (a.optionId() == null) continue;
+            map.computeIfAbsent(a.questionId(), k -> new ArrayList<>()).add(a.optionId());
+        }
+        return map;
+    }
+
+    private List<DraftService> recomputeServices(List<DraftService> current, List<String> types, List<String> extra,
+                                                 FormalAddress address) {
+        Set<String> auto = new LinkedHashSet<>(references.servicesFor(types, address));
         Set<String> manual = new LinkedHashSet<>();
         for (DraftService s : current) if (!s.auto()) manual.add(s.code());
         if (extra != null) manual.addAll(extra);
@@ -180,7 +234,8 @@ public class CardFillService {
         return new CardDraft(draft.id(), draft.sessionId(), draft.scenarioId(), draft.number(), draft.startedAt(),
                 draft.savedAt(), draft.deadlineAt(), draft.state(), draft.callerText(), draft.phones(), draft.caller(),
                 draft.address(), draft.flags(), draft.incidentTypeIds(), draft.surveyAnswers(), draft.description(),
-                draft.services(), assessor.hints(draft, scenario), draft.scenarioTitle());
+                draft.services(), assessor.hints(draft, scenario), draft.scenarioTitle(), draft.callerAddress(),
+                draft.topTypeId());
     }
 
     private static void requireActive(SessionState state) {

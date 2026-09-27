@@ -1,0 +1,2 @@
+﻿model;prompt_tok_per_s;gen_tok_per_s;produced;accepted;accept_pct;unique;with_foreign;batch_seconds;seconds_per_scenario;debrief_seconds;debrief_foreign;debrief_swapped;rejections
+qwen2.5-7b-q4;15,39;3,23;12;12;100,00;12;0;110,60;9,22;88,43;нет;нет;{}

@@ -10,3 +10,7 @@ frontend/tsconfig.tsbuildinfo
 backups/
 materials-store/
 logs/
+benchmarks/golden-ci.csv
+models/
+improvements/ChatExport_*/
+offsite-backups/

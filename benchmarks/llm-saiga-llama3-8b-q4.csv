@@ -1,0 +1,2 @@
+﻿model;prompt_tok_per_s;gen_tok_per_s;produced;accepted;accept_pct;unique;with_foreign;batch_seconds;seconds_per_scenario;debrief_seconds;debrief_foreign;debrief_swapped;rejections
+saiga-llama3-8b-q4;15,05;3,45;12;10;83,33;12;0;156,90;13,08;81,92;да;нет;{TYPE_CONTRADICTS_TEXT=1, TYPE_LEAKED=1}

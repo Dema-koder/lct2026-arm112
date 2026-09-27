@@ -20,6 +20,7 @@ import ru.lct.arm112.service.CardFillService;
 import ru.lct.arm112.service.RatingService;
 import ru.lct.arm112.service.ReferenceDataService;
 import ru.lct.arm112.service.TrainingEngine;
+import ru.lct.arm112.service.debrief.DebriefRepository;
 import ru.lct.arm112.service.UserService;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ import static ru.lct.arm112.api.ApiModels.*;
 @RequestMapping("/api/v1")
 public class TraineeController {
     private final TrainingEngine engine;
+    private final DebriefRepository debriefs;
     private final CardFillService cardFill;
     private final ReferenceDataService references;
     private final SessionRepository sessions;
@@ -47,7 +49,9 @@ public class TraineeController {
 
     public TraineeController(TrainingEngine engine, CardFillService cardFill, ReferenceDataService references,
                              SessionRepository sessions, LessonRepository lessons, AssessmentRepository assessments,
-                             MaterialRepository materials, UserService users, RatingService ratings) {
+                             MaterialRepository materials, UserService users, RatingService ratings,
+                             DebriefRepository debriefs) {
+        this.debriefs = debriefs;
         this.engine = engine;
         this.cardFill = cardFill;
         this.references = references;
@@ -77,6 +81,26 @@ public class TraineeController {
         return references.search(query);
     }
 
+    /** Список «что случилось?» — типы верхнего уровня ПОВ-112. */
+    @GetMapping("/references/card-types")
+    public List<TopTypeItem> cardTypes(@RequestParam(required = false) String query) {
+        return references.searchTopTypes(query);
+    }
+
+    /** Опросная карта типа верхнего уровня с ветвлением вопросов. */
+    @GetMapping("/references/survey-trees/{topTypeId}")
+    public SurveyTree surveyTree(@PathVariable String topTypeId) {
+        SurveyTree tree = references.surveyTree(topTypeId);
+        if (tree == null) throw TrainingEngine.notFound("Опросная карта не найдена: " + topTypeId);
+        return tree;
+    }
+
+    /** Полный справочник служб ПОВ-112 с видом и территорией. */
+    @GetMapping("/references/services")
+    public List<ServiceItem> serviceCatalog() {
+        return references.serviceCatalog();
+    }
+
     @GetMapping("/references/survey-cards/{incidentTypeId}")
     public SurveyCard surveyCard(@PathVariable String incidentTypeId) {
         return references.surveyCard(incidentTypeId);
@@ -104,6 +128,12 @@ public class TraineeController {
     public SubmitResponse submit(@PathVariable UUID sessionId,
                                  @RequestHeader("Idempotency-Key") String idempotencyKey, CurrentUser actor) {
         return engine.submit(sessionId, idempotencyKey, actor);
+    }
+
+    /** Журнал оператора 112: свои сохранённые карточки и фоновые карточки смены. */
+    @GetMapping("/training-sessions/{sessionId}/journal")
+    public JournalPage journal(@PathVariable UUID sessionId, CurrentUser actor) {
+        return engine.journal(sessionId, actor);
     }
 
     @GetMapping("/training-sessions/{sessionId}/events")
@@ -193,6 +223,20 @@ public class TraineeController {
     @GetMapping("/assessments/{assessmentId}")
     public Assessment assessment(@PathVariable UUID assessmentId, CurrentUser actor) {
         return engine.assessment(assessmentId, actor);
+    }
+
+    /**
+     * Персональный разбор занятия. Отдельным запросом, а не полем в оценке:
+     * разбор появляется позже и может не появиться вовсе, а контракт оценки
+     * запрещает лишние поля.
+     */
+    @GetMapping("/assessments/{assessmentId}/debrief")
+    public Debrief debrief(@PathVariable UUID assessmentId, CurrentUser actor) {
+        // доступ тот же, что к самой оценке: проверка внутри
+        engine.assessment(assessmentId, actor);
+        return debriefs.find(assessmentId)
+                .map(d -> new Debrief(d.assessmentId(), "READY", d.text(), d.source(), d.createdAt()))
+                .orElseGet(() -> new Debrief(assessmentId, "PENDING", null, null, null));
     }
 
     @GetMapping("/trainee/results")

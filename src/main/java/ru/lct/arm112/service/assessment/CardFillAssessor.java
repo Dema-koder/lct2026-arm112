@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import ru.lct.arm112.service.assessment.AssessmentResult.CardBreakdown;
 
 /**
  * Оценка режима заполнения карточки: адрес 40, тип 20, службы 20, время 15, грамотность 5.
@@ -27,14 +28,35 @@ public class CardFillAssessor {
 
     private final LanguageChecker language;
     private final ReferenceDataService references;
+    private final StreetDictionary streets;
+    private final ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier;
 
-    public CardFillAssessor(LanguageChecker language, ReferenceDataService references) {
+    public CardFillAssessor(LanguageChecker language, ReferenceDataService references, StreetDictionary streets,
+                            ru.lct.arm112.service.analytics.IncidentTypeClassifier classifier) {
         this.language = language;
         this.references = references;
+        this.streets = streets;
+        this.classifier = classifier;
     }
 
-    public Assessment assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios) {
+        return assess(sessionId, drafts, scenarios, 0, 0, java.util.Map.of());
+    }
+
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
+                                   int missedCalls, int lostCalls) {
+        return assess(sessionId, drafts, scenarios, missedCalls, lostCalls, java.util.Map.of());
+    }
+
+    /**
+     * @param missedCalls сколько раз входящий вызов не был принят за время звонка (заявитель перезвонил)
+     * @param lostCalls   сколько вызовов потеряно окончательно (заявитель не дозвонился)
+     */
+    public AssessmentResult assess(UUID sessionId, List<CardDraft> drafts, List<Scenario> scenarios,
+                                   int missedCalls, int lostCalls,
+                                   java.util.Map<UUID, ru.lct.arm112.persistence.TrainingStateStore.DraftTrajectory> trajectories) {
         List<AssessmentIssue> issues = new ArrayList<>();
+        List<CardBreakdown> breakdown = new ArrayList<>();
         List<String> recommendations = new ArrayList<>();
         double address = 0, type = 0, services = 0, timing = 0, lang = 0;
         int syntaxErrors = 0;
@@ -42,23 +64,37 @@ public class CardFillAssessor {
 
         for (CardDraft draft : drafts) {
             Scenario scenario = scenarios.stream().filter(s -> s.id().equals(draft.scenarioId())).findFirst().orElse(null);
-            if (scenario == null) { address += 100; type += 100; services += 100; timing += 100; lang += 100; continue; }
+            if (scenario == null) {
+                address += 100; type += 100; services += 100; timing += 100; lang += 100;
+                breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), 100.0, 100.0, 100.0, 100.0, 100.0,
+                        null, null, null, null, null, null, null, 0, 0));
+                continue;
+            }
 
-            AddressMatcher.Result addr = AddressMatcher.score(draft.address(), scenario.expectedAddress(), draft.id());
+            AddressMatcher.Result addr = AddressMatcher.score(draft.address(), scenario.expectedAddress(), draft.id(), streets);
             address += addr.score();
             issues.addAll(addr.issues());
 
-            double typeScore = jaccard(draft.incidentTypeIds(), scenario.expectedIncidentTypes());
+            TypeMatch match = matchTypes(draft.incidentTypeIds(), scenario.expectedIncidentTypes());
+            double typeScore = match.score();
             if (scenario.expectedIncidentTypes().isEmpty()) typeScore = draft.incidentTypeIds().isEmpty() ? 0 : 100;
             if (typeScore < 100 && !scenario.expectedIncidentTypes().isEmpty()) {
-                issues.add(new AssessmentIssue("INCIDENT_TYPE_MISMATCH", typeScore == 0 ? "CRITICAL" : "WARNING",
-                        typeScore == 0 ? "Тип происшествия определён неверно" : "Тип происшествия определён не полностью",
+                // Severity определяется точным попаданием, а не баллом: тип, угаданный только
+                // категорией, остаётся неверным — по нему поедет другой состав служб.
+                issues.add(new AssessmentIssue("INCIDENT_TYPE_MISMATCH", match.exact() ? "WARNING" : "CRITICAL",
+                        !match.exact() && match.sameCategory()
+                                ? "Тип происшествия определён неверно, хотя категория выбрана правильно"
+                                : match.exact() ? "Тип происшествия определён не полностью"
+                                : "Тип происшествия определён неверно",
                         draft.id(), labels(scenario.expectedIncidentTypes()), labels(draft.incidentTypeIds())));
             }
             type += typeScore;
 
-            List<String> actualServices = draft.services().stream().map(DraftService::code).toList();
-            List<String> expectedServices = scenario.expectedServices();
+            // территориальные ДДС сравниваются с колонкой «Терр. ОИВ» эталона, а не буквально по коду
+            List<String> actualServices = draft.services().stream().map(DraftService::code)
+                    .map(references::matrixGroupOf).distinct().toList();
+            List<String> expectedServices = scenario.expectedServices().stream()
+                    .map(references::matrixGroupOf).distinct().toList();
             double serviceScore = expectedServices.isEmpty() ? 100 : jaccard(actualServices, expectedServices);
             for (String code : expectedServices) {
                 if (!actualServices.contains(code)) {
@@ -68,17 +104,23 @@ public class CardFillAssessor {
             }
             services += serviceScore;
 
+            double cardTiming;
+            Long spentSeconds = null;
             if (draft.savedAt() != null && draft.startedAt() != null) {
                 Duration spent = Duration.between(draft.startedAt(), draft.savedAt());
+                spentSeconds = spent.toSeconds();
                 double t = spent.compareTo(NORM) <= 0 ? 100
                         : TextUtil.clamp(100 - 100.0 * (spent.toSeconds() - NORM.toSeconds()) / NORM.toSeconds());
                 if (t < 100) {
                     issues.add(new AssessmentIssue("PROCESSING_OVERDUE", "WARNING",
-                            "Карточка заполнялась дольше норматива 3 минуты", draft.id(), 180, spent.toSeconds()));
+                            "Карточка заполнялась дольше норматива 3 минуты", draft.id(),
+                            "норматив 180 с", "факт " + spent.toSeconds() + " с"));
                 }
                 timing += t;
+                cardTiming = t;
             } else {
                 timing += 0;
+                cardTiming = 0;
                 issues.add(new AssessmentIssue("CARD_NOT_SAVED", "CRITICAL", "Карточка не сохранена", draft.id(), null, null));
             }
 
@@ -86,9 +128,32 @@ public class CardFillAssessor {
             syntaxErrors += lr.errors();
             lang += lr.score();
             lr.findings().forEach(f -> issues.add(new AssessmentIssue("LANGUAGE", "INFO", f, draft.id(), null, null)));
+
+            List<AssessmentIssue> cardIssues = issues.stream()
+                    .filter(i -> draft.id().equals(i.cardId())).toList();
+            var trajectory = trajectories.get(draft.id());
+            breakdown.add(new CardBreakdown(draft.id(), draft.scenarioId(), addr.score(), typeScore, serviceScore,
+                    cardTiming, lr.score(), null, null, spentSeconds,
+                    secondsFrom(draft.startedAt(), trajectory == null ? null : trajectory.firstAddressAt()),
+                    secondsFrom(draft.startedAt(), trajectory == null ? null : trajectory.firstTypeAt()),
+                    trajectory == null ? null : trajectory.typeChanges(),
+                    trajectory == null ? null : trajectory.idleSeconds(),
+                    cardIssues.size(),
+                    (int) cardIssues.stream().filter(i -> "CRITICAL".equals(i.severity())).count()));
         }
 
         address /= n; type /= n; services /= n; timing /= n; lang /= n;
+        // Пропущенные и потерянные вызовы бьют по времени реакции: оператор 112 обязан ответить сразу.
+        for (int i = 0; i < missedCalls; i++) {
+            issues.add(new AssessmentIssue("CALL_MISSED", "WARNING",
+                    "Входящий вызов не принят вовремя — заявитель перезванивал", null, null, null));
+        }
+        for (int i = 0; i < lostCalls; i++) {
+            issues.add(new AssessmentIssue("CALL_LOST", "CRITICAL",
+                    "Вызов потерян: заявитель не дозвонился", null, null, null));
+        }
+        timing = TextUtil.clamp(timing - 10 * missedCalls - 30 * lostCalls);
+        if (missedCalls + lostCalls > 0) recommendations.add("Отвечайте на вызов сразу — заявитель ждёт не дольше 30 секунд.");
         double total = (address * W_ADDRESS + type * W_TYPE + services * W_SERVICES + timing * W_TIME + lang * W_LANGUAGE) / 100.0;
 
         if (address < 100) recommendations.add("Сверяйте улицу и дом с уточнённым адресом: ориентир заявителя нужно привести к формализованному адресу.");
@@ -97,10 +162,11 @@ public class CardFillAssessor {
         if (timing < 100) recommendations.add("Укладывайтесь в 3 минуты на карточку: сначала адрес и тип, подробности — в описание.");
         if (syntaxErrors > 0) recommendations.add("Проверяйте набор: опечатка в названии улицы отправит службы не по тому адресу.");
 
-        return new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
+        Assessment assessment = new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round((type + services) / 2), null,
                 TextUtil.round(lang), TextUtil.round(address), TextUtil.round(type), TextUtil.round(services),
                 syntaxErrors, issues, recommendations, "AI", TextUtil.round(total), null, null, null, List.of(), List.of());
+        return new AssessmentResult(assessment, List.copyOf(breakdown));
     }
 
     /** Подсказки по ходу заполнения — только для занятий вида «тренировка». */
@@ -126,7 +192,70 @@ public class CardFillAssessor {
         if (draft.incidentTypeIds().isEmpty() && draft.address() != null && draft.address().street() != null) {
             hints.add(new Hint("incidentTypeIds", "Выберите тип происшествия — без него не подберутся службы"));
         }
+        // Кандидаты по словам заявителя: список, а не один ответ. Верный тип попадает
+        // в первую тройку в 95 % случаев, на первое место — лишь в 66 %, поэтому
+        // единственная подсказка учила бы ошибке в каждом третьем случае.
+        if (draft.incidentTypeIds().isEmpty()) {
+            var candidates = classifier.suggest(draft.callerText());
+            if (!candidates.isEmpty()) {
+                List<String> labels = candidates.stream()
+                        .map(c -> c.label() + " (" + String.join(", ", c.matchedWords()) + ")").toList();
+                hints.add(new Hint("incidentTypeIds",
+                        "По словам заявителя похоже на: " + String.join("; ", labels)));
+            }
+        }
         return hints;
+    }
+
+    /** Зачёт за ошибку внутри категории классификатора: тип неверен, но направление угадано. */
+    private static final double SAME_CATEGORY_CREDIT = 0.5;
+
+    private record TypeMatch(double score, boolean exact, boolean sameCategory) {}
+
+    /**
+     * Совпадение набора типов с эталоном.
+     *
+     * <p>Жаккар по идентификаторам даёт ноль и за «задымление вместо пожара мусора», и за
+     * «травма вместо пожара», хотя это ошибки разного веса. Здесь числитель считается мягко:
+     * точное совпадение — единица, совпадение только по категории классификатора —
+     * {@value #SAME_CATEGORY_CREDIT}. Знаменатель прежний, поэтому там, где категория
+     * не совпадает, результат в точности равен прежнему Жаккару.
+     */
+    private TypeMatch matchTypes(List<String> actual, List<String> expected) {
+        if (actual.isEmpty() && expected.isEmpty()) return new TypeMatch(100, true, true);
+        Set<String> union = new java.util.LinkedHashSet<>(actual);
+        union.addAll(expected);
+        if (union.isEmpty()) return new TypeMatch(100, true, true);
+
+        Set<String> exact = new HashSet<>(actual);
+        exact.retainAll(expected);
+        double similarity = exact.size();
+
+        List<String> restActual = actual.stream().filter(id -> !exact.contains(id)).toList();
+        List<String> restExpected = new ArrayList<>(expected.stream().filter(id -> !exact.contains(id)).toList());
+        boolean sameCategory = false;
+        for (String a : restActual) {
+            String categoryA = categoryOf(a);
+            if (categoryA == null) continue;
+            for (java.util.Iterator<String> it = restExpected.iterator(); it.hasNext(); ) {
+                if (categoryA.equals(categoryOf(it.next()))) {
+                    similarity += SAME_CATEGORY_CREDIT;
+                    sameCategory = true;
+                    it.remove();
+                    break;
+                }
+            }
+        }
+        return new TypeMatch(100.0 * similarity / union.size(), !exact.isEmpty(), sameCategory);
+    }
+
+    private String categoryOf(String typeId) {
+        ReferenceDataService.IncidentType type = references.incidentType(typeId);
+        return type == null ? null : type.category();
+    }
+
+    private static Long secondsFrom(java.time.Instant from, java.time.Instant to) {
+        return from == null || to == null ? null : Duration.between(from, to).toSeconds();
     }
 
     private static double jaccard(List<String> a, List<String> b) {

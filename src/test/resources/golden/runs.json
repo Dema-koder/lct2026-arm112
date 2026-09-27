@@ -1,0 +1,515 @@
+[
+  {
+    "id": "R01",
+    "name": "Заполнение без ошибок",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 100.0,
+      "criteria": {
+        "address": 100.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [],
+      "rationale": "Эталон совпадает по всем полям; служб подбирается 12 по ЕКП, ровно как в expectedServices билета."
+    }
+  },
+  {
+    "id": "R02",
+    "name": "Опечатка в названии улицы",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзорина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 84.0,
+      "criteria": {
+        "address": 60.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "ADDRESS_STREET_MISMATCH"
+      ],
+      "rationale": "Левенштейн(берзорина, берзарина) = 1 ≤ 2 и строки не вложены → штраф опечатки −40."
+    }
+  },
+  {
+    "id": "R03",
+    "name": "Совершенно другая улица",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Тверская",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 76.0,
+      "criteria": {
+        "address": 40.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "ADDRESS_STREET_WRONG"
+      ],
+      "rationale": "Расстояние велико, вложенности нет → штраф неверной улицы −60."
+    }
+  },
+  {
+    "id": "R04",
+    "name": "Не указаны дом и корпус",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 90.0,
+      "criteria": {
+        "address": 75.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "ADDRESS_HOUSE_MISSING",
+        "ADDRESS_DETAIL_MISMATCH"
+      ],
+      "rationale": "Нет дома −20, не совпал корпус −5 → 75."
+    }
+  },
+  {
+    "id": "R05",
+    "name": "Неверный тип происшествия",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "medical.trauma"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 61.7,
+      "criteria": {
+        "address": 100.0,
+        "classification": 0.0,
+        "services": 8.3,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "INCIDENT_TYPE_MISMATCH",
+        "SERVICE_MISSING"
+      ],
+      "rationale": "Тип не пересекается с эталоном → 0. Службы: подбирается только 103, объединение 12 → 100/12 = 8.3."
+    }
+  },
+  {
+    "id": "R06",
+    "name": "Небрежный набор описания",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "задымление мусоропровода,, открытого пламени нет, заявитель на седьмом этаже дома"
+    },
+    "expected": {
+      "total": 98.5,
+      "criteria": {
+        "address": 100.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 70.0
+      },
+      "issues": [
+        "LANGUAGE"
+      ],
+      "rationale": "Две находки: двойная запятая и текст без заглавных при длине > 40 → 100 − 2×15 = 70."
+    }
+  },
+  {
+    "id": "R07",
+    "name": "Пропущен входящий вызов",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "missRingingCall": true,
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 98.5,
+      "criteria": {
+        "address": 100.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 90.0,
+        "language": 100.0
+      },
+      "issues": [
+        "CALL_MISSED"
+      ],
+      "rationale": "Карточка заполнена вовремя, но вызов не принят с первого раза: время 100 − 10×1 = 90."
+    }
+  },
+  {
+    "id": "R08",
+    "name": "Просрочен норматив 3 минуты",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "startedAtShiftSeconds": 270,
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 92.5,
+      "criteria": {
+        "address": 100.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 50.0,
+        "language": 100.0
+      },
+      "issues": [
+        "PROCESSING_OVERDUE"
+      ],
+      "rationale": "Заполнение 270 с при нормативе 180 с: 100 − 100×(270−180)/180 = 50."
+    }
+  },
+  {
+    "id": "R09",
+    "name": "ДДС: корректная отработка карточки",
+    "mode": "CARD_ACTIONS",
+    "kind": "TRAINING",
+    "scenario": "ticket-04-1",
+    "acts": [
+      "ACCEPT",
+      "START_RESPONSE",
+      "ARRIVE",
+      "START_WORK",
+      "CALL",
+      "COMPLETE"
+    ],
+    "comment": "Расчёт направлен, возгорание балкона ликвидировано, пострадавших нет.",
+    "expected": {
+      "total": 100.0,
+      "criteria": {
+        "timing": 100.0,
+        "actions": 100.0,
+        "communication": 100.0,
+        "language": 100.0
+      },
+      "issues": [],
+      "rationale": "Служба 101 в составе эталона → ожидается ACCEPT. Цепочка статусов полная, обязательный доклад выполнен."
+    },
+    "timelineSpacingSeconds": 10
+  },
+  {
+    "id": "R10",
+    "name": "ДДС: отказ от профильного происшествия",
+    "mode": "CARD_ACTIONS",
+    "kind": "TRAINING",
+    "scenario": "ticket-04-1",
+    "acts": [
+      "DECLINE"
+    ],
+    "declineReason": "NOT_COMPETENCE",
+    "comment": "Происшествие передано в другую службу по принадлежности территории.",
+    "expected": {
+      "total": 72.0,
+      "criteria": {
+        "timing": 100.0,
+        "actions": 30.0,
+        "communication": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "REFUSED_PROFILE_INCIDENT"
+      ],
+      "rationale": "Ожидался ACCEPT, карточка NOT_ACCEPTED → действия 100 − 70 = 30."
+    },
+    "timelineSpacingSeconds": 10
+  },
+  {
+    "id": "R11",
+    "name": "Три вводные подряд в одном занятии",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "extraScenarios": [
+      "ticket-04-1",
+      "ticket-05-1"
+    ],
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.smoke"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "perScenarioFill": {
+      "ticket-04-1": {
+        "address": {
+          "country": "Россия",
+          "locality": "Москва",
+          "street": "Грина",
+          "house": "11"
+        },
+        "incidentTypeIds": [
+          "fire.garbage"
+        ],
+        "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+      },
+      "ticket-05-1": {
+        "address": {
+          "country": "Россия",
+          "locality": "Москва",
+          "street": "Цюрупы",
+          "house": "12",
+          "building": "6"
+        },
+        "incidentTypeIds": [
+          "fire.garbage"
+        ],
+        "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+      }
+    },
+    "expected": {
+      "total": 100.0,
+      "criteria": {
+        "address": 100.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [],
+      "rationale": "Три вводные заполнены без ошибок. Проверяет, что при интенсивности «по одной» вторая и третья вводные вообще приходят: до исправления занятие вставало после первой сохранённой карточки."
+    }
+  },
+  {
+    "id": "R12",
+    "name": "Другая реальная улица, похожая на эталон",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-11-2",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Белозерская",
+        "house": "10"
+      },
+      "incidentTypeIds": [
+        "medical.illness"
+      ],
+      "description": "Пострадавшему плохо, жалуется на головокружение, сознание сохранено."
+    },
+    "expected": {
+      "total": 76.0,
+      "criteria": {
+        "address": 40.0,
+        "classification": 100.0,
+        "services": 100.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "ADDRESS_STREET_WRONG"
+      ],
+      "rationale": "Эталон — Беломорская, введена Белозерская. Обе улицы существуют в Москве, поэтому это неверный адрес (-60), а не опечатка (-40): расчёт уехал бы в другой район. Расстояние Левенштейна между ними 2, поэтому текущий код без справочника улиц засчитывает опечатку — прогон фиксирует расхождение до задачи A1."
+    }
+  },
+  {
+    "id": "R13",
+    "name": "Тип ошибочен, но категория верна",
+    "mode": "CARD_FILL",
+    "kind": "TRAINING",
+    "scenario": "ticket-02-1",
+    "fill": {
+      "address": {
+        "country": "Россия",
+        "locality": "Москва",
+        "street": "Берзарина",
+        "house": "21",
+        "building": "1"
+      },
+      "incidentTypeIds": [
+        "fire.garbage"
+      ],
+      "description": "Задымление мусоропровода в жилом доме. Открытого пламени нет, заявитель на седьмом этаже."
+    },
+    "expected": {
+      "total": 77.0,
+      "criteria": {
+        "address": 100.0,
+        "classification": 25.0,
+        "services": 60.0,
+        "timing": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "INCIDENT_TYPE_MISMATCH",
+        "SERVICE_MISSING"
+      ],
+      "rationale": "Эталон fire.smoke, выбран fire.garbage — обе категории FIRE. Частичное совпадение по категории даёт 0.5/2 = 25 вместо нуля. Службы по ЕКП пересекаются на 9 из 15 в объединении → 60. До задачи A2 тип оценивается в 0: ошибка внутри категории неотличима от ошибки между категориями."
+    }
+  },
+  {
+    "id": "R14",
+    "name": "ДДС: отписка вместо комментария",
+    "mode": "CARD_ACTIONS",
+    "kind": "TRAINING",
+    "scenario": "ticket-04-1",
+    "acts": [
+      "DECLINE"
+    ],
+    "declineReason": "NOT_COMPETENCE",
+    "comment": "Передано в работу.",
+    "expected": {
+      "total": 69.8,
+      "criteria": {
+        "timing": 100.0,
+        "actions": 30.0,
+        "communication": 85.0,
+        "language": 100.0
+      },
+      "issues": [
+        "REFUSED_PROFILE_INCIDENT",
+        "COMMENT_INCOMPLETE"
+      ],
+      "rationale": "Комментарий длиннее 15 символов и потому проходит нынешнюю проверку, но в нём нет адресата: кому именно передано. Слотовая проверка (A3) снимает 15 за недостающий слот → 85."
+    },
+    "timelineSpacingSeconds": 10
+  },
+  {
+    "id": "R15",
+    "name": "ДДС: статусы прокликаны без чтения",
+    "mode": "CARD_ACTIONS",
+    "kind": "TRAINING",
+    "scenario": "ticket-04-1",
+    "acts": [
+      "ACCEPT",
+      "START_RESPONSE",
+      "ARRIVE",
+      "START_WORK",
+      "CALL",
+      "COMPLETE"
+    ],
+    "comment": "Расчёт направлен, возгорание балкона ликвидировано, пострадавших нет.",
+    "expected": {
+      "total": 90.0,
+      "criteria": {
+        "timing": 100.0,
+        "actions": 75.0,
+        "communication": 100.0,
+        "language": 100.0
+      },
+      "issues": [
+        "CLICK_THROUGH"
+      ],
+      "rationale": "Та же цепочка, что в R09, но статусы проставлены подряд за миллисекунды. Карточку физически не читали, значит работа сымитирована: -25 к действиям. R09 отличается только тем, что его отметки разведены на 10 секунд."
+    }
+  }
+]

@@ -2,8 +2,8 @@
    Общие панели преподавателя / администратора / результатов — тот же стиль,
    что у журнала: серо-синяя палитра, кнопка только там, где без неё нельзя.
    ===================================================================== */
-.top-nav { position: absolute; left: 12px; top: 0; height: 34px; display: flex; gap: 2px; }
-.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; }
+.top-nav { min-width: 0; height: 34px; display: flex; gap: 2px; overflow-x: auto; }
+.top-nav button { height: 34px; padding: 0 12px; border: 0; background: transparent; color: #3c4a51; font-size: 12px; border-bottom: 3px solid transparent; white-space: nowrap; flex: 0 0 auto; }
 .top-nav button.active { border-bottom-color: var(--blue); color: #111; font-weight: bold; }
 .top-nav button:hover { background: #e9ecee; }
 
@@ -12,6 +12,12 @@
 
 .panel-page { min-height: calc(100vh - 34px); padding: 14px 18px 60px; color: #172026; background: #eef0f1; }
 .panel-head { display: flex; align-items: center; gap: 12px; min-height: 40px; margin: 8px 0 8px; }
+.lesson-filters { flex-wrap: wrap; margin-top: 0; }
+.lesson-filters > input { min-width: 200px; }
+.lesson-filters input[type="date"] { width: 140px; }
+.sub-nav { display: flex; gap: 2px; }
+.sub-nav button { height: 28px; padding: 0 12px; border: 1px solid #b1babf; background: white; color: #3c4a51; font-size: 12px; }
+.sub-nav button.active { background: var(--blue); border-color: var(--blue); color: white; font-weight: bold; }
 .panel-head > b { font-size: 16px; }
 .panel-head select, .panel-head input { height: 28px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; }
 .panel-head .spacer, .spacer { flex: 1; }
@@ -73,6 +79,10 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .review-card { padding: 10px 12px; margin-bottom: 8px; background: white; border-left: 4px solid var(--blue); }
 .review-card p { margin: 4px 0; }
 .review-card em { font-style: normal; color: #56656c; }
+.issue-list { margin: 2px 0 8px; padding-left: 18px; }
+.issue-list li { margin: 4px 0; }
+.issue-list li small { display: block; color: #56656c; font-weight: normal; }
+.issue-tag { margin-left: 8px; padding: 1px 6px; font-size: 10px; color: #872d24; background: #f4dcd9; }
 .review-timeline { margin: 6px 0 0; padding-left: 0; list-style: none; }
 .review-timeline li { display: flex; gap: 8px; padding: 2px 0; font-size: 12px; }
 .review-timeline time { color: #6d797f; }
@@ -83,6 +93,7 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .assessment-card > header button { width: 38px; height: 38px; color: white; border: 0; background: transparent; font-size: 20px; }
 .assessment-body { padding: 14px; }
 .assessment-issue.critical { background: #f0c9c4; font-weight: bold; }
+.assessment-issue .issue-compare { display: block; margin-top: 4px; font-weight: normal; color: #4a575e; }
 .assessment-details { margin-top: 8px; color: #56656c; }
 .assessment-details p { margin: 4px 0; font-size: 12px; }
 .recommendations { margin: 12px 0 0; padding-left: 18px; }
@@ -97,6 +108,22 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .health-grid b.ok { color: #2f9a5a; }
 .health-grid b.bad { color: #b03f2e; }
 .log-tail { max-height: 260px; overflow: auto; padding: 10px; margin: 0; font-size: 11px; color: #dfe5e7; background: #253139; }
+.managed-services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.managed-service { display: flex; flex-direction: column; min-height: 190px; padding: 12px; background: white; border: 1px solid #d7dcde; border-left: 4px solid #2f9a5a; }
+.managed-service.stopped { border-left-color: #8e9ca3; }
+.managed-service.failed { border-left-color: #b03f2e; }
+.managed-service > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.managed-service > header b { font-size: 14px; }
+.managed-service > header p { min-height: 34px; margin: 4px 0 0; color: #6d797f; font-size: 11px; line-height: 1.4; }
+.service-state { flex: none; padding: 3px 8px; color: white; background: #2f9a5a; font-size: 10px; text-transform: uppercase; }
+.service-state.stopped { background: #8e9ca3; }
+.service-state.failed { background: #b03f2e; }
+.managed-service dl { display: flex; flex-wrap: wrap; gap: 5px 14px; margin: 12px 0; }
+.managed-service dl div { min-width: 90px; }
+.managed-service dt { color: #6d797f; font-size: 10px; }
+.managed-service dd { margin: 2px 0 0; font-weight: bold; }
+.managed-service footer { display: flex; align-items: center; gap: 7px; min-height: 30px; margin-top: auto; }
+.managed-service footer small { color: #6d797f; }
 .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span { position: absolute; inset: 0; background: #b1babf; transition: .15s; }
@@ -109,6 +136,9 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .service-tiles { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
 .service-tile.foreign .tile-body { cursor: default; opacity: .78; }
 .service-tile.foreign b { font-weight: normal; }
+/* Своя служба (замечание 7): всегда первая, выделена рамкой — здесь проставляется статус */
+.service-tile.own { box-shadow: inset 0 0 0 2px #ffd166; }
+.service-tile.own .tile-body b::after { content: " · ваша"; font-weight: normal; font-size: 10px; color: #ffd166; }
 
 /* =====================================================================
    Экран оператора 112 — режим заполнения карточки (card-01.png … card-09.png).
@@ -116,16 +146,28 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
    ===================================================================== */
 .fill-shell { background: #ededed; }
 .fill-card { min-height: calc(100vh - 34px); padding: 5px 5px 84px; color: #172026; background: #ededed; }
-.fill-top { display: grid; grid-template-columns: 1fr 230px 190px; gap: 5px; height: 64px; }
-.fill-phones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.phone-box { display: grid; grid-template-columns: 1fr 44px; grid-template-rows: 14px 1fr; gap: 2px 4px; padding: 4px 8px; background: #f6f6f6; border-left: 3px solid #aeb5b9; }
+.fill-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 230px) 80px;
+  gap: 5px; height: 64px; min-width: 0;
+}
+.fill-top > * { min-width: 0; }
+.fill-top .card-timer { grid-column: 3; grid-row: 1; width: 80px; max-width: 80px; }
+.fill-phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; min-width: 0; }
+.phone-box {
+  display: grid; grid-template-columns: minmax(0, 1fr) 44px; grid-template-rows: 14px 1fr;
+  gap: 2px 4px; padding: 4px 8px; background: #f6f6f6; border-left: 3px solid #aeb5b9; min-width: 0;
+}
 .phone-box span { grid-column: 1 / -1; font-size: 10px; color: #6e797f; }
-.phone-box input { min-width: 0; height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; font-size: 14px; }
-.phone-box button { height: 26px; border: 1px solid #c9cfd2; background: #e8eaeb; font-size: 11px; }
+.phone-box input {
+  min-width: 0; width: 100%; height: 26px; padding: 0 6px;
+  border: 1px solid #c9cfd2; background: white; font-size: 14px; box-sizing: border-box;
+}
+.phone-box button { height: 26px; border: 1px solid #c9cfd2; background: #e8eaeb; font-size: 11px; flex: none; }
 .phone-box button.active { background: var(--orange); color: white; border-color: var(--orange); }
-.fill-number { display: block; padding: 6px 8px; background: #f6f6f6; }
-.fill-number b { font-size: 13px; }
-.fill-number small { display: block; font-size: 10px; color: #56656c; }
+.fill-number { display: block; min-width: 0; padding: 6px 8px; background: #f6f6f6; }
+.fill-number b { display: block; font-size: 13px; line-height: 1.2; }
+.fill-number small { display: block; font-size: 10px; color: #56656c; line-height: 1.25; }
 .caller-bubble { position: relative; margin: 6px 0 0; padding: 10px 14px; background: #fff8e1; border-left: 4px solid var(--orange); }
 .caller-bubble b { display: block; font-size: 11px; color: #7a4a00; }
 .caller-bubble p { margin: 4px 0; font-size: 15px; }
@@ -137,13 +179,36 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .fill-block.hinted { border-color: #e2b400; }
 .fill-row { display: flex; gap: 6px; align-items: end; }
 .fill-row.wrap { flex-wrap: wrap; }
+.fill-row.address-row { flex-wrap: nowrap; margin-bottom: 6px; }
+.fill-row.address-row label.f1 { flex: 1 1 0; }
+.fill-row.address-row label.f2 { flex: 2 1 0; }
+.fill-row.address-row input { width: 100%; }
 .fill-block label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.fill-block label > span { font-size: 10px; color: #56656c; white-space: nowrap; }
-.fill-block input, .fill-block select { height: 26px; padding: 0 6px; border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px; }
+.fill-block label > span { font-size: 10px; color: #56656c; line-height: 1.2; }
+.fill-block input, .fill-block select {
+  width: 100%; min-width: 0; height: 26px; padding: 0 6px;
+  border: 1px solid #c9cfd2; background: white; outline-color: var(--blue); font-size: 13px;
+  box-sizing: border-box;
+}
 .fill-block label.hinted input { border-color: #e2b400; background: #fffbe6; }
-.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; }
+.fill-block textarea { width: 100%; min-height: 96px; padding: 6px 8px; border: 1px solid #c9cfd2; background: white; resize: vertical; font-size: 13px; box-sizing: border-box; }
 .counter { text-align: right; font-size: 10px; color: #6d797f; }
-.w-xs { width: 64px; } .w-s { width: 96px; } .w-m { flex: 1; min-width: 120px; } .w-l { flex: 2; min-width: 180px; } .w-full { width: 100%; }
+.w-xs { width: 64px; flex: none; } .w-s { width: 96px; flex: none; }
+.w-m { flex: 1 1 120px; min-width: 120px; } .w-l { flex: 2 1 180px; min-width: 180px; }
+.w-full { width: 100%; display: block; margin-top: 6px; }
+/* Адрес: 12 колонок — поля не наезжают друг на друга при zoom и узкой левой колонке */
+.address-fields {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px 8px;
+  align-items: end;
+}
+.address-fields label { min-width: 0; }
+.address-fields .af-2 { grid-column: span 2; }
+.address-fields .af-3 { grid-column: span 3; }
+.address-fields .af-4 { grid-column: span 4; }
+.address-fields .af-5 { grid-column: span 5; }
+.address-fields .af-6 { grid-column: span 6; }
 .flags-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .flags-bar button { height: 28px; padding: 0 10px; border: 1px solid #b1babf; background: #e8eaeb; font-size: 11px; }
 .flags-bar button.on { background: var(--blue); color: white; border-color: var(--blue); }
@@ -179,12 +244,21 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 @media (max-width: 1250px) {
   .fill-columns { grid-template-columns: 1fr; }
   .form-grid, .form-grid.four, .form-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .address-fields { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .address-fields .af-3,
+  .address-fields .af-4 { grid-column: span 3; }
+  .address-fields .af-5,
+  .address-fields .af-6 { grid-column: span 6; }
+  .managed-services { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
 :root { --ui-scale: 1; }
 body { zoom: var(--ui-scale); }
-.scale-control { position: absolute; right: 250px; top: 6px; display: flex; align-items: center; gap: 4px; font-size: 11px; color: #3c4a51; }
+.scale-control {
+  display: flex; align-items: center; gap: 4px; flex: 0 0 auto; position: static !important;
+  right: auto !important; top: auto !important; font-size: 11px; color: #3c4a51;
+}
 .scale-control button { width: 26px; height: 22px; padding: 0; border: 1px solid #b1babf; background: white; font-size: 11px; }
 .scale-control button:disabled { opacity: .4; }
 .scale-control span { min-width: 36px; text-align: center; }
@@ -208,6 +282,97 @@ body { zoom: var(--ui-scale); }
 .criteria-notes li { margin: 3px 0; }
 .criteria-notes small { color: #6d797f; }
 
-@media (max-width: 1366px) {
-  .scale-control { right: 230px; }
+/* ---- Analytics dashboards (trainee / teacher) ---- */
+.analytics-page .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 8px 0 14px; }
+.kpi-card { display: grid; gap: 4px; padding: 12px 14px; background: white; border: 1px solid #d7dcde; border-left: 4px solid #8e9ca3; }
+.kpi-card span { font-size: 11px; color: #56656c; }
+.kpi-card b { font-size: 22px; line-height: 1.1; color: #172026; }
+.kpi-card.ok { border-left-color: #2f9a5a; }
+.kpi-card.warn { border-left-color: #b03f2e; }
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.analytics-card { padding: 10px 12px 12px; background: white; border: 1px solid #d7dcde; min-width: 0; }
+.analytics-card.wide { grid-column: 1 / -1; }
+.analytics-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; min-height: 28px; }
+.analytics-card > header b { font-size: 13px; }
+.chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-empty { margin: 18px 0; text-align: center; }
+.chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
+.hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hbar-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 80%) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  min-width: 0;
 }
+.hbar-label {
+  min-width: 0;
+  color: #3c4a51;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  justify-self: start;
+}
+.hbar-track {
+  width: 100%;
+  min-width: 0;
+  height: 10px;
+  background: #e4ebef;
+  border-radius: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
+  justify-self: stretch;
+}
+.hbar-track > i { display: block; height: 100%; background: #0784c6; margin-left: auto; }
+.hbar-value { min-width: 1.5em; text-align: right; font-size: 12px; }
+.donut-wrap { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+.donut-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.donut-legend li { display: flex; align-items: center; gap: 8px; }
+.donut-legend i { width: 10px; height: 10px; border-radius: 2px; }
+.donut-legend b { margin-left: auto; }
+.sparkline { display: block; }
+.reference-preview { margin: 6px 0; padding: 8px 10px; background: #e8f4fb; border-left: 3px solid #0784c6; }
+.reference-preview .reference-title { margin: 0 0 4px; font-weight: bold; color: #0c6fa4; font-size: 11px; }
+.ref-ok { background: #c6e7b0; padding: 1px 5px; }
+.chip-inline { display: inline-block; margin: 0 4px 2px 0; }
+
+@media (max-width: 1366px) {
+  .analytics-page .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .analytics-grid { grid-template-columns: 1fr; }
+  .donut-wrap { grid-template-columns: 1fr; justify-items: start; }
+}
+
+@media (max-width: 760px) {
+  .managed-services { grid-template-columns: 1fr; }
+}
+
+/* --- оператор 112: главный экран с журналом и входящими вызовами (замечания 3, 5) --- */
+.phone-bar { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 14px; color: #2f393f; background: #dfe3e5; border-bottom: 1px solid #b7bec2; }
+.phone-bar > b { font-size: 19px; color: #717e84; }
+.phone-bar-title { font-weight: 600; }
+.phone-bar-name, .phone-bar-hint { color: #6e797f; font-size: 11px; }
+.phone-bar-number { font-size: 15px; letter-spacing: .02em; }
+.phone-bar-queue { margin-left: auto; font-size: 11px; color: #6e797f; }
+.phone-bar.ringing { background: #fff1c2; animation: ring-blink 1s steps(2, start) infinite; }
+.phone-bar.ringing > b { color: #b03f2e; }
+@keyframes ring-blink { 50% { background: #ffe08a; } }
+.answer-button { height: 28px; padding: 0 16px; color: white; border: 0; background: #2e8b57; font-size: 12px; }
+.answer-button:hover { background: #24704a; }
+.ring-toggle { width: 30px; height: 28px; padding: 0; border: 1px solid #b7bec2; background: white; font-size: 14px; }
+.phone-bar:not(.ringing) .ring-toggle { margin-left: 0; }
+.incident-row.foreign > span, .incident-row.foreign > b, .incident-row.foreign > strong { opacity: .82; }
+.journal-card-view p { margin: 4px 0; font-size: 13px; }
+.journal-card-view em { font-style: normal; color: #56656c; }
+.caller-answer { margin: 6px 0 2px; padding: 6px 8px; background: #fff; border: 1px dashed #e2b400; }
+.caller-answer b { display: inline; margin-right: 4px; font-size: 12px; color: #7a4a00; }
+.ask-button { position: absolute; right: 12px; top: 10px; height: 24px; padding: 0 10px; border: 1px solid #d3a959; background: #fff; color: #7a4a00; font-size: 11px; }
+.ask-button:hover { background: #fff3cf; }
+
+/* --- справочник служб ПОВ-112 (СЛУЖБЫ 112.docx): длинные названия, список с прокруткой --- */
+.service-picker { max-height: 340px; margin-top: 10px; overflow-y: auto; border: 1px solid #d3d8db; background: white; }
+.service-option { display: block; width: 100%; padding: 7px 10px; text-align: left; border: 0; border-bottom: 1px solid #edf0f1; background: transparent; font-size: 12px; }
+.service-option:hover:not(:disabled) { background: #d9ecf7; }
+.service-option.selected { background: var(--blue); color: white; }
+.service-option:disabled { opacity: .75; }
