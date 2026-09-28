@@ -478,3 +478,11 @@ body { zoom: var(--ui-scale); }
 .data-table tr.just-generated:hover td { background: #ffe9cc; }
 .fresh-filter span { color: #b0561f; }
 .badge-new.old { background: #8e9ca3; }
+
+/* Рекомендации по правилам и отдельный разбор от языковой модели */
+.recommendations-title { margin: 14px 0 0; font-weight: 600; }
+.recommendations-title small { font-weight: 400; }
+.llm-debrief { margin-top: 14px; padding: 10px 14px; border-left: 4px solid #6a5acd; background: #f4f2fc; }
+.llm-debrief.unavailable { border-left-color: #b1babf; background: #f3f5f6; }
+.llm-debrief-title { margin: 0 0 6px; font-weight: 600; }
+.llm-debrief-text { margin: 0 0 6px; white-space: pre-wrap; line-height: 1.45; }

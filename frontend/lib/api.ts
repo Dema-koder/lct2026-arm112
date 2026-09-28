@@ -296,6 +296,15 @@ export type AssessmentIssue = {
 
 export type CriterionScore = { code: string; score: number | null; comment: string | null };
 
+/** Разбор от языковой модели — отдельно от рекомендаций по правилам в самой оценке. */
+export type Debrief = {
+  assessmentId: string;
+  state: "READY" | "PENDING" | "UNAVAILABLE";
+  text?: string | null;
+  source?: string | null;
+  createdAt?: string | null;
+};
+
 export type Assessment = {
   id: string;
   sessionId: string;
@@ -724,6 +733,7 @@ export const api = {
   submit: (token: string, sessionId: string) =>
     request<{ assessmentId: string; state: string }>(`/training-sessions/${sessionId}/submit`, { method: "POST", headers: commandHeaders() }, token),
   assessment: (token: string, assessmentId: string) => request<Assessment>(`/assessments/${assessmentId}`, {}, token),
+  debrief: (token: string, assessmentId: string) => request<Debrief>(`/assessments/${assessmentId}/debrief`, {}, token),
 
   // card fill
   drafts: (token: string, sessionId: string) => request<CardDraft[]>(`/card-drafts${q({ sessionId })}`, {}, token),

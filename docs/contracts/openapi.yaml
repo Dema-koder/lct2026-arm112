@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.15
+  version: 0.3.16
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -124,10 +124,11 @@ paths:
     get:
       tags: [Trainee]
       operationId: assessmentDebrief
-      summary: Персональный разбор занятия
+      summary: Разбор занятия от языковой модели
       description: >
-        Считается в фоновой очереди, поэтому может быть ещё не готов — тогда state PENDING.
-        Поле source говорит, писала текст модель (LLM) или правила (RULES).
+        Отдельно от рекомендаций по правилам, которые приходят в самой оценке (Assessment.recommendations —
+        одна на код замечания). Считается в фоновой очереди: пока не готов — PENDING; READY — текст модели;
+        UNAVAILABLE — модели не было или её текст не прошёл проверку языка, в text пояснение.
       parameters:
         - name: assessmentId
           in: path
@@ -2657,9 +2658,9 @@ components:
       required: [assessmentId, state]
       properties:
         assessmentId: {type: string, format: uuid}
-        state: {type: string, enum: [READY, PENDING]}
+        state: {type: string, enum: [READY, PENDING, UNAVAILABLE]}
         text: {type: string, nullable: true}
-        source: {type: string, nullable: true}
+        source: {type: string, nullable: true, description: "LLM, UNAVAILABLE, REJECTED; RULES — у разборов до 0.3.16"}
         createdAt: {type: string, format: date-time, nullable: true}
     LessonReport:
       type: object

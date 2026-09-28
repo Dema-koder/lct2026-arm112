@@ -703,7 +703,7 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
 
       {detail.assessment ? (
         <>
-          <AssessmentView assessment={detail.assessment} title="Оценка системы и итог" hideIssues />
+          <AssessmentView assessment={detail.assessment} title="Оценка системы и итог" hideIssues token={token} />
           <ReviewIssues detail={detail} />
           <div className="panel-head"><b>Оценка преподавателя по критериям</b><small className="muted">пустой балл — остаётся балл системы; итог считается по весам режима</small></div>
           <table className="data-table criteria">

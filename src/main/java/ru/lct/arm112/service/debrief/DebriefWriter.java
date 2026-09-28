@@ -29,12 +29,23 @@ import java.util.Map;
 public class DebriefWriter {
     private static final Logger log = LoggerFactory.getLogger(DebriefWriter.class);
 
-    /** Кириллица, цифры и пунктуация; перевод строки нужен для списка из пунктов. */
-    private static final String CYRILLIC_ONLY = """
-            root ::= line+
-            line ::= char{10,400} "\n"
-            char ::= [а-яА-ЯёЁ0-9 ,.:;()«»!?/-]
-            """;
+    /**
+     * Форма разбора задана грамматикой, а не просьбой в промпте: ровно столько пунктов,
+     * сколько видов ошибок (до трёх), в каждом два предложения — что не так и к чему это ведёт.
+     * Только кириллица, цифры и пунктуация.
+     *
+     * <p>Грамматика строк без ограничения числа рвала текст посреди слова и позволяла модели
+     * «добивать» объём повторами; грамматика с необязательным вторым предложением давала
+     * голые заголовки («Не указан номер дома.») — пересказ рекомендаций по правилам.
+     */
+    static String shape(int points) {
+        return """
+                root ::= point{%d}
+                point ::= [1-3] ". " sentence " " sentence "\n"
+                sentence ::= schar{10,180} [.!?]
+                schar ::= [а-яА-ЯёЁ0-9 ,:;()«»/-]
+                """.formatted(points);
+    }
 
     private final String baseUrl;
     private final ObjectMapper objectMapper;
@@ -59,23 +70,38 @@ public class DebriefWriter {
 
     /** @return текст разбора либо null, если модель недоступна или не ответила */
     public String write(String structuredIssues) {
+        return write(structuredIssues, 3);
+    }
+
+    /**
+     * @param points сколько пунктов есть о чём написать: лимит токенов от него зависит.
+     *               При двух ошибках и запасе в 450 токенов модель «добивала объём» повторами
+     *               и служебными репликами вроде «последний пункт был сокращён».
+     */
+    public String write(String structuredIssues, int points) {
         if (!available()) return null;
+        int n = Math.max(1, Math.min(3, points));
         String prompt = """
-                Ты наставник оператора службы 112. Ниже структура замечаний по занятию обучающегося.
-                Напиши разбор: три-четыре коротких пункта. В каждом — что сделано не так
-                и почему это важно в реальной работе службы.
+                Ты наставник оператора службы 112. Ниже структура замечаний по занятию обучающегося
+                и рекомендации, которые он уже получил.
+                Напиши разбор: ровно %d пункт(а) — по одному на каждую ошибку, начиная с самой важной.
+                В каждом пункте два предложения. Первое — что именно сделано не так, с данными
+                из замечаний: какая улица, какой тип, какие службы. Второе — к чему это приведёт
+                в реальной работе службы и как это отработать. Рекомендации не пересказывай дословно.
 
                 Пиши только по этим данным, ничего не добавляй от себя.
                 Обращайся к обучающемуся на «вы». По-русски.
 
                 %s
-                """.formatted(structuredIssues);
+                """.formatted(n, structuredIssues);
         try {
             String body = objectMapper.writeValueAsString(Map.of(
                     "messages", List.of(Map.of("role", "user", "content", prompt)),
                     "temperature", 0.4,
-                    "max_tokens", 320,
-                    "grammar", CYRILLIC_ONLY));
+                    // без штрафа модель зацикливалась на «повторите проверку…»
+                    "repeat_penalty", 1.15,
+                    "max_tokens", 60 + 170 * n,
+                    "grammar", shape(n)));
             HttpResponse<String> response = client.send(
                     HttpRequest.newBuilder(URI.create(baseUrl + "/v1/chat/completions"))
                             .timeout(Duration.ofMinutes(10))
@@ -88,10 +114,42 @@ public class DebriefWriter {
             }
             JsonNode json = objectMapper.readTree(response.body());
             String text = json.path("choices").path(0).path("message").path("content").asText("").trim();
-            return text.isBlank() ? null : text;
+            return text.isBlank() ? null : completeSentences(withoutRepeats(text));
         } catch (Exception exception) {
             log.warn("Разбор от модели не получен: {}", exception.getMessage());
             return null;
         }
+    }
+
+    /** Повторённые предложения выбрасываются: у 7B на малом числе замечаний бывает петля. */
+    public static String withoutRepeats(String text) {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        StringBuilder out = new StringBuilder();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("[^.!?\\n]+[.!?]?[ \\t]*|\\n").matcher(text);
+        while (m.find()) {
+            String sentence = m.group();
+            String key = sentence.trim().toLowerCase(java.util.Locale.ROOT);
+            if (key.length() > 12 && !seen.add(key)) continue;
+            out.append(sentence);
+        }
+        return out.toString().replaceAll("\\n{3,}", "\n\n").trim();
+    }
+
+    /**
+     * Обрезка до последнего законченного предложения: на лимите токенов модель
+     * обрывается на полуслове («согласно классифик»), а такое показывать нельзя.
+     */
+
+    public static String completeSentences(String text) {
+        for (int i = text.length() - 1; i > text.length() / 3; i--) {
+            char c = text.charAt(i);
+            if (c != '.' && c != '!' && c != '?') continue;
+            // «2.» — номер пункта списка, а не конец предложения
+            int j = i - 1;
+            while (j >= 0 && Character.isDigit(text.charAt(j))) j--;
+            boolean listMarker = c == '.' && j < i - 1 && (j < 0 || Character.isWhitespace(text.charAt(j)));
+            if (!listMarker) return text.substring(0, i + 1).trim();
+        }
+        return text;
     }
 }

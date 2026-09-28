@@ -234,8 +234,14 @@ public class TraineeController {
     public Debrief debrief(@PathVariable UUID assessmentId, CurrentUser actor) {
         // доступ тот же, что к самой оценке: проверка внутри
         engine.assessment(assessmentId, actor);
+        // READY — текст модели; UNAVAILABLE — модели не было или её текст отклонён проверкой.
+        // RULES — разборы до 28.09, собранные по правилам: теперь это отдельные рекомендации.
         return debriefs.find(assessmentId)
-                .map(d -> new Debrief(d.assessmentId(), "READY", d.text(), d.source(), d.createdAt()))
+                .map(d -> "LLM".equals(d.source())
+                        ? new Debrief(d.assessmentId(), "READY", d.text(), d.source(), d.createdAt())
+                        : new Debrief(d.assessmentId(), "UNAVAILABLE",
+                                "RULES".equals(d.source()) ? "Разбор от языковой модели не составлялся: модель не была подключена." : d.text(),
+                                d.source(), d.createdAt()))
                 .orElseGet(() -> new Debrief(assessmentId, "PENDING", null, null, null));
     }
 

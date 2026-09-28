@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type Assessment, type Material, type Rating, type ResultItem } from "../../../lib/api";
+import { api, type Assessment, type Debrief, type Material, type Rating, type ResultItem } from "../../../lib/api";
 import { bytes, criterionLabels, dateTime, formatIssueValue, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
 
 /** Мои результаты: список занятий по правилу видимости, детали оценки, рейтинг, материалы группы. */
@@ -66,7 +66,7 @@ export function Results({ token, refreshKey }: { token: string; refreshKey: numb
         </tbody>
       </table>
 
-      {selected && <AssessmentView assessment={selected} onClose={() => setSelected(null)} />}
+      {selected && <AssessmentView assessment={selected} onClose={() => setSelected(null)} token={token} />}
 
       {materials.length > 0 && (
         <>
@@ -98,7 +98,47 @@ async function download(token: string, material: Material) {
   URL.revokeObjectURL(url);
 }
 
-export function AssessmentView({ assessment, onClose, title, hideIssues }: { assessment: Assessment; onClose?: () => void; title?: string; hideIssues?: boolean }) {
+/**
+ * Разбор от языковой модели. Считается в фоне после оценки, поэтому блок сам ждёт готовности.
+ * Рекомендации по правилам показаны выше и от модели не зависят.
+ */
+export function LlmDebrief({ token, assessmentId }: { token: string; assessmentId: string }) {
+  const [debrief, setDebrief] = useState<Debrief | null>(null);
+  useEffect(() => {
+    let stopped = false;
+    let timer = 0;
+    const poll = async (attempt: number) => {
+      try {
+        const d = await api.debrief(token, assessmentId);
+        if (stopped) return;
+        setDebrief(d);
+        // разбор на модели идёт около полутора минут на человека; ждём до 15 минут
+        if (d.state === "PENDING" && attempt < 180) timer = window.setTimeout(() => void poll(attempt + 1), 5000);
+      } catch {
+        if (!stopped) setDebrief(null);
+      }
+    };
+    void poll(0);
+    return () => { stopped = true; window.clearTimeout(timer); };
+  }, [token, assessmentId]);
+
+  if (!debrief) return null;
+  return (
+    <div className={`llm-debrief ${debrief.state.toLowerCase()}`}>
+      <p className="llm-debrief-title">Рекомендация от языковой модели</p>
+      {debrief.state === "PENDING" && <p className="muted">Готовится — обычно одна-две минуты. Можно закрыть окно и вернуться позже.</p>}
+      {debrief.state === "READY" && (
+        <>
+          <p className="llm-debrief-text">{debrief.text}</p>
+          <small className="muted">Написано моделью по вашим ошибкам. Если что-то расходится с рекомендациями выше — ориентируйтесь на них и на преподавателя.</small>
+        </>
+      )}
+      {debrief.state === "UNAVAILABLE" && <p className="muted">{debrief.text ?? "Разбор от модели не составлен."}</p>}
+    </div>
+  );
+}
+
+export function AssessmentView({ assessment, onClose, title, hideIssues, token }: { assessment: Assessment; onClose?: () => void; title?: string; hideIssues?: boolean; token?: string }) {
   const fill = assessment.mode === "CARD_FILL";
   return (
     <section className="assessment-card">
@@ -163,10 +203,14 @@ export function AssessmentView({ assessment, onClose, title, hideIssues }: { ass
           </details>
         )}
         {assessment.recommendations.length > 0 && (
-          <ul className="recommendations">
-            {assessment.recommendations.map((r, index) => <li key={index}>{r}</li>)}
-          </ul>
+          <>
+            <p className="recommendations-title">Рекомендации <small className="muted">по правилам, по каждому виду ошибки</small></p>
+            <ul className="recommendations">
+              {assessment.recommendations.map((r, index) => <li key={index}>{r}</li>)}
+            </ul>
+          </>
         )}
+        {token && <LlmDebrief token={token} assessmentId={assessment.id} />}
       </div>
     </section>
   );

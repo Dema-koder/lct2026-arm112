@@ -244,10 +244,12 @@ public final class ApiModels {
                                     List<@Valid CriterionScore> criteria) {}
 
     /**
-     * Персональный разбор занятия.
+     * Персональный разбор занятия от языковой модели — отдельно от рекомендаций по правилам,
+     * которые приходят в самой оценке.
      *
-     * @param state  READY — готов; PENDING — считается в фоне
-     * @param source LLM или RULES: обучающийся вправе знать, кто писал текст
+     * @param state  READY — текст модели; PENDING — считается в фоне; UNAVAILABLE — модели не было
+     *               или её текст не прошёл проверку, в text — пояснение для человека
+     * @param source LLM, UNAVAILABLE, REJECTED (или RULES у разборов до 28.09)
      */
     public record Debrief(UUID assessmentId, String state, String text, String source,
                           Instant createdAt) {}

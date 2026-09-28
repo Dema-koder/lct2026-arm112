@@ -64,6 +64,24 @@ class DebriefTest {
         assertThat(guard.check("   ").usable()).isFalse();
     }
 
+    /** Обрыв на лимите токенов не показывается: текст режется до законченного предложения. */
+    @Test
+    void cutOffTailIsTrimmedToSentence() {
+        assertThat(ru.lct.arm112.service.debrief.DebriefWriter.completeSentences(
+                "1. Не указан дом. Уточняйте его у заявителя. 2. Оповещайте службы согласно классифик"))
+                .isEqualTo("1. Не указан дом. Уточняйте его у заявителя.");
+        assertThat(ru.lct.arm112.service.debrief.DebriefWriter.completeSentences("Всё верно."))
+                .isEqualTo("Всё верно.");
+    }
+
+    /** Петля модели не показывается: повторённое предложение остаётся один раз. */
+    @Test
+    void repeatedSentencesAreDropped() {
+        assertThat(ru.lct.arm112.service.debrief.DebriefWriter.withoutRepeats(
+                "Проверяйте детали адреса. Это поможет избежать ошибок в будущем. Проверяйте детали адреса."))
+                .isEqualTo("Проверяйте детали адреса. Это поможет избежать ошибок в будущем.");
+    }
+
     /** Разбор перезаписывается: очередь даёт «хотя бы один раз», задача может повториться. */
     @Test
     void debriefIsOverwrittenOnRepeat() {

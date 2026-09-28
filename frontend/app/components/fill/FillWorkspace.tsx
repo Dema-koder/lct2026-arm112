@@ -198,7 +198,7 @@ export function FillWorkspace({ token, context, onLogout, onReload, nav, label }
         </section>
         {assessment && (
           <Modal title="Результат занятия" onClose={() => setAssessment(null)} wide>
-            <AssessmentView assessment={assessment} />
+            <AssessmentView assessment={assessment} token={token} />
             <div className="dialog-actions"><button className="primary" onClick={() => setAssessment(null)}>Закрыть</button></div>
           </Modal>
         )}

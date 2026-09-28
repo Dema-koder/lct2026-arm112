@@ -8,6 +8,7 @@ import { avg, BarChart, Donut, HorizontalBars, KpiGrid, Sparkline } from "../ana
 /**
  * Личная аналитика обучающегося: динамика баллов, слабые критерии,
  * типичные ошибки и рекомендации — только свои данные.
+ * Разбор от языковой модели сюда не выводится: только то, что считается правилами по кодам замечаний.
  */
 export function TraineeAnalytics({ token, refreshKey }: { token: string; refreshKey: number }) {
   const [items, setItems] = useState<ResultItem[]>([]);
@@ -128,12 +129,39 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
     return { counts, frequent };
   }, [assessments]);
 
-  const recommendations = useMemo(() => {
-    const map: Record<string, number> = {};
+  // Что повторяется — по кодам замечаний, а не по тексту рекомендаций: текст можно
+  // переформулировать, код — нет. Неоповещённая служба считается отдельно по каждой службе.
+  const recurring = useMemo(() => {
+    const map = new Map<string, { message: string; critical: boolean; lessons: number }>();
     for (const a of assessments) {
-      for (const r of a.recommendations) map[r] = (map[r] ?? 0) + 1;
+      const seen = new Set<string>();
+      for (const issue of a.issues) {
+        if (issue.severity === "INFO") continue;
+        const key = issue.code === "SERVICE_MISSING" ? `${issue.code}:${String(issue.expected)}` : issue.code;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const cur = map.get(key) ?? { message: issue.message, critical: issue.severity === "CRITICAL", lessons: 0 };
+        cur.lessons += 1;
+        map.set(key, cur);
+      }
     }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return [...map.entries()].sort((x, y) => y[1].lessons - x[1].lessons || Number(y[1].critical) - Number(x[1].critical)).slice(0, 6);
+  }, [assessments]);
+
+  // Текст рекомендации задан правилом на код замечания, меняется только хвост «(карточек: N)» —
+  // без него одинаковые рекомендации складываются по занятиям.
+  const recommendations = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const a of assessments) {
+      const seen = new Set<string>();
+      for (const r of a.recommendations) {
+        const text = r.replace(/\s*\(карточек: \d+\)$/, "");
+        if (seen.has(text)) continue;
+        seen.add(text);
+        map.set(text, (map.get(text) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()].sort((x, y) => y[1] - x[1]).slice(0, 6);
   }, [assessments]);
 
   if (loading) return <div className="boot-screen">Сбор аналитики…</div>;
@@ -230,12 +258,24 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
         </article>
       </div>
 
+      {recurring.length > 0 && (
+        <article className="analytics-card wide">
+          <header><b>Что повторяется</b><small className="muted">по видам ошибок, в скольких занятиях из {assessments.length}</small></header>
+          <ul className="recommendations">
+            {recurring.map(([key, item]) => (
+              <li key={key}>{item.message}{item.critical && <span className="issue-tag">критично</span>}
+                <small className="muted"> · в {item.lessons} из {assessments.length}</small></li>
+            ))}
+          </ul>
+        </article>
+      )}
+
       {recommendations.length > 0 && (
         <article className="analytics-card wide">
-          <header><b>Рекомендации системы</b></header>
+          <header><b>Рекомендации</b><small className="muted">по правилам, по видам ошибок, в скольких занятиях из {assessments.length}</small></header>
           <ul className="recommendations">
-            {recommendations.map(([text, count]) => (
-              <li key={text}>{text}{count > 1 ? <small className="muted"> · ×{count}</small> : null}</li>
+            {recommendations.map(([text, lessons]) => (
+              <li key={text}>{text}<small className="muted"> · в {lessons} из {assessments.length}</small></li>
             ))}
           </ul>
         </article>
