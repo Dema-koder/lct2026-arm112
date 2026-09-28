@@ -2,6 +2,7 @@ package ru.lct.arm112.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.*;
 import ru.lct.arm112.persistence.AssessmentRepository;
@@ -87,6 +88,21 @@ public class LessonService {
             throw invalid("Указанный пользователь не преподаватель");
         }
         lessons.updateGroup(id, request.name().trim(), teacherId);
+        return group(id);
+    }
+
+    @Transactional
+    public Group replaceGroupMembers(UUID id, List<UUID> memberIds) {
+        group(id);
+        List<UUID> distinct = memberIds == null ? List.of() : memberIds.stream().distinct().toList();
+        List<AppUser> selected = users.findByIds(distinct);
+        if (selected.size() != distinct.size()) {
+            throw invalid("Один или несколько обучающихся не найдены");
+        }
+        if (selected.stream().anyMatch(user -> user.role() != Role.TRAINEE || !user.active())) {
+            throw invalid("В группу можно добавить только активных обучающихся");
+        }
+        users.replaceGroupMembers(id, distinct);
         return group(id);
     }
 

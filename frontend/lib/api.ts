@@ -513,6 +513,9 @@ export type ManagedService = {
   id: string;
   label: string;
   description: string;
+  purpose: string;
+  stopEffect: string;
+  restartWhen: string;
   state: "RUNNING" | "STOPPED" | "DEGRADED" | "FAILED";
   controllable: boolean;
   critical: boolean;
@@ -713,6 +716,8 @@ export const api = {
       request<Group>("/admin/groups", { method: "POST", body: json({ name, teacherId }) }, token),
     updateGroup: (token: string, id: string, name: string, teacherId: string) =>
       request<Group>(`/admin/groups/${id}`, { method: "PUT", body: json({ name, teacherId }) }, token),
+    setGroupMembers: (token: string, id: string, memberIds: string[]) =>
+      request<Group>(`/admin/groups/${id}/members`, { method: "PUT", body: json({ memberIds }) }, token),
     settings: (token: string) => request<Record<string, string>>("/admin/settings", {}, token),
     updateSettings: (token: string, patch: Record<string, string>) =>
       request<Record<string, string>>("/admin/settings", { method: "PUT", body: json(patch) }, token),

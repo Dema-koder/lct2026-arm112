@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.8
+  version: 0.3.9
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -1092,6 +1092,25 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Group'}
+  /admin/groups/{id}/members:
+    put:
+      tags: [Admin]
+      operationId: replaceGroupMembers
+      description: Заменяет полный состав группы. Выбранные обучающиеся, состоявшие в других группах, переносятся в эту группу.
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GroupMembersUpdate'}
+      responses:
+        '200':
+          description: Группа с обновлённым составом
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Group'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
   /admin/settings:
     get:
       tags: [Admin]
@@ -2130,6 +2149,15 @@ components:
       properties:
         name: {type: string, maxLength: 200}
         teacherId: {type: [string, 'null'], format: uuid}
+    GroupMembersUpdate:
+      type: object
+      additionalProperties: false
+      required: [memberIds]
+      properties:
+        memberIds:
+          type: array
+          uniqueItems: true
+          items: {type: string, format: uuid}
     Lesson:
       type: object
       additionalProperties: false
@@ -2521,11 +2549,14 @@ components:
     ManagedService:
       type: object
       additionalProperties: false
-      required: [id, label, description, state, controllable, critical, metrics, allowedActions]
+      required: [id, label, description, purpose, stopEffect, restartWhen, state, controllable, critical, metrics, allowedActions]
       properties:
         id: {type: string}
         label: {type: string}
         description: {type: string}
+        purpose: {type: string, description: Простое объяснение назначения компонента}
+        stopEffect: {type: string, description: Последствия остановки компонента}
+        restartWhen: {type: string, description: Признаки, при которых компонент следует перезапустить}
         state: {type: string, enum: [RUNNING, STOPPED, DEGRADED, FAILED]}
         controllable: {type: boolean}
         critical: {type: boolean}

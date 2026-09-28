@@ -59,6 +59,23 @@ public class UserRepository {
         return jdbc.query("select * from app_user where group_id = ? order by display_name", MAPPER, groupId);
     }
 
+    public void replaceGroupMembers(UUID groupId, List<UUID> memberIds) {
+        jdbc.update("""
+                update app_user set group_id = null, auth_version = auth_version + 1,
+                                    updated_at = current_timestamp
+                 where group_id = ?
+                """, groupId);
+        if (memberIds.isEmpty()) return;
+        String placeholders = String.join(",", Collections.nCopies(memberIds.size(), "?"));
+        List<Object> args = new ArrayList<>();
+        args.add(groupId);
+        args.addAll(memberIds);
+        jdbc.update("""
+                update app_user set group_id = ?, auth_version = auth_version + 1,
+                                    updated_at = current_timestamp
+                 where id in (""" + placeholders + ")", args.toArray());
+    }
+
     public void insert(AppUser user, UUID createdBy) {
         jdbc.update("""
                 insert into app_user (id, login, password_hash, display_name, role, workstation_number,
