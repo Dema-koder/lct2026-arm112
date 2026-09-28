@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
+import { api, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
@@ -33,10 +33,17 @@ export function AdminShell({ token, user, onLogout }: { token: string; user: Use
 }
 
 const SERVICE_ACTION_LABELS = { START: "Запустить", STOP: "Остановить", RESTART: "Перезапустить" } as const;
+const CALL_STATUS_LABELS = { ACCEPTED: "Шлюз принял", ANSWERED: "Ответили", NOT_ANSWERED: "Не ответили", FAILED: "Ошибка" } as const;
+const CALL_TRIGGER_LABELS: Record<AlertCallAttempt["triggerType"], string> = {
+  TEST: "Тест", SERVICE_PROBLEM: "Сбой сервиса", SERVICE_RECOVERY: "Восстановление",
+  MONITOR_FAILURE: "Сбой мониторинга", MONITOR_RECOVERY: "Мониторинг восстановлен", RETRY: "Повтор",
+  ESCALATION: "Резервный номер", SYSTEM: "Система",
+};
 
 function Services({ token }: { token: string }) {
   const [items, setItems] = useState<ManagedService[]>([]);
   const [history, setHistory] = useState<ServiceEvent[]>([]);
+  const [calls, setCalls] = useState<AlertCallAttempt[]>([]);
   const [alerts, setAlerts] = useState<AlertConfiguration | null>(null);
   const [pending, setPending] = useState<{ service: ManagedService; action: "START" | "STOP" | "RESTART" } | null>(null);
   const [error, setError] = useState("");
@@ -44,12 +51,13 @@ function Services({ token }: { token: string }) {
   const [working, run] = useAction(setError);
 
   const load = useCallback(async () => {
-    const [serviceItems, serviceHistory, alertState] = await Promise.all([
-      api.admin.services(token), api.admin.serviceHistory(token), api.admin.alertConfiguration(token),
+    const [serviceItems, serviceHistory, alertState, callHistory] = await Promise.all([
+      api.admin.services(token), api.admin.serviceHistory(token), api.admin.alertConfiguration(token), api.admin.alertHistory(token),
     ]);
     setItems(serviceItems);
     setHistory(serviceHistory);
     setAlerts(alertState);
+    setCalls(callHistory);
   }, [token]);
   useEffect(() => { void run(load); }, [load, run]);
 
@@ -61,8 +69,26 @@ function Services({ token }: { token: string }) {
   });
 
   const testCall = () => run(async () => {
-    const result = await api.admin.testAlert(token);
-    setNotice(result.message);
+    try {
+      const result = await api.admin.testAlert(token);
+      setNotice(result.message);
+    } finally {
+      await load();
+    }
+  });
+
+  const checkNow = () => run(async () => {
+    setItems(await api.admin.checkServices(token));
+    setNotice("Проверка сервисов завершена");
+  });
+
+  const retryCall = (id: string) => run(async () => {
+    try {
+      const result = await api.admin.retryAlert(token, id);
+      setNotice(result.status === "FAILED" ? "Повторный звонок не запущен" : "Повторный звонок передан шлюзу");
+    } finally {
+      await load();
+    }
   });
 
   return (
@@ -71,18 +97,22 @@ function Services({ token }: { token: string }) {
         <b>Управление сервисами</b>
         <small className="muted">остановленные модули не обрабатывают новые события, их данные сохраняются</small>
         <span className="spacer" />
-        <button className="ghost" disabled={working} onClick={() => run(load)}>обновить</button>
+        <button className="secondary" disabled={working} onClick={checkNow}>Проверить сейчас</button>
       </div>
       <div className={`service-alert-status ${alerts?.configured ? "configured" : "disabled"}`}>
         <div>
           <b>Аварийный звонок</b>
-          <span>{alerts?.configured ? "телефонный шлюз настроен" : "не настроен — добавьте параметры шлюза на сервере"}</span>
+          <span>{alerts?.configured
+            ? `телефонный шлюз настроен · номеров в цепочке: ${alerts.recipientCount}`
+            : "не настроен — добавьте параметры шлюза на сервере"}</span>
           <details className="service-alert-setup" open={!alerts?.configured}>
             <summary>Как настроить</summary>
             <p>Исходный код менять не нужно. Администратор сервера добавляет в файл <code>/opt/arm112/.env</code> адрес внутреннего телефонного шлюза, его служебный токен и номер дежурного:</p>
             <code>ARM112_ALERT_CALL_GATEWAY_URL</code>
             <code>ARM112_ALERT_CALL_GATEWAY_TOKEN</code>
+            <code>ARM112_ALERT_PHONE_NUMBERS</code>
             <code>ARM112_ALERT_PHONE_NUMBER</code>
+            <p><code>ARM112_ALERT_PHONE_NUMBERS</code> содержит основной и резервные номера через запятую; одиночный параметр оставлен для совместимости.</p>
             <p>После изменения необходимо перезапустить backend. Секретный токен намеренно нельзя вводить или прочитать через браузер.</p>
           </details>
         </div>
@@ -100,6 +130,14 @@ function Services({ token }: { token: string }) {
             <dl>
               {service.metrics.map((metric) => <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>)}
             </dl>
+            <div className={`service-diagnostics ${service.issue ? "has-issue" : "healthy"}`}>
+              <div><span>Последняя проверка</span><b>{dateTime(service.lastCheckedAt)}</b></div>
+              <div><span>Последняя успешная</span><b>{service.lastSuccessfulAt ? dateTime(service.lastSuccessfulAt) : "ещё не было"}</b></div>
+              <div><span>Ответ</span><b>{service.responseTimeMs == null ? "не измеряется" : `${service.responseTimeMs} мс`}</b></div>
+              <p><b>{service.issue ? "Проблема:" : "Результат:"}</b> {service.issue ?? "проверка пройдена"}</p>
+              <p><b>Что делать:</b> {service.recommendedAction}</p>
+              <p><b>Зависит от:</b> {service.dependencies.length ? service.dependencies.join(", ") : "нет зависимостей"}</p>
+            </div>
             <details className="service-help">
               <summary>Что это и когда перезапускать</summary>
               <p><b>Назначение:</b> {service.purpose}</p>
@@ -117,6 +155,35 @@ function Services({ token }: { token: string }) {
           </article>
         ))}
       </div>
+      <section className="service-history alert-call-history">
+        <div className="panel-head">
+          <b>История аварийных звонков</b>
+          <small className="muted">номер показывается частично; ответ обновляет внутренний телефонный шлюз</small>
+        </div>
+        {calls.length === 0 ? <p className="empty-state">Звонков пока не было</p> : (
+          <div className="table-scroll"><table className="data-table">
+            <thead><tr><th>Время</th><th>Получатель</th><th>Причина</th><th>Сервис</th><th>Попытка</th><th>Статус</th><th>Ответ</th><th>Действие</th></tr></thead>
+            <tbody>{calls.map((call) => (
+              <tr key={call.id} title={call.errorMessage ?? call.message}>
+                <td>{dateTime(call.requestedAt)}</td>
+                <td>{call.recipient}</td>
+                <td className="call-reason">
+                  <b>{CALL_TRIGGER_LABELS[call.triggerType] ?? call.triggerType}</b>
+                  <small>{call.message}</small>
+                  {call.errorMessage && <small className="error-text">{call.errorMessage}</small>}
+                </td>
+                <td>{items.find((item) => item.id === call.serviceId)?.label ?? call.serviceId ?? "—"}</td>
+                <td>{call.attemptNumber} · получатель {call.recipientOrder}</td>
+                <td><span className={`call-status ${call.status.toLowerCase()}`}>{CALL_STATUS_LABELS[call.status]}</span></td>
+                <td>{call.answered == null
+                  ? call.status === "ACCEPTED" && call.gatewayCallId ? "ожидается" : "нет данных"
+                  : call.answered ? "да" : "нет"}</td>
+                <td><button className="ghost" disabled={working || !alerts?.configured} onClick={() => retryCall(call.id)}>повторить</button></td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+        )}
+      </section>
       <section className="service-history">
         <div className="panel-head"><b>История сервисов</b><small className="muted">действия администраторов и автоматические изменения состояния</small></div>
         {history.length === 0 ? <p className="empty-state">Событий пока нет</p> : (

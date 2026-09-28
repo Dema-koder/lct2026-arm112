@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Безопасное управление компонентами в рантайме.
@@ -43,6 +44,7 @@ public class ServiceManagementService {
     private final ServiceEventRepository history;
     private final TrainingEngine engine;
     private final String version;
+    private final Map<String, Instant> lastSuccessfulChecks = new ConcurrentHashMap<>();
 
     public ServiceManagementService(SettingsService settings, JdbcTemplate jdbc, EventService events,
                                     SessionRepository sessions, JobRepository jobs, TrainingEngine engine,
@@ -66,7 +68,7 @@ public class ServiceManagementService {
         } catch (RuntimeException exception) {
             databaseState = "FAILED";
         }
-        return List.of(
+        List<ManagedService> raw = List.of(
                 fixed("frontend", "Веб-интерфейс", "Доступен через браузер; перезапускается средствами Docker/CI.",
                         "Показывает рабочие места обучающегося, преподавателя и администратора.",
                         "Страницы временно перестанут открываться.", "После обновления или если страницы не загружаются.",
@@ -103,6 +105,7 @@ public class ServiceManagementService {
                                 new ServiceMetric("С ошибкой", String.valueOf(jobs.countByState(JobRepository.FAILED)))), false,
                         jobs.countByState(JobRepository.FAILED) > 0 ? "DEGRADED" : null)
         );
+        return raw.stream().map(this::diagnose).toList();
     }
 
     public ManagedService execute(String id, String requestedAction, CurrentUser actor) {
@@ -161,13 +164,91 @@ public class ServiceManagementService {
         boolean enabled = settings.enabled(KEYS.get(id));
         String state = enabled ? (healthState == null ? "RUNNING" : healthState) : "STOPPED";
         return new ManagedService(id, label, description, purpose, stopEffect, restartWhen, state,
-                true, critical, metrics, enabled ? List.of("STOP", "RESTART") : List.of("START"));
+                true, critical, metrics, enabled ? List.of("STOP", "RESTART") : List.of("START"),
+                null, null, null, null, null, List.of());
     }
 
     private ManagedService fixed(String id, String label, String description, String purpose,
                                  String stopEffect, String restartWhen, String state,
                                  boolean controllable, boolean critical, List<ServiceMetric> metrics) {
         return new ManagedService(id, label, description, purpose, stopEffect, restartWhen, state,
-                controllable, critical, metrics, List.of());
+                controllable, critical, metrics, List.of(), null, null, null, null, null, List.of());
+    }
+
+    private ManagedService diagnose(ManagedService service) {
+        Instant checkedAt = Instant.now();
+        long started = System.nanoTime();
+        String state = service.state();
+        String issue = defaultIssue(service);
+        try {
+            switch (service.id()) {
+                case "database" -> jdbc.queryForObject("select 1", Integer.class);
+                case "simulation" -> sessions.findByState("ACTIVE").size();
+                case "telephony" -> engine.activeCallCount();
+                case "realtime" -> events.openSockets();
+                case "jobs" -> jobs.countByState(JobRepository.READY);
+                default -> { /* frontend/backend подтверждаются самим успешным ответом API */ }
+            }
+        } catch (RuntimeException exception) {
+            state = "FAILED";
+            issue = "Проверка завершилась ошибкой: " + safeMessage(exception);
+        }
+        Long responseTimeMs = service.id().equals("frontend") ? null
+                : Math.max(0, (System.nanoTime() - started) / 1_000_000);
+        if (state.equals("RUNNING")) lastSuccessfulChecks.put(service.id(), checkedAt);
+        Instant lastSuccessful = lastSuccessfulChecks.get(service.id());
+        return new ManagedService(service.id(), service.label(), service.description(), service.purpose(),
+                service.stopEffect(), service.restartWhen(), state, service.controllable(), service.critical(),
+                service.metrics(), service.allowedActions(), checkedAt, lastSuccessful, responseTimeMs,
+                issue, recommendation(service.id(), state, issue), dependencies(service.id()));
+    }
+
+    private String defaultIssue(ManagedService service) {
+        if (service.state().equals("STOPPED")) return "Остановлен администратором";
+        if (service.state().equals("DEGRADED") && service.id().equals("jobs")) {
+            String failed = service.metrics().stream().filter(metric -> metric.label().equals("С ошибкой"))
+                    .map(ServiceMetric::value).findFirst().orElse("несколько");
+            return "Фоновые задания с ошибкой: " + failed;
+        }
+        if (service.state().equals("FAILED")) return "Компонент не прошёл проверку доступности";
+        return null;
+    }
+
+    private String recommendation(String id, String state, String issue) {
+        if (state.equals("RUNNING")) return "Действий не требуется";
+        if (state.equals("STOPPED")) return KEYS.containsKey(id)
+                ? "Запустите модуль, когда его функции снова понадобятся"
+                : "Запустите компонент средствами Docker/CI";
+        if (id.equals("jobs") && state.equals("DEGRADED")) {
+            return "Проверьте ошибки фоновых заданий; если очередь не движется — перезапустите модуль";
+        }
+        return serviceRestartRecommendation(id, issue);
+    }
+
+    private String serviceRestartRecommendation(String id, String issue) {
+        return switch (id) {
+            case "database" -> "Проверьте PostgreSQL и место на диске; не перезапускайте БД при активных пользователях";
+            case "backend", "frontend" -> "Проверьте журнал и healthcheck, затем выполните перевыкладку через CI";
+            default -> "Проверьте журнал; если причина не устранена — перезапустите модуль";
+        };
+    }
+
+    private List<String> dependencies(String id) {
+        return switch (id) {
+            case "frontend" -> List.of("Backend API");
+            case "backend" -> List.of("PostgreSQL");
+            case "database" -> List.of();
+            case "simulation" -> List.of("Backend API", "PostgreSQL", "Доставка событий");
+            case "telephony" -> List.of("Backend API", "PostgreSQL");
+            case "realtime" -> List.of("Backend API", "PostgreSQL");
+            case "jobs" -> List.of("Backend API", "PostgreSQL");
+            default -> List.of();
+        };
+    }
+
+    private static String safeMessage(RuntimeException exception) {
+        String value = exception.getMessage();
+        if (value == null || value.isBlank()) return exception.getClass().getSimpleName();
+        return value.length() <= 200 ? value : value.substring(0, 200);
     }
 }

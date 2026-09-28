@@ -393,13 +393,20 @@ public final class ApiModels {
     public record ManagedService(String id, String label, String description, String purpose,
                                  String stopEffect, String restartWhen, String state,
                                  boolean controllable, boolean critical,
-                                 List<ServiceMetric> metrics, List<String> allowedActions) {}
+                                 List<ServiceMetric> metrics, List<String> allowedActions,
+                                 Instant lastCheckedAt, Instant lastSuccessfulAt, Long responseTimeMs,
+                                 String issue, String recommendedAction, List<String> dependencies) {}
     public record ServiceAction(@NotBlank String action) {}
     public record ServiceEvent(UUID id, String serviceId, String eventType, String previousState,
                                String currentState, String action, String outcome, String message,
                                UUID actorUserId, String actorLogin, boolean notified, Instant occurredAt) {}
-    public record AlertConfiguration(boolean configured, String channel) {}
+    public record AlertConfiguration(boolean configured, String channel, int recipientCount) {}
     public record NotificationTestResult(String status, String message) {}
+    public record AlertCallAttempt(UUID id, UUID retryOfId, String serviceId, String triggerType,
+                                   String recipient, String message, String status, Boolean answered,
+                                   int attemptNumber, int recipientOrder, String gatewayCallId, String errorMessage,
+                                   Instant requestedAt, Instant updatedAt) {}
+    public record PhoneCallStatusUpdate(@NotBlank String status, Boolean answered, String errorMessage) {}
     public record BackupInfo(String fileName, long sizeBytes, Instant createdAt) {}
     public record RestoreRequest(@NotBlank String confirm) {}
     public record LogTail(List<String> lines) {}

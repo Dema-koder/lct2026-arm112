@@ -28,6 +28,7 @@ public class ContractVersionFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/api/v1/")
+                || request.getRequestURI().startsWith("/api/v1/integrations/phone/calls/")
                 || request.getMethod().equalsIgnoreCase("OPTIONS");
     }
 

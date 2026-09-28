@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.9
+  version: 0.3.10
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -23,6 +23,7 @@ tags:
   - name: Assessment
   - name: Teacher
   - name: Admin
+  - name: Integrations
 paths:
   # ------------------------------------------------------------------ auth
   /auth/login:
@@ -1177,6 +1178,19 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/ManagedService'}
+  /admin/system/services/diagnostics:
+    post:
+      tags: [Admin]
+      operationId: checkManagedServicesNow
+      description: Немедленно проверяет доступность компонентов и возвращает диагностику с рекомендациями.
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ManagedService'}
   /admin/system/services/{id}/actions:
     post:
       tags: [Admin]
@@ -1235,6 +1249,53 @@ paths:
               schema: {$ref: '#/components/schemas/NotificationTestResult'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
         '502': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/system/alerts/history:
+    get:
+      tags: [Admin]
+      operationId: listAlertCallAttempts
+      parameters:
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 500, default: 50}}
+      responses:
+        '200':
+          description: История аварийных и тестовых телефонных вызовов
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/AlertCallAttempt'}
+  /admin/system/alerts/history/{id}/retry:
+    post:
+      tags: [Admin]
+      operationId: retryAlertCall
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Новая попытка звонка
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AlertCallAttempt'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+  /integrations/phone/calls/{gatewayCallId}:
+    put:
+      tags: [Integrations]
+      operationId: updatePhoneCallStatus
+      security: []
+      description: Обратный вызов внутреннего телефонного шлюза; защищён отдельным заголовком с серверным токеном.
+      parameters:
+        - {in: path, name: gatewayCallId, required: true, schema: {type: string}}
+        - {in: header, name: X-ARM112-Gateway-Token, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PhoneCallStatusUpdate'}
+      responses:
+        '204': {description: Статус обновлён}
+        '401': {$ref: '#/components/responses/ErrorResponse'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/log:
     get:
       tags: [Admin]
@@ -2549,7 +2610,7 @@ components:
     ManagedService:
       type: object
       additionalProperties: false
-      required: [id, label, description, purpose, stopEffect, restartWhen, state, controllable, critical, metrics, allowedActions]
+      required: [id, label, description, purpose, stopEffect, restartWhen, state, controllable, critical, metrics, allowedActions, lastCheckedAt, lastSuccessfulAt, responseTimeMs, issue, recommendedAction, dependencies]
       properties:
         id: {type: string}
         label: {type: string}
@@ -2564,6 +2625,12 @@ components:
         allowedActions:
           type: array
           items: {type: string, enum: [START, STOP, RESTART]}
+        lastCheckedAt: {type: string, format: date-time}
+        lastSuccessfulAt: {type: [string, 'null'], format: date-time}
+        responseTimeMs: {type: [integer, 'null'], minimum: 0}
+        issue: {type: [string, 'null']}
+        recommendedAction: {type: string}
+        dependencies: {type: array, items: {type: string}}
     ServiceAction:
       type: object
       additionalProperties: false
@@ -2590,10 +2657,11 @@ components:
     AlertConfiguration:
       type: object
       additionalProperties: false
-      required: [configured, channel]
+      required: [configured, channel, recipientCount]
       properties:
         configured: {type: boolean}
         channel: {type: string, const: PHONE_CALL}
+        recipientCount: {type: integer, minimum: 0}
     NotificationTestResult:
       type: object
       additionalProperties: false
@@ -2601,6 +2669,33 @@ components:
       properties:
         status: {type: string, const: SENT}
         message: {type: string}
+    AlertCallAttempt:
+      type: object
+      additionalProperties: false
+      required: [id, retryOfId, serviceId, triggerType, recipient, message, status, answered, attemptNumber, recipientOrder, gatewayCallId, errorMessage, requestedAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        retryOfId: {type: [string, 'null'], format: uuid}
+        serviceId: {type: [string, 'null']}
+        triggerType: {type: string, enum: [TEST, SERVICE_PROBLEM, SERVICE_RECOVERY, MONITOR_FAILURE, MONITOR_RECOVERY, RETRY, ESCALATION, SYSTEM]}
+        recipient: {type: string, description: Маскированный номер получателя}
+        message: {type: string}
+        status: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED]}
+        answered: {type: [boolean, 'null']}
+        attemptNumber: {type: integer, minimum: 1}
+        recipientOrder: {type: integer, minimum: 1}
+        gatewayCallId: {type: [string, 'null']}
+        errorMessage: {type: [string, 'null']}
+        requestedAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    PhoneCallStatusUpdate:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED]}
+        answered: {type: [boolean, 'null']}
+        errorMessage: {type: [string, 'null']}
     BackupInfo:
       type: object
       additionalProperties: false
