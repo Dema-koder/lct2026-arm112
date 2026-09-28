@@ -71,13 +71,23 @@ public class AssessmentRepository {
      */
     public void insert(AssessmentResult result, UUID sessionId, UUID lessonId, UUID traineeId,
                        Map<UUID, String> cardScenarios) {
+        insert(result, result.assessment(), null, null, sessionId, lessonId, traineeId, cardScenarios);
+    }
+
+    /** Сохраняет показанную оценку и отдельный неизменённый результат ИИ для обучения без обратной связи. */
+    public void insert(AssessmentResult result, Assessment rawAi, UUID calibrationModelId,
+                       Integer calibrationVersion, UUID sessionId, UUID lessonId, UUID traineeId,
+                       Map<UUID, String> cardScenarios) {
         Assessment ai = result.assessment();
         long startedAt = System.nanoTime();
         jdbc.update("""
-                insert into assessment (id, session_id, mode, ai_payload, ai_total, timing_score, language_score, syntax_errors)
-                values (?, ?, ?, ?, ?, ?, ?, ?)
-                """, ai.id(), sessionId, ai.mode(), encode(ai), ai.totalScore(), ai.timingScore(),
-                ai.languageScore(), ai.syntaxErrors() == null ? 0 : ai.syntaxErrors());
+                insert into assessment (id, session_id, mode, ai_payload, raw_ai_payload, ai_total,
+                                        timing_score, language_score, syntax_errors,
+                                        calibration_model_id, calibration_version)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, ai.id(), sessionId, ai.mode(), encode(ai), encode(rawAi), ai.totalScore(), ai.timingScore(),
+                ai.languageScore(), ai.syntaxErrors() == null ? 0 : ai.syntaxErrors(),
+                calibrationModelId, calibrationVersion);
 
         List<AssessmentIssue> issues = ai.issues() == null ? List.of() : ai.issues();
         if (!issues.isEmpty()) {
@@ -190,10 +200,10 @@ public class AssessmentRepository {
     /** Оценки, которые преподаватель правил по критериям — вход для калибровки. */
     public List<AssessmentRow> findTeacherAssessed(String mode) {
         return jdbc.query("""
-                select * from assessment
+                select assessment.*, coalesce(raw_ai_payload, ai_payload) as calibration_payload from assessment
                  where mode = ? and teacher_assessed_at is not null and teacher_payload is not null
                  order by teacher_assessed_at
-                """, mapper, mode);
+                """, this::mapForCalibration, mode);
     }
 
     public void setTeacher(UUID id, UUID teacherId, double total, String comment, List<CriterionScore> criteria) {
@@ -230,10 +240,18 @@ public class AssessmentRepository {
     }
 
     private AssessmentRow map(ResultSet rs, int row) throws SQLException {
+        return map(rs, "ai_payload");
+    }
+
+    private AssessmentRow mapForCalibration(ResultSet rs, int row) throws SQLException {
+        return map(rs, "calibration_payload");
+    }
+
+    private AssessmentRow map(ResultSet rs, String payloadColumn) throws SQLException {
         Timestamp assessedAt = rs.getTimestamp("teacher_assessed_at");
         BigDecimal teacherTotal = rs.getBigDecimal("teacher_total");
         return new AssessmentRow(rs.getObject("id", UUID.class), rs.getObject("session_id", UUID.class),
-                rs.getString("mode"), decode(rs.getString("ai_payload")),
+                rs.getString("mode"), decode(rs.getString(payloadColumn)),
                 rs.getBigDecimal("ai_total").doubleValue(),
                 rs.getObject("timing_score") == null ? null : rs.getBigDecimal("timing_score").doubleValue(),
                 rs.getObject("language_score") == null ? null : rs.getBigDecimal("language_score").doubleValue(),

@@ -26,6 +26,7 @@ import ru.lct.arm112.security.CurrentUser;
 import ru.lct.arm112.security.Role;
 import ru.lct.arm112.service.assessment.CardActionsAssessor;
 import ru.lct.arm112.service.assessment.CardFillAssessor;
+import ru.lct.arm112.service.analytics.CalibrationService;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -119,6 +120,7 @@ public class TrainingEngine {
     private final SessionAccess access;
     private final CardActionsAssessor actionsAssessor;
     private final CardFillAssessor fillAssessor;
+    private final CalibrationService calibration;
     private final ru.lct.arm112.persistence.JobRepository jobs;
     private final String publicBaseUrl;
 
@@ -137,7 +139,8 @@ public class TrainingEngine {
                           LessonRepository lessonRepo, UserRepository userRepo, AssessmentRepository assessmentRepo,
                           ScenarioService scenarios, ReferenceDataService references, SettingsService settings,
                           SessionAccess access, CardActionsAssessor actionsAssessor, CardFillAssessor fillAssessor,
-                          ru.lct.arm112.persistence.JobRepository jobs, IdempotencyService idempotency,
+                          CalibrationService calibration, ru.lct.arm112.persistence.JobRepository jobs,
+                          IdempotencyService idempotency,
                           @Value("${arm112.public-base-url:http://localhost:8080}") String publicBaseUrl) {
         this.jobs = jobs;
         this.events = events;
@@ -152,6 +155,7 @@ public class TrainingEngine {
         this.access = access;
         this.actionsAssessor = actionsAssessor;
         this.fillAssessor = fillAssessor;
+        this.calibration = calibration;
         this.idempotency = idempotency;
         this.publicBaseUrl = publicBaseUrl.endsWith("/")
                 ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
@@ -499,8 +503,11 @@ public class TrainingEngine {
         Map<UUID, String> cardScenarios = new LinkedHashMap<>();
         state.cards.values().forEach(card -> cardScenarios.put(card.id, card.scenarioId));
         state.drafts.values().forEach(draft -> cardScenarios.put(draft.id(), draft.scenarioId()));
+        CalibrationService.AppliedAssessment applied = calibration.applyActive(result);
+        result = applied.result();
         Assessment assessment = result.assessment();
-        assessmentRepo.insert(result, state.id, state.lessonId, state.traineeId, cardScenarios);
+        assessmentRepo.insert(result, applied.raw(), applied.modelId(), applied.modelVersion(),
+                state.id, state.lessonId, state.traineeId, cardScenarios);
         // Разбор считается в фоне: на целевом железе он стоит десятки секунд,
         // а обучающийся должен увидеть оценку сразу.
         jobs.enqueue("SESSION_DEBRIEF", "{\"assessmentId\":\"" + assessment.id() + "\"}",

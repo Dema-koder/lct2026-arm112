@@ -18,6 +18,7 @@ import ru.lct.arm112.service.PhoneCallAlertService;
 import ru.lct.arm112.service.PhoneGatewayMockService;
 import ru.lct.arm112.service.TrainingEngine;
 import ru.lct.arm112.service.UserService;
+import ru.lct.arm112.service.analytics.CalibrationService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,6 +46,7 @@ public class AdminController {
     private final ServiceManagementService serviceManagement;
     private final PhoneCallAlertService serviceAlerts;
     private final PhoneGatewayMockService mockPhoneGateway;
+    private final CalibrationService calibration;
     private final JdbcTemplate jdbc;
     private final String version;
     private final Path logFile;
@@ -53,6 +55,7 @@ public class AdminController {
                            BackupService backups, EventService events, SessionRepository sessions,
                            TrainingEngine engine, ServiceManagementService serviceManagement, JdbcTemplate jdbc,
                            PhoneCallAlertService serviceAlerts, PhoneGatewayMockService mockPhoneGateway,
+                           CalibrationService calibration,
                            @Value("${arm112.version:0.3.0}") String version,
                            @Value("${arm112.log-file:./logs/arm112.log}") String logFile) {
         this.users = users;
@@ -66,6 +69,7 @@ public class AdminController {
         this.serviceManagement = serviceManagement;
         this.serviceAlerts = serviceAlerts;
         this.mockPhoneGateway = mockPhoneGateway;
+        this.calibration = calibration;
         this.jdbc = jdbc;
         this.version = version;
         this.logFile = Path.of(logFile);
@@ -130,6 +134,25 @@ public class AdminController {
     @PutMapping("/groups/{id}/members")
     public Group updateGroupMembers(@PathVariable UUID id, @Valid @RequestBody GroupMembersUpdate request) {
         return lessons.replaceGroupMembers(id, request.memberIds());
+    }
+
+    // ---------------------------------------------------------------- correction of AI assessment
+
+    @GetMapping("/assessment-calibration")
+    public AdminCalibrationState calibration(@RequestParam(defaultValue = "CARD_FILL") String mode) {
+        return calibration.state(mode);
+    }
+
+    @PostMapping("/assessment-calibration/activate")
+    public AdminCalibrationState activateCalibration(@Valid @RequestBody CalibrationCommand request,
+                                                       CurrentUser actor) {
+        return calibration.activate(request.mode(), actor.id());
+    }
+
+    @PostMapping("/assessment-calibration/deactivate")
+    public AdminCalibrationState deactivateCalibration(@Valid @RequestBody CalibrationCommand request,
+                                                         CurrentUser actor) {
+        return calibration.deactivate(request.mode(), actor.id());
     }
 
     // ---------------------------------------------------------------- settings
