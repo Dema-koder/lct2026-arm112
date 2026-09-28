@@ -90,8 +90,8 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}")
-    public UserAdminView updateUser(@PathVariable UUID id, @Valid @RequestBody UserUpdate request) {
-        return users.update(id, request);
+    public UserAdminView updateUser(@PathVariable UUID id, @Valid @RequestBody UserUpdate request, CurrentUser actor) {
+        return users.update(id, request, actor.id());
     }
 
     @PostMapping("/users/{id}/block")

@@ -91,9 +91,14 @@ public class UserService {
         return toAdminView(user);
     }
 
-    public UserAdminView update(UUID id, UserUpdate request) {
+    public UserAdminView update(UUID id, UserUpdate request, UUID actor) {
         AppUser existing = require(id);
         Role role = parseRole(request.role());
+        // Роль меняет только администратор, поэтому запрет на смену своей роли
+        // гарантирует, что последний администратор не разжалует сам себя.
+        if (id.equals(actor) && role != existing.role()) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Нельзя сменить роль своей учётной записи");
+        }
         validateGroupAssignment(role, request.groupId());
         if (existing.role() == Role.TEACHER && role != Role.TEACHER && lessons.countGroupsByTeacher(id) > 0) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",

@@ -397,7 +397,8 @@ function Users({ token, self }: { token: string; self: User }) {
   const saveEdit = () => editing && run(async () => {
     await api.admin.updateUser(token, editing.id, {
       displayName: editing.displayName, role: editing.role,
-      workstationNumber: editing.workstationNumber || null, groupId: editing.groupId || null,
+      workstationNumber: editing.role === "TRAINEE" ? editing.workstationNumber || null : null,
+      groupId: editing.role === "TRAINEE" ? editing.groupId || null : null,
     });
     setEditing(null);
     setNotice("Сохранено");
@@ -457,15 +458,20 @@ function Users({ token, self }: { token: string; self: User }) {
           <div className="form-grid">
             <label className="wide"><span>ФИО</span><input value={editing.displayName} onChange={(e) => setEditing({ ...editing, displayName: e.target.value })} /></label>
             <label><span>Роль</span>
-              <select value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value as Role })}>
+              <select value={editing.role} disabled={editing.id === self.id} title={editing.id === self.id ? "Свою роль сменить нельзя" : undefined}
+                onChange={(e) => setEditing({ ...editing, role: e.target.value as Role })}>
                 {(["TRAINEE", "TEACHER", "ADMIN"] as Role[]).map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}
               </select></label>
-            <label><span>Номер АРМ</span><input value={editing.workstationNumber ?? ""} onChange={(e) => setEditing({ ...editing, workstationNumber: e.target.value })} /></label>
-            <label className="wide"><span>Группа</span>
-              <select value={editing.groupId ?? ""} onChange={(e) => setEditing({ ...editing, groupId: e.target.value || null })}>
-                <option value="">без группы</option>
-                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select></label>
+            {editing.role === "TRAINEE" && (
+              <>
+                <label><span>Номер АРМ</span><input value={editing.workstationNumber ?? ""} onChange={(e) => setEditing({ ...editing, workstationNumber: e.target.value })} /></label>
+                <label className="wide"><span>Группа</span>
+                  <select value={editing.groupId ?? ""} onChange={(e) => setEditing({ ...editing, groupId: e.target.value || null })}>
+                    <option value="">без группы</option>
+                    {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select></label>
+              </>
+            )}
           </div>
           <div className="dialog-actions">
             <button className="secondary" onClick={() => setEditing(null)}>Отмена</button>

@@ -42,6 +42,16 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         JsonNode me = json(get("/api/v1/auth/me", teacher));
         assertThat(me.get("role").asText()).isEqualTo("TEACHER");
 
+        String adminId = userId(admin);
+        HttpResponse<String> demoteSelf = put("/api/v1/admin/users/" + adminId,
+                "{\"displayName\":\"Администратор системы\",\"role\":\"TRAINEE\"}", admin);
+        assertThat(demoteSelf.statusCode()).as(demoteSelf.body()).isEqualTo(422);
+        assertThat(json(get("/api/v1/auth/me", admin)).get("role").asText()).isEqualTo("ADMIN");
+        HttpResponse<String> editSelf = put("/api/v1/admin/users/" + adminId,
+                "{\"displayName\":\"Администратор системы\",\"role\":\"ADMIN\"}", admin);
+        assertThat(editSelf.statusCode()).as(editSelf.body()).isEqualTo(200);
+        admin = login("admin", "admin");   // правка учётной записи отзывает её токены
+
         long before = auditRepository.count();
         HttpResponse<String> settings = put("/api/v1/admin/settings", "{\"audit.retention_days\":\"30\"}", admin);
         assertThat(settings.statusCode()).isEqualTo(422);   // ТЗ: не меньше 6 месяцев
