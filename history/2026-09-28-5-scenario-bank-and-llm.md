@@ -21,7 +21,7 @@
 
 ### Контракт
 
-- `openapi.yaml` 0.3.10 → **0.3.11**: новые пути `/teacher/scenarios/generation-jobs`, схемы `GenerationJob`, `GenerationReport`; `/teacher/scenarios/generate` помечен `deprecated`. Изменения только добавляющие.
+- `openapi.yaml` → **0.3.12** (0.3.11 заняла параллельная ветка с mock-шлюзом телефонии): новые пути `/teacher/scenarios/generation-jobs`, схемы `GenerationJob`, `GenerationReport`; `/teacher/scenarios/generate` помечен `deprecated`. Изменения только добавляющие.
 
 ### Документация
 

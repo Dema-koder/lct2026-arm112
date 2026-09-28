@@ -410,6 +410,11 @@ public final class ApiModels {
                                String currentState, String action, String outcome, String message,
                                UUID actorUserId, String actorLogin, boolean notified, Instant occurredAt) {}
     public record AlertConfiguration(boolean configured, String channel, int recipientCount) {}
+    public record MockPhoneGatewaySettings(boolean available, String scenario, Long delayMs,
+                                           List<String> allowedScenarios, String message) {}
+    public record MockPhoneGatewayUpdate(@NotBlank String scenario,
+                                         @jakarta.validation.constraints.Min(100)
+                                         @jakarta.validation.constraints.Max(30000) long delayMs) {}
     public record NotificationTestResult(String status, String message) {}
     public record AlertCallAttempt(UUID id, UUID retryOfId, String serviceId, String triggerType,
                                    String recipient, String message, String status, Boolean answered,

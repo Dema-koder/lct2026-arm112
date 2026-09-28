@@ -15,6 +15,7 @@ import ru.lct.arm112.service.LessonService;
 import ru.lct.arm112.service.SettingsService;
 import ru.lct.arm112.service.ServiceManagementService;
 import ru.lct.arm112.service.PhoneCallAlertService;
+import ru.lct.arm112.service.PhoneGatewayMockService;
 import ru.lct.arm112.service.TrainingEngine;
 import ru.lct.arm112.service.UserService;
 
@@ -43,6 +44,7 @@ public class AdminController {
     private final TrainingEngine engine;
     private final ServiceManagementService serviceManagement;
     private final PhoneCallAlertService serviceAlerts;
+    private final PhoneGatewayMockService mockPhoneGateway;
     private final JdbcTemplate jdbc;
     private final String version;
     private final Path logFile;
@@ -50,7 +52,7 @@ public class AdminController {
     public AdminController(UserService users, LessonService lessons, SettingsService settings, AuditService audit,
                            BackupService backups, EventService events, SessionRepository sessions,
                            TrainingEngine engine, ServiceManagementService serviceManagement, JdbcTemplate jdbc,
-                           PhoneCallAlertService serviceAlerts,
+                           PhoneCallAlertService serviceAlerts, PhoneGatewayMockService mockPhoneGateway,
                            @Value("${arm112.version:0.3.0}") String version,
                            @Value("${arm112.log-file:./logs/arm112.log}") String logFile) {
         this.users = users;
@@ -63,6 +65,7 @@ public class AdminController {
         this.engine = engine;
         this.serviceManagement = serviceManagement;
         this.serviceAlerts = serviceAlerts;
+        this.mockPhoneGateway = mockPhoneGateway;
         this.jdbc = jdbc;
         this.version = version;
         this.logFile = Path.of(logFile);
@@ -217,6 +220,16 @@ public class AdminController {
                     "Телефонный шлюз не подтвердил запуск тестового звонка");
         }
         return new NotificationTestResult("SENT", "Тестовый звонок запущен");
+    }
+
+    @GetMapping("/system/alerts/mock")
+    public MockPhoneGatewaySettings mockAlertSettings() {
+        return mockPhoneGateway.status();
+    }
+
+    @PutMapping("/system/alerts/mock")
+    public MockPhoneGatewaySettings updateMockAlertSettings(@Valid @RequestBody MockPhoneGatewayUpdate request) {
+        return mockPhoneGateway.update(request);
     }
 
     @GetMapping("/system/alerts/history")
