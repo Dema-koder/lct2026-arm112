@@ -88,4 +88,9 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(admin, /RESTORE/);
   assert.match(admin, /Управление сервисами/);
   assert.match(api, /\/admin\/system\/services/);
+  assert.match(admin, /Поиск по ФИО, логину или номеру АРМ/);
+  assert.match(api, /\/groups\/\$\{id\}\/members/);
+  assert.match(admin, /Что это и когда перезапускать/);
+  assert.match(admin, /Действие или адрес API/);
+  assert.match(admin, /ARM112_ALERT_CALL_GATEWAY_TOKEN/);
 });

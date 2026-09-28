@@ -68,18 +68,36 @@ public class ServiceManagementService {
         }
         return List.of(
                 fixed("frontend", "Веб-интерфейс", "Доступен через браузер; перезапускается средствами Docker/CI.",
+                        "Показывает рабочие места обучающегося, преподавателя и администратора.",
+                        "Страницы временно перестанут открываться.", "После обновления или если страницы не загружаются.",
                         "RUNNING", false, true, List.of(new ServiceMetric("Состояние", "страница загружена"))),
                 fixed("backend", "Backend API", "Основное приложение; жизненным циклом управляет Docker/CI.",
+                        "Выполняет всю бизнес-логику и связывает интерфейс с базой данных.",
+                        "Все действия в системе станут недоступны.", "После обновления, изменения серверных настроек или ошибки healthcheck.",
                         "RUNNING", false, true, List.of(new ServiceMetric("Версия", version))),
                 fixed("database", "PostgreSQL", "Основная база; остановка из приложения запрещена.",
+                        "Хранит пользователей, занятия, карточки, оценки и системную историю.",
+                        "Чтение и сохранение данных станет невозможно.", "Только при обслуживании БД специалистом и при отсутствии пользователей.",
                         databaseState, false, true, List.of(new ServiceMetric("Версия", databaseVersion))),
                 runtime("simulation", "Движок симуляции", "Доставка вводных и контроль нормативов времени.",
+                        "По расписанию выдаёт карточки, поддерживает их одновременную обработку и считает время реакции.",
+                        "Новые карточки и таймеры занятий будут поставлены на паузу.",
+                        "Если карточки перестали приходить или таймеры занятия не двигаются.",
                         List.of(new ServiceMetric("Активных сессий", String.valueOf(sessions.findByState("ACTIVE").size()))), true),
                 runtime("telephony", "Симулятор телефонии", "Исходящие учебные звонки и смена их состояний.",
+                        "Имитирует звонки руководителям: гудки, соединение и ответ абонента.",
+                        "Новые учебные звонки не начнутся; данные текущих звонков сохранятся.",
+                        "Если звонок завис в одном состоянии или перестал воспроизводиться ответ.",
                         List.of(new ServiceMetric("Активных звонков", String.valueOf(engine.activeCallCount()))), false),
                 runtime("realtime", "Доставка событий", "WebSocket-уведомления и повтор недоставленных событий.",
+                        "Мгновенно передаёт в браузеры новые карточки, статусы и изменения без обновления страницы.",
+                        "Данные сохранятся, но экраны могут обновляться с задержкой до запуска модуля.",
+                        "Если данные есть после обновления страницы, но не появляются автоматически.",
                         List.of(new ServiceMetric("Подключений", String.valueOf(events.openSockets()))), false),
                 runtime("jobs", "Фоновые задания", "Генерация сценариев и персональные разборы занятий.",
+                        "Выполняет долгие операции в очереди, не блокируя работу пользователя.",
+                        "Очередь сохранится, но генерация и разборы будут ждать запуска.",
+                        "Если число «В очереди» долго не уменьшается или появились задания «С ошибкой».",
                         List.of(new ServiceMetric("В очереди", String.valueOf(jobs.countByState(JobRepository.READY))),
                                 new ServiceMetric("В работе", String.valueOf(jobs.countByState(JobRepository.RUNNING))),
                                 new ServiceMetric("С ошибкой", String.valueOf(jobs.countByState(JobRepository.FAILED)))), false,
@@ -131,21 +149,25 @@ public class ServiceManagementService {
                 previousState, currentState, action, outcome, message, actor.id(), actor.login(), notified, Instant.now()));
     }
 
-    private ManagedService runtime(String id, String label, String description,
+    private ManagedService runtime(String id, String label, String description, String purpose,
+                                   String stopEffect, String restartWhen,
                                    List<ServiceMetric> metrics, boolean critical) {
-        return runtime(id, label, description, metrics, critical, null);
+        return runtime(id, label, description, purpose, stopEffect, restartWhen, metrics, critical, null);
     }
 
-    private ManagedService runtime(String id, String label, String description,
+    private ManagedService runtime(String id, String label, String description, String purpose,
+                                   String stopEffect, String restartWhen,
                                    List<ServiceMetric> metrics, boolean critical, String healthState) {
         boolean enabled = settings.enabled(KEYS.get(id));
         String state = enabled ? (healthState == null ? "RUNNING" : healthState) : "STOPPED";
-        return new ManagedService(id, label, description, state,
+        return new ManagedService(id, label, description, purpose, stopEffect, restartWhen, state,
                 true, critical, metrics, enabled ? List.of("STOP", "RESTART") : List.of("START"));
     }
 
-    private ManagedService fixed(String id, String label, String description, String state,
+    private ManagedService fixed(String id, String label, String description, String purpose,
+                                 String stopEffect, String restartWhen, String state,
                                  boolean controllable, boolean critical, List<ServiceMetric> metrics) {
-        return new ManagedService(id, label, description, state, controllable, critical, metrics, List.of());
+        return new ManagedService(id, label, description, purpose, stopEffect, restartWhen, state,
+                controllable, critical, metrics, List.of());
     }
 }

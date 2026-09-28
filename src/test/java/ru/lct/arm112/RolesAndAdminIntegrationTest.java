@@ -61,7 +61,7 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         assertThat(services.statusCode()).as(services.body()).isEqualTo(200);
         assertThat(services.body()).contains("\"id\":\"backend\"", "\"id\":\"database\"",
                 "\"id\":\"simulation\"", "\"id\":\"telephony\"", "\"id\":\"realtime\"",
-                "\"id\":\"jobs\"");
+                "\"id\":\"jobs\"", "\"purpose\":", "\"stopEffect\":", "\"restartWhen\":");
         assertThat(get("/api/v1/admin/system/services", teacher).statusCode()).isEqualTo(403);
 
         HttpResponse<String> stopped = post("/api/v1/admin/system/services/jobs/actions",
@@ -128,6 +128,12 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
                 "{\"name\":\"Проверка ролей\",\"teacherId\":\"" + userId(teacher) + "\"}", admin, null);
         assertThat(group.statusCode()).as(group.body()).isEqualTo(201);
         String ownGroupId = json(group).get("id").asText();
+        HttpResponse<String> members = put("/api/v1/admin/groups/" + ownGroupId + "/members",
+                "{\"memberIds\":[\"" + id + "\"]}", admin);
+        assertThat(members.statusCode()).as(members.body()).isEqualTo(200);
+        assertThat(members.body()).contains(loginName, "\"groupId\":\"" + ownGroupId + "\"");
+        assertThat(put("/api/v1/admin/groups/" + ownGroupId + "/members",
+                "{\"memberIds\":[]}", teacher).statusCode()).isEqualTo(403);
         assertThat(put("/api/v1/admin/groups/" + json(group).get("id").asText(),
                 "{\"name\":\"Проверка ролей\",\"teacherId\":\"" + id + "\"}", admin).statusCode())
                 .isEqualTo(422);

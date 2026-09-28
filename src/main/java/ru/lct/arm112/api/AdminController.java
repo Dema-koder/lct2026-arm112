@@ -124,6 +124,11 @@ public class AdminController {
         return lessons.updateGroup(id, request);
     }
 
+    @PutMapping("/groups/{id}/members")
+    public Group updateGroupMembers(@PathVariable UUID id, @Valid @RequestBody GroupMembersUpdate request) {
+        return lessons.replaceGroupMembers(id, request.memberIds());
+    }
+
     // ---------------------------------------------------------------- settings
 
     @GetMapping("/settings")

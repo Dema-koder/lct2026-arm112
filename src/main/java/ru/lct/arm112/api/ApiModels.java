@@ -250,6 +250,7 @@ public final class ApiModels {
     public record Group(UUID id, String name, UUID teacherId, String teacherName,
                         List<User> members) {}
     public record GroupUpsert(@NotBlank @Size(max = 200) String name, UUID teacherId) {}
+    public record GroupMembersUpdate(@NotNull List<UUID> memberIds) {}
 
     public record Lesson(UUID id, UUID teacherId, UUID groupId, String groupName, String title,
                          String kind, String mode, String cardSource, String state,
@@ -389,7 +390,8 @@ public final class ApiModels {
     public record SystemHealth(String status, String database, int openSockets,
                                int activeSessions, String version, Instant serverTime) {}
     public record ServiceMetric(String label, String value) {}
-    public record ManagedService(String id, String label, String description, String state,
+    public record ManagedService(String id, String label, String description, String purpose,
+                                 String stopEffect, String restartWhen, String state,
                                  boolean controllable, boolean critical,
                                  List<ServiceMetric> metrics, List<String> allowedActions) {}
     public record ServiceAction(@NotBlank String action) {}

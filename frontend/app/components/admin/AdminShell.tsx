@@ -77,6 +77,14 @@ function Services({ token }: { token: string }) {
         <div>
           <b>Аварийный звонок</b>
           <span>{alerts?.configured ? "телефонный шлюз настроен" : "не настроен — добавьте параметры шлюза на сервере"}</span>
+          <details className="service-alert-setup" open={!alerts?.configured}>
+            <summary>Как настроить</summary>
+            <p>Исходный код менять не нужно. Администратор сервера добавляет в файл <code>/opt/arm112/.env</code> адрес внутреннего телефонного шлюза, его служебный токен и номер дежурного:</p>
+            <code>ARM112_ALERT_CALL_GATEWAY_URL</code>
+            <code>ARM112_ALERT_CALL_GATEWAY_TOKEN</code>
+            <code>ARM112_ALERT_PHONE_NUMBER</code>
+            <p>После изменения необходимо перезапустить backend. Секретный токен намеренно нельзя вводить или прочитать через браузер.</p>
+          </details>
         </div>
         <button className="secondary" disabled={working || !alerts?.configured} onClick={testCall}>Проверить звонок</button>
       </div>
@@ -92,6 +100,12 @@ function Services({ token }: { token: string }) {
             <dl>
               {service.metrics.map((metric) => <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>)}
             </dl>
+            <details className="service-help">
+              <summary>Что это и когда перезапускать</summary>
+              <p><b>Назначение:</b> {service.purpose}</p>
+              <p><b>Если остановить:</b> {service.stopEffect}</p>
+              <p><b>Перезапускать:</b> {service.restartWhen}</p>
+            </details>
             <footer>
               {service.controllable ? service.allowedActions.map((action) => (
                 <button key={action} className={action === "STOP" ? "danger-button" : action === "START" ? "primary-button" : "secondary"}
@@ -273,41 +287,69 @@ function Users({ token, self }: { token: string; self: User }) {
 function Groups({ token }: { token: string }) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [teachers, setTeachers] = useState<UserAdminView[]>([]);
+  const [trainees, setTrainees] = useState<UserAdminView[]>([]);
   const [name, setName] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editingIds, setEditingIds] = useState<string[]>([]);
+  const [editingSearch, setEditingSearch] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
 
   const load = useCallback(async () => {
-    const [g, t] = await Promise.all([api.admin.groups(token), api.admin.users(token, "TEACHER")]);
+    const [g, t, s] = await Promise.all([
+      api.admin.groups(token), api.admin.users(token, "TEACHER"), api.admin.users(token, "TRAINEE"),
+    ]);
     setGroups(g);
     setTeachers(t);
-    if (!teacherId && t[0]) setTeacherId(t[0].id);
-  }, [token, teacherId]);
+    setTrainees(s.filter((student) => student.active));
+    setTeacherId((current) => current || t[0]?.id || "");
+  }, [token]);
   useEffect(() => { void run(load); }, [load, run]);
 
   const create = () => run(async () => {
-    await api.admin.createGroup(token, name.trim(), teacherId);
+    const created = await api.admin.createGroup(token, name.trim(), teacherId);
+    if (selectedIds.length) await api.admin.setGroupMembers(token, created.id, selectedIds);
     setName("");
-    setNotice("Группа создана");
+    setSelectedIds([]);
+    setStudentSearch("");
+    setNotice(selectedIds.length ? "Группа создана, обучающиеся назначены" : "Группа создана");
     await load();
   });
   const reassign = (g: Group, next: string) => run(async () => { await api.admin.updateGroup(token, g.id, g.name, next); await load(); });
+  const openMembers = (group: Group) => {
+    setEditingGroup(group);
+    setEditingIds(group.members.map((member) => member.id));
+    setEditingSearch("");
+  };
+  const saveMembers = () => editingGroup && run(async () => {
+    await api.admin.setGroupMembers(token, editingGroup.id, editingIds);
+    setEditingGroup(null);
+    setNotice("Состав группы сохранён");
+    await load();
+  });
 
   return (
     <section className="panel-page">
       <div className="panel-head"><b>Группы</b></div>
-      <div className="form-grid">
+      <div className="form-grid group-create-form">
         <label><span>Название</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label><span>Преподаватель</span>
           <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
             {teachers.map((t) => <option key={t.id} value={t.id}>{t.displayName}</option>)}
           </select></label>
+        <div className="group-students-field">
+          <span>Обучающиеся ({selectedIds.length} выбрано)</span>
+          <StudentPicker students={trainees} groups={groups} selected={selectedIds} search={studentSearch}
+            onSearch={setStudentSearch} onChange={setSelectedIds} />
+        </div>
         <div className="dialog-actions"><button className="primary" disabled={working || !name.trim() || !teacherId} onClick={create}>Создать</button></div>
       </div>
       <table className="data-table">
-        <thead><tr><th>Группа</th><th>Преподаватель</th><th>Обучающиеся</th></tr></thead>
+        <thead><tr><th>Группа</th><th>Преподаватель</th><th>Обучающиеся</th><th /></tr></thead>
         <tbody>
           {groups.map((g) => (
             <tr key={g.id}>
@@ -317,14 +359,59 @@ function Groups({ token }: { token: string }) {
                   {teachers.map((t) => <option key={t.id} value={t.id}>{t.displayName}</option>)}
                 </select>
               </td>
-              <td>{g.members.map((m) => `${m.displayName} (АРМ ${m.workstationNumber ?? "—"})`).join(", ") || <span className="muted">пусто — назначьте группу в карточке пользователя</span>}</td>
+              <td>{g.members.map((m) => `${m.displayName} (АРМ ${m.workstationNumber ?? "—"})`).join(", ") || <span className="muted">пока никого нет</span>}</td>
+              <td><button className="ghost" onClick={() => openMembers(g)}>изменить состав</button></td>
             </tr>
           ))}
         </tbody>
       </table>
+      {editingGroup && (
+        <Modal title={`Состав группы «${editingGroup.name}»`} wide onClose={() => setEditingGroup(null)}>
+          <StudentPicker students={trainees} groups={groups} selected={editingIds} search={editingSearch}
+            onSearch={setEditingSearch} onChange={setEditingIds} />
+          <div className="dialog-actions">
+            <button className="secondary" onClick={() => setEditingGroup(null)}>Отмена</button>
+            <button className="primary" disabled={working} onClick={saveMembers}>Сохранить состав</button>
+          </div>
+        </Modal>
+      )}
       <ErrorBanner error={error} onClose={() => setError("")} />
       <Notice text={notice} />
     </section>
+  );
+}
+
+function StudentPicker({ students, groups, selected, search, onSearch, onChange }: {
+  students: UserAdminView[];
+  groups: Group[];
+  selected: string[];
+  search: string;
+  onSearch: (value: string) => void;
+  onChange: (ids: string[]) => void;
+}) {
+  const query = search.trim().toLowerCase();
+  const visible = students.filter((student) => !query || [student.displayName, student.login, student.workstationNumber]
+    .some((value) => value?.toLowerCase().includes(query)));
+  const toggle = (id: string) => onChange(selected.includes(id)
+    ? selected.filter((current) => current !== id)
+    : [...selected, id]);
+  return (
+    <div className="student-picker">
+      <input className="student-search" value={search} onChange={(event) => onSearch(event.target.value)}
+        placeholder="Поиск по ФИО, логину или номеру АРМ" />
+      <div className="student-options">
+        {visible.map((student) => {
+          const currentGroup = groups.find((group) => group.id === student.groupId);
+          return (
+            <label key={student.id} className={selected.includes(student.id) ? "selected" : ""}>
+              <input type="checkbox" checked={selected.includes(student.id)} onChange={() => toggle(student.id)} />
+              <span><b>{student.displayName}</b><small>{student.login} · АРМ {student.workstationNumber ?? "не указан"}{currentGroup ? ` · сейчас: ${currentGroup.name}` : " · без группы"}</small></span>
+            </label>
+          );
+        })}
+        {!visible.length && <p className="empty-state">Ничего не найдено</p>}
+      </div>
+    </div>
   );
 }
 
@@ -397,11 +484,13 @@ function Audit({ token }: { token: string }) {
     <section className="panel-page">
       <div className="panel-head">
         <b>Журнал действий</b>
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
+        <label className="audit-filter"><span>Роль</span><select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">все роли</option>
           {(["ADMIN", "TEACHER", "TRAINEE"] as Role[]).map((r) => <option key={r} value={r}>{roleLabels[r]}</option>)}
-        </select>
-        <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="фильтр по действию, например cards" />
+        </select></label>
+        <label className="audit-filter audit-action-filter"><span>Действие или адрес API</span>
+          <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Например: /cards, /users или /settings" />
+        </label>
       </div>
       <table className="data-table audit">
         <thead><tr><th>Когда</th><th>Кто</th><th>Роль</th><th>Действие</th><th>Статус</th><th>IP</th><th>Данные</th></tr></thead>

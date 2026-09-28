@@ -22,6 +22,10 @@
 .panel-head select, .panel-head input { height: 28px; padding: 0 8px; border: 1px solid #9aa6ac; background: white; }
 .panel-head .spacer, .spacer { flex: 1; }
 .panel-head small, .muted { color: #6d797f; }
+.audit-filter { display: flex; flex-direction: column; gap: 3px; min-width: 150px; }
+.audit-filter > span { font-size: 10px; color: #56656c; }
+.audit-action-filter { flex: 0 1 420px; min-width: 300px; }
+.audit-action-filter input { width: 100%; }
 .inline-error { color: #8f2f22; }
 .primary-button { height: 30px; padding: 0 14px; color: white; border: 0; background: var(--blue); }
 .primary-button:hover { background: var(--blue-dark); }
@@ -60,6 +64,18 @@
 .form-grid textarea { height: 72px; padding: 6px 8px; resize: vertical; }
 .form-grid .dialog-actions { grid-column: 1 / -1; margin-top: 4px; }
 .form-grid.teacher-assess { grid-template-columns: 200px 1fr; }
+.group-create-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.group-students-field { grid-column: 1 / -1; }
+.group-students-field > span { display: block; margin-bottom: 4px; font-size: 11px; color: #56656c; }
+.student-picker { border: 1px solid #d7dcde; background: white; }
+.student-search { width: 100%; height: 34px; padding: 0 10px; border: 0; border-bottom: 1px solid #d7dcde; outline-color: var(--blue); }
+.student-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 230px; overflow-y: auto; padding: 6px; }
+.student-options label { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 6px; min-width: 0; padding: 7px; cursor: pointer; }
+.student-options label:hover { background: #e4ebef; }
+.student-options label.selected { background: #d9ecf7; }
+.student-options label span { min-width: 0; }
+.student-options label b, .student-options label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.student-options label small { margin-top: 2px; color: #6d797f; font-size: 10px; }
 label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #56656c; }
 
 .check-list { display: grid; gap: 4px; max-height: 320px; overflow: auto; padding: 8px; margin-bottom: 8px; background: white; border: 1px solid #d7dcde; }
@@ -126,10 +142,17 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .managed-service dd { margin: 2px 0 0; font-weight: bold; }
 .managed-service footer { display: flex; align-items: center; gap: 7px; min-height: 30px; margin-top: auto; }
 .managed-service footer small { color: #6d797f; }
+.service-help { margin: 0 0 10px; font-size: 11px; color: #56656c; }
+.service-help summary { color: var(--blue-dark); cursor: pointer; }
+.service-help p { margin: 5px 0; line-height: 1.4; }
 .service-alert-status { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; margin-bottom: 10px; border: 1px solid #d7dcde; border-left: 4px solid #8e9ca3; background: white; }
 .service-alert-status.configured { border-left-color: #2f9a5a; }
 .service-alert-status div { display: flex; flex-direction: column; gap: 3px; }
 .service-alert-status span { color: #6d797f; font-size: 11px; }
+.service-alert-setup { max-width: 760px; margin-top: 6px; font-size: 11px; color: #56656c; }
+.service-alert-setup summary { color: var(--blue-dark); cursor: pointer; }
+.service-alert-setup p { margin: 5px 0; line-height: 1.4; }
+.service-alert-setup > code { display: block; padding: 2px 5px; background: #eef0f1; color: #24313a; }
 .service-history { margin-top: 12px; overflow-x: auto; background: white; border: 1px solid #d7dcde; }
 .service-history .panel-head { border: 0; border-bottom: 1px solid #d7dcde; }
 .service-history .data-table { margin: 0; }
@@ -260,6 +283,13 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
   .address-fields .af-5,
   .address-fields .af-6 { grid-column: span 6; }
   .managed-services { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .panel-head { flex-wrap: wrap; }
+  .audit-action-filter { flex-basis: 100%; min-width: 0; }
+  .group-create-form, .student-options { grid-template-columns: 1fr; }
+  .service-alert-status { align-items: flex-start; flex-direction: column; }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
