@@ -372,6 +372,15 @@ public final class ApiModels {
     public record CalibrationReport(String mode, int assessments,
                                     List<CriterionCalibration> criteria, List<String> skipped) {}
 
+    /** Сохранённая версия коррекции. Старые оценки при её включении не пересчитываются. */
+    public record CalibrationModel(UUID id, String mode, int version, boolean active, int assessments,
+                                   Double maeBefore, Double maeAfter,
+                                   List<CriterionCalibration> criteria, UUID createdBy,
+                                   Instant createdAt, Instant activatedAt, Instant deactivatedAt) {}
+    public record AdminCalibrationState(String mode, CalibrationModel active,
+                                        CalibrationReport candidate, List<CalibrationModel> history) {}
+    public record CalibrationCommand(@NotBlank String mode) {}
+
     public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
                                 List<CardDraft> drafts, Assessment assessment) {}
 

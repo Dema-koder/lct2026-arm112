@@ -591,6 +591,42 @@ export type AlertCallAttempt = {
   updatedAt: string;
 };
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
+export type CalibrationCriterion = {
+  code: string;
+  label: string;
+  slope: number;
+  intercept: number;
+  maeBefore: number;
+  maeAfter: number;
+  improvementPercent: number;
+  pairs: number;
+};
+export type CalibrationReport = {
+  mode: LessonMode;
+  assessments: number;
+  criteria: CalibrationCriterion[];
+  skipped: string[];
+};
+export type CalibrationModel = {
+  id: string;
+  mode: LessonMode;
+  version: number;
+  active: boolean;
+  assessments: number;
+  maeBefore: number | null;
+  maeAfter: number | null;
+  criteria: CalibrationCriterion[];
+  createdBy: string;
+  createdAt: string;
+  activatedAt: string | null;
+  deactivatedAt: string | null;
+};
+export type AdminCalibrationState = {
+  mode: LessonMode;
+  active: CalibrationModel | null;
+  candidate: CalibrationReport;
+  history: CalibrationModel[];
+};
 
 // ------------------------------------------------------------------ transport
 
@@ -803,5 +839,11 @@ export const api = {
     createBackup: (token: string) => request<BackupInfo>("/admin/backups", { method: "POST" }, token),
     restore: (token: string, fileName: string) =>
       request<void>(`/admin/backups/${encodeURIComponent(fileName)}/restore`, { method: "POST", body: json({ confirm: "RESTORE" }) }, token),
+    calibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>(`/admin/assessment-calibration${q({ mode })}`, {}, token),
+    activateCalibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>("/admin/assessment-calibration/activate", { method: "POST", body: json({ mode }) }, token),
+    deactivateCalibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>("/admin/assessment-calibration/deactivate", { method: "POST", body: json({ mode }) }, token),
   },
 };

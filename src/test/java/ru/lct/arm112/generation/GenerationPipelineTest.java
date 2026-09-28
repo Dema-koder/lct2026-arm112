@@ -13,6 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,6 +104,11 @@ class GenerationPipelineTest {
             JobRow row = jobs.findById(jobId).orElseThrow();
             if (JobRepository.DONE.equals(row.state()) || JobRepository.FAILED.equals(row.state())) return row;
             worker.runOne();
+            // Планировщик приложения мог забрать именно эту задачу параллельно тесту.
+            // Даём ему закончить вместо того, чтобы 500 раз мгновенно прочитать RUNNING.
+            if (JobRepository.RUNNING.equals(jobs.findById(jobId).orElseThrow().state())) {
+                LockSupport.parkNanos(5_000_000);
+            }
         }
         return jobs.findById(jobId).orElseThrow();
     }

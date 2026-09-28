@@ -679,6 +679,14 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
     setNotice("Оценка сохранена — итог пересчитан по критериям");
     await load();
   });
+  const confirmAi = () => run(async () => {
+    const payload: CriterionScore[] = codes
+      .map(({ code }) => ({ code, score: aiScore(code), comment: null }))
+      .filter((criterion): criterion is CriterionScore => criterion.score !== null);
+    await api.teacher.assess(token, sessionId, null, comment, payload);
+    setNotice("Оценка системы подтверждена преподавателем и учтена для коррекции ИИ");
+    await load();
+  });
   const fmtAddress = (a: SessionDetail["drafts"][number]["address"]) => {
     const formal = [a.locality, a.street, a.house && `д. ${a.house}`, a.building && `к. ${a.building}`, a.apartment && `кв. ${a.apartment}`].filter(Boolean).join(", ");
     if (formal) return a.descriptive ? `${formal} (ориентир: ${a.descriptive})` : formal;
@@ -718,7 +726,10 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
               </tr>
             </tbody>
           </table>
-          <div className="dialog-actions"><button className="primary" disabled={working || invalid} onClick={assess}>Сохранить оценку</button></div>
+          <div className="dialog-actions">
+            <button className="secondary" disabled={working || anyScore} onClick={confirmAi}>Подтвердить оценку ИИ</button>
+            <button className="primary" disabled={working || invalid} onClick={assess}>Сохранить оценку</button>
+          </div>
         </>
       ) : (
         <p className="muted">Обучающийся ещё не завершил занятие — оценить можно после завершения.</p>

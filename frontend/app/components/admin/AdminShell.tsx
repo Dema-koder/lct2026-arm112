@@ -1,20 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type MockPhoneGatewaySettings, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
+import { api, type AdminCalibrationState, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type LessonMode, type ManagedService, type MockPhoneGatewaySettings, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
-type View = "users" | "groups" | "services" | "settings" | "audit" | "system";
+type View = "users" | "groups" | "services" | "calibration" | "settings" | "audit" | "system";
 
 /** Рабочее место администратора — всё через UI (решение №9), в стиле остальных экранов. */
 export function AdminShell({ token, user, onLogout }: { token: string; user: User; onLogout: () => void }) {
   const [view, setView] = useState<View>("users");
   const nav = (
     <>
-      {(["users", "groups", "services", "settings", "audit", "system"] as View[]).map((v) => (
+      {(["users", "groups", "services", "calibration", "settings", "audit", "system"] as View[]).map((v) => (
         <button key={v} className={view === v ? "active" : ""} onClick={() => setView(v)}>
-          {{ users: "Пользователи", groups: "Группы", services: "Сервисы", settings: "Настройки", audit: "Журнал", system: "Система" }[v]}
+          {{ users: "Пользователи", groups: "Группы", services: "Сервисы", calibration: "Коррекция ИИ", settings: "Настройки", audit: "Журнал", system: "Система" }[v]}
         </button>
       ))}
     </>
@@ -25,10 +25,100 @@ export function AdminShell({ token, user, onLogout }: { token: string; user: Use
       {view === "users" && <Users token={token} self={user} />}
       {view === "groups" && <Groups token={token} />}
       {view === "services" && <Services token={token} />}
+      {view === "calibration" && <AssessmentCalibration token={token} />}
       {view === "settings" && <Settings token={token} />}
       {view === "audit" && <Audit token={token} />}
       {view === "system" && <System token={token} />}
     </main>
+  );
+}
+
+const MODE_LABELS: Record<LessonMode, string> = {
+  CARD_FILL: "Оператор 112 · заполнение карточки",
+  CARD_ACTIONS: "ДДС · действия с карточкой",
+};
+
+function AssessmentCalibration({ token }: { token: string }) {
+  const [mode, setMode] = useState<LessonMode>("CARD_FILL");
+  const [state, setState] = useState<AdminCalibrationState | null>(null);
+  const [confirmation, setConfirmation] = useState<"activate" | "deactivate" | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useNotice();
+  const [working, run] = useAction(setError);
+  const load = useCallback(() => run(async () => setState(await api.admin.calibration(token, mode))), [mode, run, token]);
+  useEffect(() => { void load(); }, [load]);
+
+  const execute = () => confirmation && run(async () => {
+    const updated = confirmation === "activate"
+      ? await api.admin.activateCalibration(token, mode)
+      : await api.admin.deactivateCalibration(token, mode);
+    setState(updated);
+    setNotice(confirmation === "activate"
+      ? `Версия ${updated.active?.version ?? ""} включена для будущих оценок`
+      : "Коррекция отключена; новые оценки снова выставляются без поправок");
+    setConfirmation(null);
+  });
+
+  const candidate = state?.candidate;
+  return (
+    <section className="panel-page calibration-page">
+      <div className="panel-head">
+        <b>Коррекция оценки ИИ</b>
+        <small className="muted">обучение на подтверждённых преподавателем баллах</small>
+        <span className="spacer" />
+        <select aria-label="Режим занятия" value={mode} onChange={(event) => setMode(event.target.value as LessonMode)}>
+          {Object.entries(MODE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select>
+        <button className="secondary" disabled={working} onClick={load}>Обновить расчёт</button>
+      </div>
+      {error && <ErrorBanner message={error} />}
+      {notice && <Notice message={notice} />}
+      <div className="calibration-explainer">
+        <b>Как это работает</b>
+        <p>Правильной считается оценка преподавателя. Система сравнивает её с исходным баллом ИИ и предлагает поправки отдельно по каждому критерию.</p>
+        <p>Новая версия применяется только к будущим оценкам. Уже завершённые занятия и оценки преподавателя не изменяются.</p>
+      </div>
+      <div className={`calibration-status ${state?.active ? "active" : "inactive"}`}>
+        <div><span>Текущая версия</span><b>{state?.active ? `Версия ${state.active.version}` : "Коррекция выключена"}</b></div>
+        <div><span>Обучающих оценок</span><b>{state?.active?.assessments ?? "—"}</b></div>
+        <div><span>Средняя ошибка</span><b>{state?.active?.maeBefore == null ? "—" : `${state.active.maeBefore.toFixed(1)} → ${state.active.maeAfter?.toFixed(1)}`}</b></div>
+        <div><span>Включена</span><b>{state?.active?.activatedAt ? dateTime(state.active.activatedAt) : "—"}</b></div>
+      </div>
+      <div className="panel-head"><b>Новый расчёт</b><small className="muted">учтено оценок: {candidate?.assessments ?? 0}</small></div>
+      {candidate?.criteria.length ? (
+        <table className="data-table calibration-table">
+          <thead><tr><th>Критерий</th><th>Сравнений</th><th>Ошибка до</th><th>Ошибка после</th><th>Улучшение</th><th>Поправка</th></tr></thead>
+          <tbody>{candidate.criteria.map((criterion) => (
+            <tr key={criterion.code}>
+              <td><b>{criterion.label}</b></td><td>{criterion.pairs}</td>
+              <td>{criterion.maeBefore.toFixed(1)}</td><td>{criterion.maeAfter.toFixed(1)}</td>
+              <td className="positive">−{criterion.improvementPercent.toFixed(1)}%</td>
+              <td><code>{criterion.slope.toFixed(3)} × балл {criterion.intercept < 0 ? "−" : "+"} {Math.abs(criterion.intercept).toFixed(2)}</code></td>
+            </tr>
+          ))}</tbody>
+        </table>
+      ) : <p className="calibration-empty">Безопасную поправку пока нельзя рассчитать. Нужны оценки преподавателей по критериям.</p>}
+      {!!candidate?.skipped.length && (
+        <details className="calibration-skipped" open={!candidate.criteria.length}>
+          <summary>Почему отдельные критерии не готовы ({candidate.skipped.length})</summary>
+          <ul>{candidate.skipped.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+        </details>
+      )}
+      <div className="dialog-actions calibration-actions">
+        {state?.active && <button className="danger" disabled={working} onClick={() => setConfirmation("deactivate")}>Отключить коррекцию</button>}
+        <button className="primary" disabled={working || !candidate?.criteria.length} onClick={() => setConfirmation("activate")}>Обучить и включить новую версию</button>
+      </div>
+      {!!state?.history.length && <details className="calibration-history"><summary>История версий ({state.history.length})</summary>
+        <table className="data-table"><thead><tr><th>Версия</th><th>Состояние</th><th>Оценок</th><th>Ошибка</th><th>Создана</th></tr></thead>
+          <tbody>{state.history.map((item) => <tr key={item.id}><td>v{item.version}</td><td>{item.active ? "активна" : "выключена"}</td><td>{item.assessments}</td><td>{item.maeBefore?.toFixed(1)} → {item.maeAfter?.toFixed(1)}</td><td>{dateTime(item.createdAt)}</td></tr>)}</tbody>
+        </table></details>}
+      {confirmation && <Modal title={confirmation === "activate" ? "Включить новую коррекцию?" : "Отключить коррекцию?"} onClose={() => setConfirmation(null)}>
+        <p>{confirmation === "activate"
+          ? "Новая версия будет применяться только к оценкам ИИ, созданным после включения. Старые результаты останутся без изменений."
+          : "Будущие оценки будут выставляться без поправок. История версий сохранится."}</p>
+        <div className="dialog-actions"><button className="secondary" onClick={() => setConfirmation(null)}>Отмена</button><button className={confirmation === "activate" ? "primary" : "danger"} disabled={working} onClick={execute}>Подтвердить</button></div>
+      </Modal>}
+    </section>
   );
 }
 
