@@ -14,6 +14,7 @@
     "ECO"
   ],
   "fire.apartment": [
+    "101",
     "102",
     "103",
     "104",
@@ -29,6 +30,7 @@
     "OIV_TINAO"
   ],
   "fire.building": [
+    "101",
     "102",
     "103",
     "104",
@@ -46,6 +48,7 @@
     "OIV_TINAO"
   ],
   "fire.smoke": [
+    "101",
     "102",
     "103",
     "104",
@@ -85,6 +88,7 @@
     "OIV_TINAO"
   ],
   "fire.alarm": [
+    "101",
     "102",
     "103",
     "CEMP",
@@ -98,8 +102,8 @@
     "OIV_TINAO"
   ],
   "dtp.injured": [
-    "101",
     "102",
+    "101",
     "103",
     "CEMP",
     "MOSGORTRANS",
@@ -160,9 +164,9 @@
     "OIV_TINAO"
   ],
   "gas.smell": [
+    "104",
     "101",
     "103",
-    "104",
     "CEMP",
     "MAYOR",
     "OIV",
@@ -198,8 +202,8 @@
     "MAYOR"
   ],
   "person.danger": [
-    "101",
     "102",
+    "101",
     "103",
     "MOSBEZ",
     "MAYOR",
@@ -239,8 +243,8 @@
     "OIV_TINAO"
   ],
   "utility.elevator": [
-    "GOR_HOZ",
     "MOSLIFT",
+    "GOR_HOZ",
     "MAYOR",
     "OIV",
     "OIV_TINAO"

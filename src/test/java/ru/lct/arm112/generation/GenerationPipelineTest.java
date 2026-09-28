@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * модели заменит один компонент, а очередь, валидатор и сохранение останутся теми же.
  * Поэтому цифры, снятые здесь, будут сравнимы с цифрами после подключения модели.
  */
-@SpringBootTest
+@SpringBootTest(properties = "arm112.generation.recombination-fallback=true")
 class GenerationPipelineTest {
 
     @Autowired

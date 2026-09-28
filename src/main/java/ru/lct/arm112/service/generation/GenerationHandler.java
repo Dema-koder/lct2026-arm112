@@ -63,7 +63,11 @@ public class GenerationHandler implements JobHandler {
 
     @Override
     public String handle(String payload) {
-        Request request = objectMapper.readValue(payload, Request.class);
+        return objectMapper.writeValueAsString(run(objectMapper.readValue(payload, Request.class)));
+    }
+
+    /** Генерация с проверкой; из очереди и из синхронного вызова идёт одна и та же. */
+    public Report run(Request request) {
         List<ScenarioUpsert> candidates = generator.generate(request.category(), request.count(),
                 request.difficulty());
 
@@ -89,6 +93,6 @@ public class GenerationHandler implements JobHandler {
         log.info("Генерация «{}»: запрошено {}, выдано {}, принято {}, отсеяно {} — причины {}",
                 request.category(), request.count(), candidates.size(), saved.size(),
                 candidates.size() - saved.size(), rejections);
-        return objectMapper.writeValueAsString(report);
+        return report;
     }
 }

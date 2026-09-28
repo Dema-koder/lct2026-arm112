@@ -375,6 +375,28 @@ export type Scenario = {
 
 export type ScenarioListItem = Pick<Scenario, "id" | "title" | "source" | "category" | "difficulty" | "callerText" | "rawAddress" | "expectedAddress" | "expectedIncidentTypes" | "expectedServices" | "referenceConfirmed" | "createdAt">;
 
+export type GenerationReport = {
+  generator: string;
+  requested: number;
+  produced: number;
+  accepted: number;
+  rejected: number;
+  rejectionReasons: Record<string, number>;
+  warnings: Record<string, number>;
+  savedIds: string[];
+};
+
+export type GenerationJob = {
+  id: string;
+  state: "READY" | "RUNNING" | "DONE" | "FAILED";
+  category: string;
+  count: number;
+  error?: string | null;
+  createdAt: string;
+  finishedAt?: string | null;
+  report?: GenerationReport | null;
+};
+
 export type ScenarioUpsert = {
   id?: string | null;
   title: string;
@@ -688,8 +710,9 @@ export const api = {
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}`, { method: "PUT", body: json(body) }, token),
     confirmReference: (token: string, id: string) =>
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}/confirm-reference`, { method: "POST" }, token),
-    generate: (token: string, category: string, count: number, difficulty: number) =>
-      request<Scenario[]>("/teacher/scenarios/generate", { method: "POST", body: json({ category, count, difficulty }) }, token),
+    startGeneration: (token: string, category: string, count: number, difficulty: number) =>
+      request<GenerationJob>("/teacher/scenarios/generation-jobs", { method: "POST", body: json({ category, count, difficulty }) }, token),
+    generationJob: (token: string, id: string) => request<GenerationJob>(`/teacher/scenarios/generation-jobs/${id}`, {}, token),
     groups: (token: string) => request<Group[]>("/teacher/groups", {}, token),
     lessons: (token: string, state?: string) => request<Lesson[]>(`/teacher/lessons${q({ state })}`, {}, token),
     lesson: (token: string, id: string) => request<Lesson>(`/teacher/lessons/${id}`, {}, token),

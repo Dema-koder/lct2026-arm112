@@ -173,6 +173,15 @@ public final class ApiModels {
     public record GenerateRequest(@NotBlank String category, @Min(1) @Max(20) int count,
                                   @Min(1) @Max(10) int difficulty) {}
 
+    /** Итог фоновой генерации: источник, сколько принято валидатором и почему отсеяно остальное. */
+    public record GenerationReport(String generator, int requested, int produced, int accepted, int rejected,
+                                   Map<String, Integer> rejectionReasons, Map<String, Integer> warnings,
+                                   List<String> savedIds) {}
+
+    /** Задача генерации; report появляется, когда state = DONE. */
+    public record GenerationJob(UUID id, String state, String category, int count, String error,
+                                Instant createdAt, Instant finishedAt, GenerationReport report) {}
+
     public record CardDraft(UUID id, UUID sessionId, String scenarioId, String number,
                             Instant startedAt, Instant savedAt, Instant deadlineAt, String state,
                             String callerText, DraftPhones phones, DraftCaller caller,

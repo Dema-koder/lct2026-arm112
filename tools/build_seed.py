@@ -138,10 +138,25 @@ def find_row(rows: list[dict], lookup: str | None) -> dict | None:
     return None
 
 
+# Основная служба строки ЕКП (поле scenario). В notify её нет: там перечислены только
+# оповещаемые. Без неё у «пожар: квартира» из эталона выпадала сама пожарная охрана 101,
+# а у «пожар: мусор» оставалась — потому что там МЧС стоит ещё и среди оповещаемых.
+MAIN_SERVICE = {
+    "MCHS": "101", "Police": "102", "AMBULANCE": "103", "MOSGAZ": "104",
+    "MOSLIFT": "MOSLIFT", "AUTOROADS": "AUTOROADS", "MOSVODOCANAL": "MOSVODOKANAL", "METRO": "METRO",
+    "OEK": "OEK", "MOSGORTRANS": "MOSGORTRANS", "MOEK": "MOEK", "MOSVODOSTOK": "MOSVODOSTOK",
+    "GORMOST": "GORMOST", "MOSCOLLECTOR": "MOSKOLLEKTOR",
+}
+
+
 def services_for(row: dict | None) -> list[str]:
     if row is None:
         return []
     seen: list[str] = []
+    for main in (row.get("scenario") or "").split(","):
+        code = MAIN_SERVICE.get(main.strip())
+        if code and code not in seen:
+            seen.append(code)
     for notify in row.get("notify", []):
         if "нет реагирования" in notify.get("type_in_service", "").lower():
             continue

@@ -66,16 +66,18 @@ public class LlmGenerator implements ScenarioGenerator {
     private final ObjectMapper objectMapper;
     private final ScenarioService scenarios;
     private final ReferenceDataService references;
+    private final GenerationBases bases;
     private final Random random = new Random();
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5)).build();
 
     public LlmGenerator(@Value("${arm112.llm.url:}") String baseUrl, ObjectMapper objectMapper,
-                        ScenarioService scenarios, ReferenceDataService references) {
+                        ScenarioService scenarios, ReferenceDataService references, GenerationBases bases) {
         this.baseUrl = baseUrl == null ? "" : baseUrl.trim();
         this.objectMapper = objectMapper;
         this.scenarios = scenarios;
         this.references = references;
+        this.bases = bases;
     }
 
     @Override
@@ -102,10 +104,10 @@ public class LlmGenerator implements ScenarioGenerator {
             log.info("Языковая модель недоступна, кандидатов не будет");
             return List.of();
         }
-        List<ScenarioListItem> pool = scenarios.list(category, "TICKET", null).stream()
-                .filter(s -> s.expectedAddress() != null
-                        && s.expectedAddress().street() != null
-                        && !s.expectedIncidentTypes().isEmpty())
+        // основа — билет или сценарий банка той же категории с чистым эталоном:
+        // от неё берутся адрес и тип, а модель пишет только текст заявителя
+        List<ScenarioListItem> pool = scenarios.list(category, null, null).stream()
+                .filter(bases::usable)
                 .toList();
         if (pool.isEmpty()) return List.of();
 
@@ -115,7 +117,7 @@ public class LlmGenerator implements ScenarioGenerator {
             String typeId = base.expectedIncidentTypes().get(0);
             ReferenceDataService.IncidentType type = references.incidentType(typeId);
             if (type == null) continue;
-            String callerText = write(type.label(), category);
+            String callerText = write(type.label(), bases.placeOf(base));
             if (callerText == null) continue;
             result.add(new ScenarioUpsert(null, "Сгенерировано: " + type.label(), category, difficulty,
                     callerText, caller(), base.rawAddress(), base.expectedAddress(),
@@ -124,11 +126,12 @@ public class LlmGenerator implements ScenarioGenerator {
         return result;
     }
 
-    /** Один вызов модели: текст заявителя по заданному типу происшествия. */
-    private String write(String typeLabel, String category) {
+    /** Один вызов модели: текст заявителя по заданному типу происшествия и месту. */
+    private String write(String typeLabel, String place) {
         String prompt = """
                 Ты пишешь учебные вводные для тренажёра операторов службы 112.
                 Напиши, что сообщает заявитель по телефону о происшествии типа «%s».
+                Место происшествия: %s. Описание должно подходить к этому месту.
 
                 Требования:
                 - одна-две фразы, как записал бы оператор: сжато, по делу, без приветствий;
@@ -136,7 +139,7 @@ public class LlmGenerator implements ScenarioGenerator {
                 - НЕ называй адрес, улицу и номер дома;
                 - НЕ используй формулировку «%s» дословно — заявитель говорит обычными словами;
                 - без кавычек и пояснений, только сам текст.
-                """.formatted(typeLabel, typeLabel);
+                """.formatted(typeLabel, place, typeLabel);
         try {
             String body = objectMapper.writeValueAsString(java.util.Map.of(
                     "messages", List.of(java.util.Map.of("role", "user", "content", prompt)),

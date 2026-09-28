@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.10
+  version: 0.3.11
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -637,6 +637,11 @@ paths:
     post:
       tags: [Teacher]
       operationId: generateScenarios
+      deprecated: true
+      description: >
+        Синхронная генерация. Устарела: пачка на языковой модели идёт минуту-полторы.
+        Использует тот же путь с проверкой, что и задача генерации; без модели возвращает
+        пустой список. Новым клиентам — POST /teacher/scenarios/generation-jobs.
       requestBody:
         required: true
         content:
@@ -650,6 +655,38 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/generation-jobs:
+    post:
+      tags: [Teacher]
+      operationId: startScenarioGeneration
+      description: >
+        Ставит задачу генерации в очередь. Кандидаты от языковой модели проходят проверку
+        справочниками; в библиотеку попадают только принятые, с неподтверждённым эталоном.
+        Без модели задача завершается с generator = none и нулём кандидатов.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GenerateRequest'}
+      responses:
+        '202':
+          description: Задача поставлена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationJob'}
+  /teacher/scenarios/generation-jobs/{id}:
+    get:
+      tags: [Teacher]
+      operationId: getScenarioGeneration
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Состояние задачи; отчёт — после завершения
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationJob'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
   /teacher/scenarios/{id}:
     get:
       tags: [Teacher]
@@ -2013,6 +2050,35 @@ components:
         category: {type: string}
         count: {type: integer, minimum: 1, maximum: 20}
         difficulty: {type: integer, minimum: 1, maximum: 10}
+    GenerationReport:
+      type: object
+      additionalProperties: false
+      required: [generator, requested, produced, accepted, rejected, rejectionReasons, warnings, savedIds]
+      properties:
+        generator: {type: string, description: "llm, recombination или none (модель не подключена)"}
+        requested: {type: integer}
+        produced: {type: integer}
+        accepted: {type: integer}
+        rejected: {type: integer}
+        rejectionReasons: {type: object, additionalProperties: {type: integer}, description: "код проверки → число отсеянных"}
+        warnings: {type: object, additionalProperties: {type: integer}}
+        savedIds: {type: array, items: {type: string}}
+    GenerationJob:
+      type: object
+      additionalProperties: false
+      required: [id, state, category, count, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        state: {type: string, enum: [READY, RUNNING, DONE, FAILED]}
+        category: {type: string}
+        count: {type: integer}
+        error: {type: [string, 'null']}
+        createdAt: {type: string, format: date-time}
+        finishedAt: {type: [string, 'null'], format: date-time}
+        report:
+          oneOf:
+            - {$ref: '#/components/schemas/GenerationReport'}
+            - {type: 'null'}
     CreateDraftRequest:
       type: object
       additionalProperties: false

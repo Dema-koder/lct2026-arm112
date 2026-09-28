@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { api, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
+import { api, type GenerationReport, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
 import { categoryLabels, dateTime, sourceLabels } from "../../../lib/format";
 import { ErrorBanner, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
 
@@ -28,6 +28,32 @@ export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListIt
   );
 }
 
+/** Причины отсева сгенерированных сценариев — коды ScenarioValidator словами. */
+const rejectionLabels: Record<string, string> = {
+  TYPE_CONTRADICTS_TEXT: "тип не следует из текста",
+  TYPE_LEAKED: "подпись типа в тексте",
+  TYPE_UNKNOWN: "тип не из классификатора",
+  FOREIGN_SCRIPT: "чужие буквы",
+  LATIN_IN_TEXT: "латиница в тексте",
+  NOT_RUSSIAN: "текст не по-русски",
+  SLOPPY_TEXT: "небрежный текст",
+  ADDRESS_LEAKED: "адрес в тексте заявителя",
+  STREET_UNKNOWN: "улицы нет в справочнике",
+  CALLER_TEXT_TOO_SHORT: "слишком короткий текст",
+};
+
+function generationSummary(report: GenerationReport): string {
+  if (report.generator === "none") {
+    return "Языковая модель не подключена — новые сценарии не созданы. Готовые сценарии банка — в фильтре «Сгенерированные».";
+  }
+  const reasons = Object.entries(report.rejectionReasons)
+    .map(([code, count]) => `${rejectionLabels[code] ?? code} — ${count}`).join(", ");
+  const source = report.generator === "llm" ? "языковая модель" : report.generator;
+  return `Источник: ${source}. Принято ${report.accepted} из ${report.produced}`
+    + (report.rejected > 0 ? `, отсеяно ${report.rejected}: ${reasons}` : "")
+    + (report.accepted > 0 ? ". Проверьте и подтвердите эталон." : ".");
+}
+
 /** Библиотека сценариев: билеты, сгенерированные, сформированные обучающимися; эталон и его подтверждение. */
 export function Scenarios({ token }: { token: string }) {
   const [items, setItems] = useState<ScenarioListItem[]>([]);
@@ -39,6 +65,7 @@ export function Scenarios({ token }: { token: string }) {
   const [genDifficulty, setGenDifficulty] = useState(5);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
@@ -51,10 +78,22 @@ export function Scenarios({ token }: { token: string }) {
   useEffect(() => { api.incidentTypes(token).then(setTypes).catch(() => undefined); }, [token]);
 
   const open = (id: string) => run(async () => setSelected(await api.teacher.scenario(token, id)));
+  // Генерация идёт в фоне: на языковой модели пачка занимает минуту-полторы.
   const generate = () => run(async () => {
-    const created = await api.teacher.generate(token, category || "FIRE", genCount, genDifficulty);
-    setNotice(`Сгенерировано сценариев: ${created.length} (сложность ${genDifficulty}) — подтвердите эталон`);
-    await load();
+    setGenerating(true);
+    try {
+      let job = await api.teacher.startGeneration(token, category, genCount, genDifficulty);
+      for (let i = 0; i < 180 && (job.state === "READY" || job.state === "RUNNING"); i++) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        job = await api.teacher.generationJob(token, job.id);
+      }
+      if (job.state === "FAILED") throw new Error(`Генерация не удалась: ${job.error ?? "причина не указана"}`);
+      if (!job.report) throw new Error("Генерация ещё идёт — обновите список позже");
+      setNotice(generationSummary(job.report));
+      await load();
+    } finally {
+      setGenerating(false);
+    }
   });
 
   if (selected) {
@@ -83,7 +122,9 @@ export function Scenarios({ token }: { token: string }) {
         <label className="inline"><span>сложность</span>
           <input type="number" min={1} max={10} value={genDifficulty} onChange={(e) => setGenDifficulty(Math.min(10, Math.max(1, Number(e.target.value) || 5)))} className="w-xs" />
         </label>
-        <button className="primary-button" disabled={working} onClick={generate}>Сгенерировать</button>
+        <button className="primary-button" disabled={working || !category}
+          title={category ? undefined : "Выберите категорию — сценарии генерируются по одной"}
+          onClick={generate}>{generating ? "Генерация…" : "Сгенерировать"}</button>
       </div>
       <table className="data-table">
         <thead><tr><th /><th>Название</th><th>Тип</th><th>Источник</th><th>Сложн.</th><th>Вводная</th><th>Эталон</th><th /></tr></thead>

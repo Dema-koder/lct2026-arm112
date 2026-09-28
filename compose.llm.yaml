@@ -24,12 +24,14 @@ services:
     ports:
       - "${LLM_PORT:-8090}:8080"
     healthcheck:
-      # модель грузится с диска десятки секунд, поэтому длинный start_period
+      # Модель грузится с диска: на Linux — десятки секунд, на Windows из примонтированной
+      # папки ./models — больше десяти минут (7B Q4, 28.09). С коротким start_period
+      # compose объявлял сайдкар нездоровым и не поднимал бэкенд вовсе.
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 120s
+      start_period: 1200s
     restart: unless-stopped
 
   backend:

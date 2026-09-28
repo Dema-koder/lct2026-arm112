@@ -39,12 +39,15 @@ public class TeacherController {
     private final Path materialsDir;
     private final ru.lct.arm112.service.analytics.DashboardService dashboards;
     private final ru.lct.arm112.persistence.SessionRepository sessions;
+    private final ru.lct.arm112.service.generation.ScenarioGenerationService generation;
 
     public TeacherController(LessonService lessons, ScenarioService scenarios, TrainingEngine engine,
                              MaterialRepository materials,
                              @Value("${arm112.materials.dir:./materials-store}") String materialsDir,
                              ru.lct.arm112.service.analytics.DashboardService dashboards,
-                             ru.lct.arm112.persistence.SessionRepository sessions) {
+                             ru.lct.arm112.persistence.SessionRepository sessions,
+                             ru.lct.arm112.service.generation.ScenarioGenerationService generation) {
+        this.generation = generation;
         this.dashboards = dashboards;
         this.sessions = sessions;
         this.lessons = lessons;
@@ -84,10 +87,23 @@ public class TeacherController {
         return scenarios.confirm(id, actor.id());
     }
 
+    /** Устаревший синхронный вызов: теперь тот же путь с валидатором, что и у задачи. */
+    @Deprecated
     @PostMapping("/scenarios/generate")
     @ResponseStatus(HttpStatus.CREATED)
     public List<Scenario> generate(@Valid @RequestBody GenerateRequest request, CurrentUser actor) {
-        return scenarios.generate(request, actor.id());
+        return generation.generateNow(request, actor.id());
+    }
+
+    @PostMapping("/scenarios/generation-jobs")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public GenerationJob startGeneration(@Valid @RequestBody GenerateRequest request, CurrentUser actor) {
+        return generation.enqueue(request, actor.id());
+    }
+
+    @GetMapping("/scenarios/generation-jobs/{id}")
+    public GenerationJob generationJob(@PathVariable UUID id, CurrentUser actor) {
+        return generation.job(id, actor.id());
     }
 
     // ---------------------------------------------------------------- groups
