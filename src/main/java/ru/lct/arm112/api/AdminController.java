@@ -14,6 +14,7 @@ import ru.lct.arm112.service.EventService;
 import ru.lct.arm112.service.LessonService;
 import ru.lct.arm112.service.SettingsService;
 import ru.lct.arm112.service.ServiceManagementService;
+import ru.lct.arm112.service.PhoneCallAlertService;
 import ru.lct.arm112.service.TrainingEngine;
 import ru.lct.arm112.service.UserService;
 
@@ -41,6 +42,7 @@ public class AdminController {
     private final SessionRepository sessions;
     private final TrainingEngine engine;
     private final ServiceManagementService serviceManagement;
+    private final PhoneCallAlertService serviceAlerts;
     private final JdbcTemplate jdbc;
     private final String version;
     private final Path logFile;
@@ -48,6 +50,7 @@ public class AdminController {
     public AdminController(UserService users, LessonService lessons, SettingsService settings, AuditService audit,
                            BackupService backups, EventService events, SessionRepository sessions,
                            TrainingEngine engine, ServiceManagementService serviceManagement, JdbcTemplate jdbc,
+                           PhoneCallAlertService serviceAlerts,
                            @Value("${arm112.version:0.3.0}") String version,
                            @Value("${arm112.log-file:./logs/arm112.log}") String logFile) {
         this.users = users;
@@ -59,6 +62,7 @@ public class AdminController {
         this.sessions = sessions;
         this.engine = engine;
         this.serviceManagement = serviceManagement;
+        this.serviceAlerts = serviceAlerts;
         this.jdbc = jdbc;
         this.version = version;
         this.logFile = Path.of(logFile);
@@ -176,7 +180,32 @@ public class AdminController {
     @PostMapping("/system/services/{id}/actions")
     public ManagedService serviceAction(@PathVariable String id, @Valid @RequestBody ServiceAction request,
                                         CurrentUser actor) {
-        return serviceManagement.execute(id, request.action(), actor.id());
+        return serviceManagement.execute(id, request.action(), actor);
+    }
+
+    @GetMapping("/system/services/history")
+    public List<ServiceEvent> serviceHistory(@RequestParam(required = false) String serviceId,
+                                             @RequestParam(defaultValue = "50") int limit) {
+        return serviceManagement.history(serviceId, Math.max(1, Math.min(limit, 500)));
+    }
+
+    @GetMapping("/system/alerts")
+    public AlertConfiguration alertConfiguration() {
+        return new AlertConfiguration(serviceAlerts.configured(), "PHONE_CALL");
+    }
+
+    @PostMapping("/system/alerts/test")
+    public NotificationTestResult testAlert() {
+        if (!serviceAlerts.configured()) {
+            throw new ApiException(HttpStatus.CONFLICT, "ALERTS_NOT_CONFIGURED",
+                    "Телефонные оповещения не настроены на сервере");
+        }
+        boolean sent = serviceAlerts.send("ARM-112: тестовое уведомление администратора");
+        if (!sent) {
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "ALERT_DELIVERY_FAILED",
+                    "Телефонный шлюз не подтвердил запуск тестового звонка");
+        }
+        return new NotificationTestResult("SENT", "Тестовый звонок запущен");
     }
 
     @GetMapping("/backups")

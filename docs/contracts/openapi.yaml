@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.7
+  version: 0.3.8
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -1178,6 +1178,44 @@ paths:
               schema: {$ref: '#/components/schemas/ManagedService'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/system/services/history:
+    get:
+      tags: [Admin]
+      operationId: listServiceEvents
+      parameters:
+        - {in: query, name: serviceId, schema: {type: string}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 500, default: 50}}
+      responses:
+        '200':
+          description: История команд администраторов и автоматически обнаруженных изменений состояния
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ServiceEvent'}
+  /admin/system/alerts:
+    get:
+      tags: [Admin]
+      operationId: getAlertConfiguration
+      responses:
+        '200':
+          description: Состояние настройки аварийных телефонных звонков
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AlertConfiguration'}
+  /admin/system/alerts/test:
+    post:
+      tags: [Admin]
+      operationId: testPhoneAlert
+      description: Просит настроенный внутренний телефонный шлюз выполнить тестовый голосовой звонок.
+      responses:
+        '200':
+          description: Шлюз принял запрос на звонок
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NotificationTestResult'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '502': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/log:
     get:
       tags: [Admin]
@@ -2488,7 +2526,7 @@ components:
         id: {type: string}
         label: {type: string}
         description: {type: string}
-        state: {type: string, enum: [RUNNING, STOPPED, FAILED]}
+        state: {type: string, enum: [RUNNING, STOPPED, DEGRADED, FAILED]}
         controllable: {type: boolean}
         critical: {type: boolean}
         metrics: {type: array, items: {$ref: '#/components/schemas/ServiceMetric'}}
@@ -2501,6 +2539,37 @@ components:
       required: [action]
       properties:
         action: {type: string, enum: [START, STOP, RESTART]}
+    ServiceEvent:
+      type: object
+      additionalProperties: false
+      required: [id, serviceId, eventType, previousState, currentState, action, outcome, message, actorUserId, actorLogin, notified, occurredAt]
+      properties:
+        id: {type: string, format: uuid}
+        serviceId: {type: string}
+        eventType: {type: string, enum: [ACTION, STATE_CHANGE]}
+        previousState: {type: [string, 'null']}
+        currentState: {type: string, enum: [RUNNING, STOPPED, DEGRADED, FAILED]}
+        action: {type: [string, 'null'], enum: [START, STOP, RESTART, null]}
+        outcome: {type: string, enum: [SUCCESS, FAILED]}
+        message: {type: [string, 'null']}
+        actorUserId: {type: [string, 'null'], format: uuid}
+        actorLogin: {type: [string, 'null']}
+        notified: {type: boolean}
+        occurredAt: {type: string, format: date-time}
+    AlertConfiguration:
+      type: object
+      additionalProperties: false
+      required: [configured, channel]
+      properties:
+        configured: {type: boolean}
+        channel: {type: string, const: PHONE_CALL}
+    NotificationTestResult:
+      type: object
+      additionalProperties: false
+      required: [status, message]
+      properties:
+        status: {type: string, const: SENT}
+        message: {type: string}
     BackupInfo:
       type: object
       additionalProperties: false

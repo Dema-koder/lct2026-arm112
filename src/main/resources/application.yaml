@@ -51,6 +51,14 @@ arm112:
   jobs:
     poll-ms: ${ARM112_JOBS_POLL_MS:1000}
     batch-size: ${ARM112_JOBS_BATCH_SIZE:2}
+  service-monitor:
+    interval-ms: ${ARM112_SERVICE_MONITOR_INTERVAL_MS:30000}
+    initial-delay-ms: ${ARM112_SERVICE_MONITOR_INITIAL_DELAY_MS:15000}
+  alerts:
+    phone:
+      gateway-url: ${ARM112_ALERT_CALL_GATEWAY_URL:}
+      gateway-token: ${ARM112_ALERT_CALL_GATEWAY_TOKEN:}
+      number: ${ARM112_ALERT_PHONE_NUMBER:}
   backup:
     dir: ${ARM112_BACKUP_DIR:./backups}
     external-dir: ${ARM112_BACKUP_EXTERNAL_DIR:}

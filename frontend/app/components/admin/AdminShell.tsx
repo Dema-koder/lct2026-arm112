@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
+import { api, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
@@ -36,12 +36,21 @@ const SERVICE_ACTION_LABELS = { START: "Запустить", STOP: "Остано
 
 function Services({ token }: { token: string }) {
   const [items, setItems] = useState<ManagedService[]>([]);
+  const [history, setHistory] = useState<ServiceEvent[]>([]);
+  const [alerts, setAlerts] = useState<AlertConfiguration | null>(null);
   const [pending, setPending] = useState<{ service: ManagedService; action: "START" | "STOP" | "RESTART" } | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
 
-  const load = useCallback(async () => setItems(await api.admin.services(token)), [token]);
+  const load = useCallback(async () => {
+    const [serviceItems, serviceHistory, alertState] = await Promise.all([
+      api.admin.services(token), api.admin.serviceHistory(token), api.admin.alertConfiguration(token),
+    ]);
+    setItems(serviceItems);
+    setHistory(serviceHistory);
+    setAlerts(alertState);
+  }, [token]);
   useEffect(() => { void run(load); }, [load, run]);
 
   const execute = () => pending && run(async () => {
@@ -49,6 +58,11 @@ function Services({ token }: { token: string }) {
     setNotice(`${pending.service.label}: ${SERVICE_ACTION_LABELS[pending.action].toLowerCase()} — выполнено`);
     setPending(null);
     await load();
+  });
+
+  const testCall = () => run(async () => {
+    const result = await api.admin.testAlert(token);
+    setNotice(result.message);
   });
 
   return (
@@ -59,13 +73,20 @@ function Services({ token }: { token: string }) {
         <span className="spacer" />
         <button className="ghost" disabled={working} onClick={() => run(load)}>обновить</button>
       </div>
+      <div className={`service-alert-status ${alerts?.configured ? "configured" : "disabled"}`}>
+        <div>
+          <b>Аварийный звонок</b>
+          <span>{alerts?.configured ? "телефонный шлюз настроен" : "не настроен — добавьте параметры шлюза на сервере"}</span>
+        </div>
+        <button className="secondary" disabled={working || !alerts?.configured} onClick={testCall}>Проверить звонок</button>
+      </div>
       <div className="managed-services">
         {items.map((service) => (
           <article className={`managed-service ${service.state.toLowerCase()} ${service.critical ? "critical" : ""}`} key={service.id}>
             <header>
               <div><b>{service.label}</b><p>{service.description}</p></div>
               <span className={`service-state ${service.state.toLowerCase()}`}>
-                {service.state === "RUNNING" ? "работает" : service.state === "STOPPED" ? "остановлен" : "ошибка"}
+                {service.state === "RUNNING" ? "работает" : service.state === "STOPPED" ? "остановлен" : service.state === "DEGRADED" ? "требует внимания" : "ошибка"}
               </span>
             </header>
             <dl>
@@ -82,6 +103,24 @@ function Services({ token }: { token: string }) {
           </article>
         ))}
       </div>
+      <section className="service-history">
+        <div className="panel-head"><b>История сервисов</b><small className="muted">действия администраторов и автоматические изменения состояния</small></div>
+        {history.length === 0 ? <p className="empty-state">Событий пока нет</p> : (
+          <table className="data-table">
+            <thead><tr><th>Время</th><th>Сервис</th><th>Событие</th><th>Состояние</th><th>Инициатор</th><th>Оповещение</th></tr></thead>
+            <tbody>{history.map((event) => (
+              <tr key={event.id}>
+                <td>{dateTime(event.occurredAt)}</td>
+                <td>{items.find((item) => item.id === event.serviceId)?.label ?? event.serviceId}</td>
+                <td>{event.action ? SERVICE_ACTION_LABELS[event.action] : "Изменение состояния"}</td>
+                <td><span className={`history-outcome ${event.outcome.toLowerCase()}`}>{event.currentState}</span></td>
+                <td>{event.actorLogin ?? "система"}</td>
+                <td>{event.notified ? "звонок запущен" : "—"}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </section>
       {pending && (
         <Modal title={`${SERVICE_ACTION_LABELS[pending.action]}: ${pending.service.label}`} onClose={() => setPending(null)}>
           <p className="dialog-copy">

@@ -172,6 +172,9 @@ Frontend-тест собирает production bundle, проверяет сер�
 | `ARM112_SWAGGER_PUBLIC` | публичный Swagger; при `false` доступен только администратору | `true` |
 | `ARM112_MATERIALS_DIR` | каталог файлов методических материалов | `./materials-store` |
 | `ARM112_LOG_FILE` | файл лога (виден администратору в UI) | `./logs/arm112.log` |
+| `ARM112_ALERT_CALL_GATEWAY_URL` | внутренний HTTP-шлюз для аварийного голосового звонка | выключен |
+| `ARM112_ALERT_CALL_GATEWAY_TOKEN` | служебный Bearer-токен телефонного шлюза | выключен |
+| `ARM112_ALERT_PHONE_NUMBER` | номер дежурного для аварийных звонков | выключен |
 
 Параметры Compose можно переопределить через `.env`; полный пример находится в [`.env.example`](.env.example). В частности, `POSTGRES_PORT`, `BACKEND_PORT` и `FRONTEND_PORT` меняют опубликованные порты хоста.
 
