@@ -352,6 +352,12 @@ body { zoom: var(--ui-scale); }
 .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-empty { margin: 18px 0; text-align: center; }
 .chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
+.chart-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.chart-split-block { min-width: 0; }
+.chart-subhead { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #3c4a51; }
+@media (max-width: 900px) {
+  .chart-split { grid-template-columns: 1fr; }
+}
 .hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .hbar-list li {
   display: grid;

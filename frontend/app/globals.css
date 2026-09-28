@@ -252,7 +252,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .dialog-label { display: block; margin-bottom: 7px; font-weight: bold; }
 .dialog-copy { margin-top: 0; color: #536169; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-.dialog-actions button { min-width: 110px; min-height: 38px; border: 0; }
+.dialog-actions button { min-width: 110px; min-height: 38px; padding: 0 14px; border: 0; }
 .dialog-actions .primary { color: white; background: var(--blue); }
 .dialog-actions .secondary { background: #d7dcde; }
 .dialog-actions .call-button { color: white; background: #159247; }
