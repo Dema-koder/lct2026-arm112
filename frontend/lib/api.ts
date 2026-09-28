@@ -386,6 +386,8 @@ export type GenerationReport = {
   savedIds: string[];
 };
 
+export type GenerationStatus = { generator: "llm" | "none" | "recombination" | string };
+
 export type GenerationJob = {
   id: string;
   state: "READY" | "RUNNING" | "DONE" | "FAILED";
@@ -717,6 +719,7 @@ export const api = {
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}`, { method: "PUT", body: json(body) }, token),
     confirmReference: (token: string, id: string) =>
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}/confirm-reference`, { method: "POST" }, token),
+    generationStatus: (token: string) => request<GenerationStatus>("/teacher/scenarios/generation-status", {}, token),
     startGeneration: (token: string, category: string, count: number, difficulty: number) =>
       request<GenerationJob>("/teacher/scenarios/generation-jobs", { method: "POST", body: json({ category, count, difficulty }) }, token),
     generationJob: (token: string, id: string) => request<GenerationJob>(`/teacher/scenarios/generation-jobs/${id}`, {}, token),

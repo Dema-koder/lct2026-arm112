@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.12
+  version: 0.3.13
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -655,6 +655,17 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/generation-status:
+    get:
+      tags: [Teacher]
+      operationId: getScenarioGenerationStatus
+      description: Чем будет сгенерировано — чтобы показать до запуска, подключена ли модель.
+      responses:
+        '200':
+          description: Источник генерации
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationStatus'}
   /teacher/scenarios/generation-jobs:
     post:
       tags: [Teacher]
@@ -2092,6 +2103,12 @@ components:
         rejectionReasons: {type: object, additionalProperties: {type: integer}, description: "код проверки → число отсеянных"}
         warnings: {type: object, additionalProperties: {type: integer}}
         savedIds: {type: array, items: {type: string}}
+    GenerationStatus:
+      type: object
+      additionalProperties: false
+      required: [generator]
+      properties:
+        generator: {type: string, description: "llm — модель отвечает; none — не подключена; recombination — включён откат"}
     GenerationJob:
       type: object
       additionalProperties: false

@@ -6,6 +6,7 @@ import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.GenerateRequest;
 import ru.lct.arm112.api.ApiModels.GenerationJob;
 import ru.lct.arm112.api.ApiModels.GenerationReport;
+import ru.lct.arm112.api.ApiModels.GenerationStatus;
 import ru.lct.arm112.api.ApiModels.Scenario;
 import ru.lct.arm112.persistence.JobRepository;
 import ru.lct.arm112.persistence.JobRepository.JobRow;
@@ -32,13 +33,20 @@ public class ScenarioGenerationService {
     private final GenerationHandler handler;
     private final ScenarioService scenarios;
     private final ObjectMapper objectMapper;
+    private final ScenarioGenerator generator;
 
     public ScenarioGenerationService(JobRepository jobs, GenerationHandler handler, ScenarioService scenarios,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper, ScenarioGenerator generator) {
+        this.generator = generator;
         this.jobs = jobs;
         this.handler = handler;
         this.scenarios = scenarios;
         this.objectMapper = objectMapper;
+    }
+
+    /** Источник до запуска: преподаватель видит, подключена ли модель, ещё не нажав кнопку. */
+    public GenerationStatus status() {
+        return new GenerationStatus(generator.name());
     }
 
     public GenerationJob enqueue(GenerateRequest request, UUID actor) {

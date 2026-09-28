@@ -95,6 +95,11 @@ public class TeacherController {
         return generation.generateNow(request, actor.id());
     }
 
+    @GetMapping("/scenarios/generation-status")
+    public GenerationStatus generationStatus() {
+        return generation.status();
+    }
+
     @PostMapping("/scenarios/generation-jobs")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public GenerationJob startGeneration(@Valid @RequestBody GenerateRequest request, CurrentUser actor) {

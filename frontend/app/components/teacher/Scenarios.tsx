@@ -1,9 +1,9 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { api, type GenerationReport, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { api, type GenerationJob, type GenerationReport, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
 import { categoryLabels, dateTime, sourceLabels } from "../../../lib/format";
-import { ErrorBanner, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
+import { ErrorBanner, Modal, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
 
 /** Развёрнутая карточка сценария: вводная целиком, адреса, эталон с подсветкой правильных ответов. */
 export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListItem; typeLabel: (id: string) => string }) {
@@ -54,6 +54,140 @@ function generationSummary(report: GenerationReport): string {
     + (report.accepted > 0 ? ". Проверьте и подтвердите эталон." : ".");
 }
 
+/**
+ * Сценарий, созданный генерацией из интерфейса и ещё не проверенный преподавателем.
+ * Банк, поставляемый с системой (gen-seed-*), сюда не относится: он написан и проверен заранее.
+ */
+export function isFreshGenerated(s: ScenarioListItem) {
+  return s.source === "GENERATED" && !s.referenceConfirmed && !s.id.startsWith("gen-seed-");
+}
+
+/**
+ * Созданные до 28.09 перестановкой билетов (id gen-…): текст одного билета с адресом другого.
+ * Их не выдаём за новые — у них своя пометка, чтобы преподаватель проверил или удалил их.
+ */
+function isOldRecombination(s: ScenarioListItem) {
+  return isFreshGenerated(s) && s.id.startsWith("gen-");
+}
+
+/** Меньше стольких сценариев в категории — она помечается как тонкая. */
+const THIN_CATEGORY = 10;
+
+/**
+ * Окно генерации: категория плитками с числом сценариев в библиотеке, количество, сложность.
+ * Генерация идёт фоновой задачей; окно показывает ход и итог, а созданное отдаёт наверх,
+ * чтобы список подсветил новую пачку.
+ */
+function GenerateDialog({ token, library, initialCategory, onClose, onDone }: {
+  token: string;
+  library: ScenarioListItem[];
+  initialCategory: string;
+  onClose: () => void;
+  onDone: (savedIds: string[], category: string) => void;
+}) {
+  const [category, setCategory] = useState(initialCategory);
+  const [count, setCount] = useState(5);
+  const [difficulty, setDifficulty] = useState(5);
+  const [generator, setGenerator] = useState<string | null>(null);
+  const [job, setJob] = useState<GenerationJob | null>(null);
+  const [startedAt, setStartedAt] = useState(0);
+  const [now, setNow] = useState(0);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.teacher.generationStatus(token).then((s) => setGenerator(s.generator)).catch(() => setGenerator("none"));
+  }, [token]);
+  const running = job !== null && (job.state === "READY" || job.state === "RUNNING");
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const s of library) map[s.category] = (map[s.category] ?? 0) + 1;
+    return map;
+  }, [library]);
+  const categories = Object.keys(categoryLabels).filter((k) => k !== "OTHER" || counts[k]);
+
+  const start = async () => {
+    setError("");
+    try {
+      let current = await api.teacher.startGeneration(token, category, count, difficulty);
+      setStartedAt(Date.now());
+      setNow(Date.now());
+      setJob(current);
+      for (let i = 0; i < 300 && (current.state === "READY" || current.state === "RUNNING"); i++) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        current = await api.teacher.generationJob(token, current.id);
+        setJob(current);
+      }
+      if (current.report) onDone(current.report.savedIds, category);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось запустить генерацию");
+      setJob(null);
+    }
+  };
+
+  const report = job?.report ?? null;
+  const elapsed = startedAt ? Math.max(0, Math.round((now - startedAt) / 1000)) : 0;
+  const statusText = generator === null ? "Проверяем, подключена ли языковая модель…"
+    : generator === "llm" ? "Языковая модель подключена: около 10 секунд на сценарий. Всё сгенерированное проходит проверку и попадает в библиотеку неподтверждённым."
+    : generator === "none" ? "Языковая модель не подключена — новые сценарии создать нельзя. Готовые сценарии банка уже в библиотеке (источник «Сгенерированные»)."
+    : "Модель не подключена, включён запасной способ — перестановка билетов с проверкой.";
+
+  return (
+    <Modal title="Генерация сценариев" onClose={onClose} wide>
+      <div className="generate-dialog">
+        <p className={`generator-status ${generator === "none" ? "off" : "on"}`}>{statusText}</p>
+
+        <p className="field-title">Категория</p>
+        <div className="category-tiles">
+          {categories.map((k) => {
+            const n = counts[k] ?? 0;
+            return (
+              <button key={k} type="button" disabled={running}
+                className={`category-tile ${category === k ? "selected" : ""} ${n < THIN_CATEGORY ? "thin" : ""}`}
+                onClick={() => setCategory(k)}>
+                <b>{categoryLabels[k]}</b>
+                <small>{n} в библиотеке{n < THIN_CATEGORY ? " · мало" : ""}</small>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="generate-params">
+          <label className="inline"><span>сколько</span>
+            <input type="number" min={1} max={20} value={count} disabled={running}
+              onChange={(e) => setCount(Math.min(20, Math.max(1, Number(e.target.value) || 1)))} className="w-xs" />
+          </label>
+          <label className="inline"><span>сложность</span>
+            <input type="number" min={1} max={10} value={difficulty} disabled={running}
+              onChange={(e) => setDifficulty(Math.min(10, Math.max(1, Number(e.target.value) || 5)))} className="w-xs" />
+          </label>
+        </div>
+
+        {running && <p className="generate-progress">Генерация «{categoryLabels[category]}»: {elapsed} с… Окно можно свернуть — задача продолжится.</p>}
+        {job?.state === "FAILED" && <p className="inline-error">Генерация не удалась: {job.error ?? "причина не указана"}</p>}
+        {report && <p className="generate-result">{generationSummary(report)}</p>}
+        {error && <p className="inline-error">{error}</p>}
+
+        <div className="dialog-actions">
+          {report && report.accepted > 0
+            ? <button className="primary" onClick={onClose}>Показать новые ({report.accepted})</button>
+            : (
+              <button className="primary" disabled={!category || running || generator === "none" || generator === null} onClick={() => void start()}>
+                {running ? "Генерация…" : category ? `Сгенерировать ${count} · ${categoryLabels[category]}` : "Выберите категорию"}
+              </button>
+            )}
+          <button className="ghost" onClick={onClose}>{running ? "Свернуть" : "Закрыть"}</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /** Библиотека сценариев: билеты, сгенерированные, сформированные обучающимися; эталон и его подтверждение. */
 export function Scenarios({ token }: { token: string }) {
   const [items, setItems] = useState<ScenarioListItem[]>([]);
@@ -61,11 +195,12 @@ export function Scenarios({ token }: { token: string }) {
   const [source, setSource] = useState("");
   const [selected, setSelected] = useState<Scenario | null>(null);
   const [types, setTypes] = useState<IncidentTypeItem[]>([]);
-  const [genCount, setGenCount] = useState(3);
-  const [genDifficulty, setGenDifficulty] = useState(5);
+  const [library, setLibrary] = useState<ScenarioListItem[]>([]);
+  const [dialog, setDialog] = useState(false);
+  const [lastBatch, setLastBatch] = useState<string[]>([]);
+  const [onlyFresh, setOnlyFresh] = useState(false);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
@@ -73,28 +208,20 @@ export function Scenarios({ token }: { token: string }) {
 
   const load = useCallback(async () => {
     setItems(await api.teacher.scenarios(token, { category: category || undefined, source: source || undefined }));
+    // вся библиотека — для числа сценариев по категориям в окне генерации и счётчика новых
+    setLibrary(await api.teacher.scenarios(token, {}));
   }, [token, category, source]);
   useEffect(() => { void run(load); }, [load, run]);
   useEffect(() => { api.incidentTypes(token).then(setTypes).catch(() => undefined); }, [token]);
 
   const open = (id: string) => run(async () => setSelected(await api.teacher.scenario(token, id)));
-  // Генерация идёт в фоне: на языковой модели пачка занимает минуту-полторы.
-  const generate = () => run(async () => {
-    setGenerating(true);
-    try {
-      let job = await api.teacher.startGeneration(token, category, genCount, genDifficulty);
-      for (let i = 0; i < 180 && (job.state === "READY" || job.state === "RUNNING"); i++) {
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        job = await api.teacher.generationJob(token, job.id);
-      }
-      if (job.state === "FAILED") throw new Error(`Генерация не удалась: ${job.error ?? "причина не указана"}`);
-      if (!job.report) throw new Error("Генерация ещё идёт — обновите список позже");
-      setNotice(generationSummary(job.report));
-      await load();
-    } finally {
-      setGenerating(false);
-    }
-  });
+  const freshCount = library.filter(isFreshGenerated).length;
+  const query = search.trim().toLowerCase();
+  const visible = items
+    .filter((s) => !onlyFresh || isFreshGenerated(s))
+    .filter((s) => !query || [s.title, s.callerText, s.rawAddress ?? ""].some((v) => v.toLowerCase().includes(query)))
+    // только что созданная пачка — наверх
+    .sort((x, y) => Number(lastBatch.includes(y.id)) - Number(lastBatch.includes(x.id)));
 
   if (selected) {
     return <ScenarioEdit token={token} scenario={selected} types={types} onBack={() => { setSelected(null); void load(); }} />;
@@ -115,25 +242,28 @@ export function Scenarios({ token }: { token: string }) {
           <option value="TRAINEE_MADE">Сформированные обучающимися</option>
         </select>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="поиск по названию и вводной" />
+        {freshCount > 0 && (
+          <label className="inline fresh-filter">
+            <input type="checkbox" checked={onlyFresh} onChange={(e) => setOnlyFresh(e.target.checked)} />
+            <span>только новые, на проверке ({freshCount})</span>
+          </label>
+        )}
         <span className="spacer" />
-        <label className="inline"><span>сгенерировать</span>
-          <input type="number" min={1} max={20} value={genCount} onChange={(e) => setGenCount(Number(e.target.value) || 1)} className="w-xs" />
-        </label>
-        <label className="inline"><span>сложность</span>
-          <input type="number" min={1} max={10} value={genDifficulty} onChange={(e) => setGenDifficulty(Math.min(10, Math.max(1, Number(e.target.value) || 5)))} className="w-xs" />
-        </label>
-        <button className="primary-button" disabled={working || !category}
-          title={category ? undefined : "Выберите категорию — сценарии генерируются по одной"}
-          onClick={generate}>{generating ? "Генерация…" : "Сгенерировать"}</button>
+        <button className="primary-button" disabled={working} onClick={() => setDialog(true)}>✦ Сгенерировать…</button>
       </div>
       <table className="data-table">
         <thead><tr><th /><th>Название</th><th>Тип</th><th>Источник</th><th>Сложн.</th><th>Вводная</th><th>Эталон</th><th /></tr></thead>
         <tbody>
-          {items.filter((s) => !search.trim() || [s.title, s.callerText, s.rawAddress ?? ""].some((v) => v.toLowerCase().includes(search.trim().toLowerCase()))).map((s) => (
+          {visible.map((s) => (
             <Fragment key={s.id}>
-              <tr className="clickable" onClick={() => setExpanded(expanded === s.id ? null : s.id)}>
+              <tr className={`clickable ${lastBatch.includes(s.id) ? "just-generated" : ""}`} onClick={() => setExpanded(expanded === s.id ? null : s.id)}>
                 <td className="expand-cell">{expanded === s.id ? "⌃" : "⌄"}</td>
-                <td><b>{s.title}</b></td>
+                <td>
+                  <b>{s.title}</b>
+                  {isOldRecombination(s)
+                    ? <span className="badge-new old" title="Создан старой перестановкой билетов: текст и адрес могут не сочетаться">склейка · проверьте</span>
+                    : isFreshGenerated(s) && <span className="badge-new" title="Создан генерацией, эталон ещё не подтверждён">новый · на проверке</span>}
+                </td>
                 <td>{s.expectedIncidentTypes.map(typeLabel).join(", ") || <span className="muted">не задан</span>}</td>
                 <td>{sourceLabels[s.source] ?? s.source}</td>
                 <td>{s.difficulty}</td>
@@ -146,6 +276,17 @@ export function Scenarios({ token }: { token: string }) {
           ))}
         </tbody>
       </table>
+      {dialog && (
+        <GenerateDialog token={token} library={library} initialCategory={category}
+          onClose={() => { setDialog(false); void load(); }}
+          onDone={(ids, generated) => {
+            setLastBatch(ids);
+            // показать пачку там, где её видно: в её категории, без прочих фильтров
+            if (ids.length > 0) { setCategory(generated); setSource(""); setOnlyFresh(false); setSearch(""); }
+            if (ids.length > 0) setNotice(`Новых сценариев: ${ids.length} — подсвечены вверху списка`);
+            void load();
+          }} />
+      )}
       <ErrorBanner error={error} onClose={() => setError("")} />
       <Notice text={notice} />
     </section>

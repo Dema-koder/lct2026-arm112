@@ -178,6 +178,9 @@ public final class ApiModels {
                                    Map<String, Integer> rejectionReasons, Map<String, Integer> warnings,
                                    List<String> savedIds) {}
 
+    /** Чем будет сгенерировано: llm — языковая модель отвечает, none — не подключена. */
+    public record GenerationStatus(String generator) {}
+
     /** Задача генерации; report появляется, когда state = DONE. */
     public record GenerationJob(UUID id, String state, String category, int count, String error,
                                 Instant createdAt, Instant finishedAt, GenerationReport report) {}
