@@ -67,7 +67,41 @@ public class ScenarioService {
         if (inserted > 0) log.info("Добавлено сценариев из сидов: {}", inserted);
         if (refreshed > 0) log.info("Обновлены эталоны неподтверждённых сценариев из сидов: {}", refreshed);
         backfillTitles();
+        recategorize();
         learnPlaces();
+    }
+
+    /**
+     * Категория сценария — позиция «Что случилось?» его главного (первого) типа по разделу ЕКП.
+     *
+     * <p>Её не выбирают, а выводят: иначе у «драки с травмами» категория зависела бы от того,
+     * какой тип записан первым, а у суицида — от того, как его когда-то назвали в коде.
+     * Без типа категория остаётся прежней.
+     */
+    public String categoryFor(List<String> types, String fallback) {
+        if (types == null || types.isEmpty()) return fallback;
+        ru.lct.arm112.service.ReferenceDataService.IncidentType type = references.incidentType(types.get(0));
+        return type == null ? fallback : type.category();
+    }
+
+    /**
+     * Пересчёт категорий всей библиотеки при старте. Категория выводится из типа, поэтому
+     * пересчитываются и подтверждённые сценарии: подтверждал преподаватель эталон, а не
+     * деление на категории. Так же старые коды (FIRE, POLICE…) уходят с уже засеянных стендов.
+     */
+    private void recategorize() {
+        int count = 0;
+        for (Scenario s : repository.find(null, null, null, 5000)) {
+            String category = categoryFor(s.expectedIncidentTypes(), s.category());
+            if (category.equals(s.category())) continue;
+            repository.update(new Scenario(s.id(), s.title(), s.source(), category, s.difficulty(),
+                    s.callerText(), s.caller(), s.rawAddress(), s.expectedAddress(),
+                    s.expectedIncidentTypes(), s.expectedServices(), s.addressClarified(),
+                    s.expectedDecision(), s.expectedDecisionReason(), s.outboundCallRequired(),
+                    s.referenceConfirmed(), s.referenceConfirmedAt(), s.createdBy(), s.createdAt()));
+            count++;
+        }
+        if (count > 0) log.info("Категория по разделу ЕКП пересчитана у {} сценариев", count);
     }
 
     /**
@@ -249,7 +283,7 @@ public class ScenarioService {
         List<String> types = request.expectedIncidentTypes() == null ? List.of() : request.expectedIncidentTypes();
         List<String> services = request.expectedServices() == null || request.expectedServices().isEmpty()
                 ? references.servicesFor(types) : request.expectedServices();
-        return new Scenario(id, request.title().trim(), source, request.category(), request.difficulty(), request.callerText(),
+        return new Scenario(id, request.title().trim(), source, categoryFor(types, request.category()), request.difficulty(), request.callerText(),
                 request.caller(), request.rawAddress(), request.expectedAddress(), types, services,
                 request.expectedAddress() != null, blank(request.expectedDecision()) ? null : request.expectedDecision(),
                 request.expectedDecisionReason(), request.outboundCallRequired(), false, null, actor, createdAt);

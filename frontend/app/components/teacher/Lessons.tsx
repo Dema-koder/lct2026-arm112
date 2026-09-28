@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type CardSource, type CriterionScore, type Group, type Intensity, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
-import { actionLabels, categoryLabels, criterionLabels, criteriaForMode, dateTime, displayCardNumber, formatIssueValue, intensityHints, intensityLabels, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
+import { actionLabels, categoryLabels, criterionLabels, scenarioCategories, criteriaForMode, dateTime, displayCardNumber, formatIssueValue, intensityHints, intensityLabels, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
 import { ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
 import { BarChart, Donut, HorizontalBars, KpiGrid } from "../analytics/charts";
 import { ScenarioCard } from "./Scenarios";
@@ -336,7 +336,7 @@ function LessonCreate({ token, onDone, onCancel }: { token: string; onDone: (les
       <div className="panel-head"><b>Сценарии</b>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">все категории</option>
-          {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {scenarioCategories.map((k) => <option key={k} value={k}>{categoryLabels[k]}</option>)}
         </select>
         <label className="inline"><span>сложность</span>
           <input type="number" min={1} max={10} value={difficultyMin} onChange={(e) => setDifficultyMin(Math.min(10, Math.max(1, Number(e.target.value) || 1)))} className="w-xs" />

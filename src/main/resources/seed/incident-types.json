@@ -2,7 +2,7 @@
   {
     "id": "fire.garbage",
     "label": "Пожар: мусор",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -19,7 +19,7 @@
   {
     "id": "fire.apartment",
     "label": "Пожар: квартира",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -35,7 +35,7 @@
   {
     "id": "fire.building",
     "label": "Пожар: здание",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -52,7 +52,7 @@
   {
     "id": "fire.smoke",
     "label": "Задымление в жилом доме",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -69,7 +69,7 @@
   {
     "id": "fire.vehicle",
     "label": "Пожар: транспортное средство",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -85,7 +85,7 @@
   {
     "id": "fire.grass",
     "label": "Пожар: трава, пух",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -100,7 +100,7 @@
   {
     "id": "fire.alarm",
     "label": "Сработка пожарной сигнализации",
-    "category": "FIRE",
+    "category": "t101",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -114,7 +114,7 @@
   {
     "id": "dtp.injured",
     "label": "ДТП с пострадавшими",
-    "category": "POLICE",
+    "category": "dtp",
     "frequent": true,
     "significant": true,
     "synonyms": [
@@ -131,7 +131,7 @@
   {
     "id": "dtp.no_injured",
     "label": "ДТП без пострадавших",
-    "category": "POLICE",
+    "category": "dtp",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -146,7 +146,7 @@
   {
     "id": "dtp.water",
     "label": "Падение транспорта в воду",
-    "category": "RESCUE",
+    "category": "dtp",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -162,7 +162,7 @@
   {
     "id": "explosion",
     "label": "Взрыв",
-    "category": "FIRE",
+    "category": "explosion",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -177,7 +177,7 @@
   {
     "id": "explosion.threat",
     "label": "Угроза взрыва",
-    "category": "POLICE",
+    "category": "terror_threat",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -193,7 +193,7 @@
   {
     "id": "gas.smell",
     "label": "Запах газа в помещении",
-    "category": "GAS",
+    "category": "t104",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -208,7 +208,7 @@
   {
     "id": "fight",
     "label": "Драка",
-    "category": "POLICE",
+    "category": "t102",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -225,7 +225,7 @@
   {
     "id": "crime.robbery",
     "label": "Грабёж",
-    "category": "POLICE",
+    "category": "t102",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -245,7 +245,7 @@
   {
     "id": "crime.hooligan",
     "label": "Хулиганство, нарушение тишины",
-    "category": "POLICE",
+    "category": "t102",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -265,7 +265,7 @@
   {
     "id": "medical.trauma",
     "label": "Травма",
-    "category": "MEDICAL",
+    "category": "t103",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -287,7 +287,7 @@
   {
     "id": "medical.illness",
     "label": "Внезапное заболевание",
-    "category": "MEDICAL",
+    "category": "t103",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -315,7 +315,7 @@
   {
     "id": "medical.suicide",
     "label": "Попытка суицида",
-    "category": "MEDICAL",
+    "category": "person_danger",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -334,7 +334,7 @@
   {
     "id": "person.danger",
     "label": "Человек в опасности",
-    "category": "RESCUE",
+    "category": "person_danger",
     "frequent": true,
     "significant": true,
     "synonyms": [
@@ -356,7 +356,7 @@
   {
     "id": "person.missing",
     "label": "Пропал человек",
-    "category": "POLICE",
+    "category": "person_danger",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -377,7 +377,7 @@
   {
     "id": "person.body",
     "label": "Обнаружен труп",
-    "category": "POLICE",
+    "category": "death",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -394,7 +394,7 @@
   {
     "id": "water.rescue",
     "label": "Происшествие на воде",
-    "category": "RESCUE",
+    "category": "person_danger",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -414,7 +414,7 @@
   {
     "id": "utility.water",
     "label": "Прорыв воды, залив",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -431,7 +431,7 @@
   {
     "id": "utility.elevator",
     "label": "Застревание в лифте",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -446,7 +446,7 @@
   {
     "id": "utility.power",
     "label": "Отключение электроэнергии",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -461,7 +461,7 @@
   {
     "id": "tree.fallen",
     "label": "Поваленное дерево",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -477,7 +477,7 @@
   {
     "id": "manhole.open",
     "label": "Открытый люк",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -492,7 +492,7 @@
   {
     "id": "collapse.threat",
     "label": "Угроза обрушения",
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "frequent": false,
     "significant": true,
     "synonyms": [
@@ -507,7 +507,7 @@
   {
     "id": "animal",
     "label": "Животные",
-    "category": "OTHER",
+    "category": "animals",
     "frequent": false,
     "significant": false,
     "synonyms": [
@@ -523,7 +523,7 @@
   {
     "id": "wrong_number",
     "label": "Ошибочно набран номер",
-    "category": "OTHER",
+    "category": "wrong_number",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -537,7 +537,7 @@
   {
     "id": "cancel",
     "label": "Отмена вызова",
-    "category": "OTHER",
+    "category": "cancel",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -550,7 +550,7 @@
   {
     "id": "test_call",
     "label": "Тестовый вызов",
-    "category": "OTHER",
+    "category": "test_call",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -563,7 +563,7 @@
   {
     "id": "consult",
     "label": "Консультация",
-    "category": "OTHER",
+    "category": "consult",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -577,7 +577,7 @@
   {
     "id": "foreign",
     "label": "Вызов на иностранном языке",
-    "category": "OTHER",
+    "category": "foreign",
     "frequent": true,
     "significant": false,
     "synonyms": [
@@ -592,7 +592,7 @@
   {
     "id": "top.accident_utility",
     "label": "Аварии и происшествия в городском хозяйстве",
-    "category": "OTHER",
+    "category": "accident_utility",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -600,7 +600,7 @@
   {
     "id": "top.accident_transport",
     "label": "Аварии и происшествия на транспортных объектах",
-    "category": "OTHER",
+    "category": "accident_transport",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -608,7 +608,7 @@
   {
     "id": "top.accident_hydro",
     "label": "Аварии на гидротехнических сооружениях",
-    "category": "OTHER",
+    "category": "accident_hydro",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -616,7 +616,7 @@
   {
     "id": "top.accident_hazard",
     "label": "Аварии на опасных и производственных объектах",
-    "category": "OTHER",
+    "category": "accident_hazard",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -624,7 +624,7 @@
   {
     "id": "top.gratitude",
     "label": "Благодарность службам",
-    "category": "OTHER",
+    "category": "gratitude",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -632,7 +632,7 @@
   {
     "id": "top.uav",
     "label": "БПЛА",
-    "category": "OTHER",
+    "category": "uav",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -640,7 +640,7 @@
   {
     "id": "top.internal_call",
     "label": "Внутренний звонок (звонок от работников)",
-    "category": "OTHER",
+    "category": "internal_call",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -648,7 +648,7 @@
   {
     "id": "top.repeat_call",
     "label": "Дополнительный звонок от заявителя",
-    "category": "OTHER",
+    "category": "repeat_call",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -656,7 +656,7 @@
   {
     "id": "top.road_obstacle",
     "label": "Дорожные помехи",
-    "category": "OTHER",
+    "category": "road_obstacle",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -664,7 +664,7 @@
   {
     "id": "top.complaint",
     "label": "Жалоба на действие или бездействие служб",
-    "category": "OTHER",
+    "category": "complaint",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -672,7 +672,7 @@
   {
     "id": "top.non_target",
     "label": "Нецелевой вызов",
-    "category": "OTHER",
+    "category": "non_target",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -680,7 +680,7 @@
   {
     "id": "top.feedback",
     "label": "Отзыв о работе 112 Москва",
-    "category": "OTHER",
+    "category": "feedback",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -688,7 +688,7 @@
   {
     "id": "top.shift_handover",
     "label": "Передача дежурства",
-    "category": "OTHER",
+    "category": "shift_handover",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -696,7 +696,7 @@
   {
     "id": "top.help_services",
     "label": "Помощь службам",
-    "category": "OTHER",
+    "category": "help_services",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -704,7 +704,7 @@
   {
     "id": "top.other",
     "label": "Прочие происшествия",
-    "category": "OTHER",
+    "category": "other",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -712,7 +712,7 @@
   {
     "id": "top.radiation",
     "label": "Радиация",
-    "category": "OTHER",
+    "category": "radiation",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -720,7 +720,7 @@
   {
     "id": "top.thermometer",
     "label": "Разбитый градусник",
-    "category": "OTHER",
+    "category": "thermometer",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -728,7 +728,7 @@
   {
     "id": "top.gathering",
     "label": "Сбор",
-    "category": "OTHER",
+    "category": "gathering",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -736,7 +736,7 @@
   {
     "id": "top.social_help",
     "label": "Социальная помощь",
-    "category": "OTHER",
+    "category": "social_help",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -744,7 +744,7 @@
   {
     "id": "top.info_101",
     "label": "Справка 101",
-    "category": "OTHER",
+    "category": "info_101",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -752,7 +752,7 @@
   {
     "id": "top.info_102",
     "label": "Справка 102",
-    "category": "OTHER",
+    "category": "info_102",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -760,7 +760,7 @@
   {
     "id": "top.info_103",
     "label": "Справка 103",
-    "category": "OTHER",
+    "category": "info_103",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -768,7 +768,7 @@
   {
     "id": "top.info_104",
     "label": "Справка 104",
-    "category": "OTHER",
+    "category": "info_104",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -776,7 +776,7 @@
   {
     "id": "top.info_gibdd",
     "label": "Справка ГИБДД",
-    "category": "OTHER",
+    "category": "info_gibdd",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -784,7 +784,7 @@
   {
     "id": "top.info_gorhoz",
     "label": "Справка Городское хозяйство",
-    "category": "OTHER",
+    "category": "info_gorhoz",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -792,7 +792,7 @@
   {
     "id": "top.info_mchs",
     "label": "Справка МЧС",
-    "category": "OTHER",
+    "category": "info_mchs",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -800,7 +800,7 @@
   {
     "id": "top.tech_failure",
     "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
-    "category": "OTHER",
+    "category": "tech_failure",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -808,7 +808,7 @@
   {
     "id": "top.training",
     "label": "Тренировка",
-    "category": "OTHER",
+    "category": "training",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -816,7 +816,7 @@
   {
     "id": "top.emergency_notice",
     "label": "Уведомление о ЧС",
-    "category": "OTHER",
+    "category": "emergency_notice",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -824,7 +824,7 @@
   {
     "id": "top.hazmat_threat",
     "label": "Угроза выброса опасных веществ и радиации",
-    "category": "OTHER",
+    "category": "hazmat_threat",
     "frequent": false,
     "significant": false,
     "synonyms": []
@@ -832,7 +832,7 @@
   {
     "id": "top.eco",
     "label": "Экологическое происшествие",
-    "category": "OTHER",
+    "category": "eco",
     "frequent": false,
     "significant": false,
     "synonyms": []

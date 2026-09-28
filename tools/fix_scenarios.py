@@ -12,8 +12,11 @@ build_seed.py разбирает docs/materials/tickets.md и угадывает
 * типы берутся из docs/materials/data/scenario-overrides.json, где они заданы
   вручную по тексту билета;
 * службы пересчитываются по матрице типов (seed/service-matrix.json);
-* категория выводится из первого типа (seed/incident-types.json), а не из
-  ключевых слов, — поэтому «драка» больше не попадает в «медицину»;
+* категория типа выводится из раздела ЕКП по номеру классификатора: раздел —
+  это позиция списка «Что случилось?», с которой оператор начинает карточку
+  (раздел 17 — «Человек в опасности», 19 — «Смертельный исход», 22 — «103»…);
+  результат пишется в seed/incident-types.json;
+* категория сценария — категория первого, главного типа;
 * поля адреса из уточнений сливаются с разобранным адресом, null очищает поле.
 
 Банк, написанный заранее вне контура (seed/scenarios-generated.json), проходит
@@ -32,6 +35,39 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SEED = ROOT / "src" / "main" / "resources" / "seed"
 OVERRIDES = ROOT / "docs" / "materials" / "data" / "scenario-overrides.json"
+CLASSIFIER = ROOT / "docs" / "materials" / "data" / "classifier.json"
+
+# Раздел ЕКП (первые цифры номера) → позиция «Что случилось?» (seed/card-types.json).
+# ЕКП сам делится так, и оператор выбирает именно позицию, а тип и основная служба
+# получаются из ответов опросной карты. Своих категорий поверх этого не придумываем.
+SECTION_TO_TOP = {
+    "1": "t101", "2": "dtp", "3": "explosion", "4": "terror_threat", "5": "collapse",
+    "6": "collapse_threat", "7": "nature", "8": "eco", "9": "accident_hydro",
+    "10": "accident_hazard", "11": "hazmat_threat", "12": "accident_transport", "13": "t104",
+    "14": "accident_utility", "15": "t102", "16": "road_obstacle", "17": "person_danger",
+    "18": "child_danger", "19": "death", "20": "social_help", "21": "animals", "22": "t103",
+    "23": "other", "24": "uav",
+}
+# Разделы, где позиция зависит от подраздела (поле p1 строки ЕКП).
+P1_TO_TOP = {
+    "Скопление воды": "water_accum", "Радиация": "radiation", "Градусник": "thermometer",
+    "Благодарность": "gratitude", "Жалоба": "complaint", "Справка консультация": "consult",
+    "Тренировка": "training", "Помощь службам": "help_services",
+}
+
+
+def section_of(number: str) -> str:
+    return number[:1] if len(number) == 7 else number[:2]
+
+
+def category_of_type(item: dict, rows: dict[str, dict], tops: set[str]) -> str:
+    """Позиция «Что случилось?» для типа: по разделу ЕКП, иначе по самому типу верхнего уровня."""
+    number = item.get("classifierNumber")
+    if number and number in rows:
+        row = rows[number]
+        return P1_TO_TOP.get(row.get("p1", "").strip()) or SECTION_TO_TOP[section_of(number)]
+    own = item["id"].removeprefix("top.")
+    return own if own in tops else "other"
 
 STREET_WORDS = r"(улица|ул|проспект|пр-т|просп|переулок|пер|шоссе|ш|набережная|наб|площадь|пл|бульвар|б-р|проезд|аллея)"
 
@@ -64,7 +100,12 @@ def main() -> int:
     tickets = load(SEED / "scenarios.json")
     bank = load(SEED / "scenarios-generated.json")
     overrides = {k: v for k, v in load(OVERRIDES).items() if not k.startswith("_")}
-    types = {t["id"]: t for t in load(SEED / "incident-types.json")}
+    type_list = load(SEED / "incident-types.json")
+    rows = {row["number"]: row for row in load(CLASSIFIER)}
+    tops = {top["id"] for top in load(SEED / "card-types.json")}
+    for item in type_list:
+        item["category"] = category_of_type(item, rows, tops)
+    types = {t["id"]: t for t in type_list}
     matrix = load(SEED / "service-matrix.json")
     streets = {normalize(s) for s in load(SEED / "streets.json")["streets"]}
 
@@ -86,7 +127,7 @@ def main() -> int:
             if type_id not in types:
                 problems.append(f"{scenario['id']}: типа {type_id} нет в справочнике")
         scenario["expectedServices"] = services_for(type_ids, matrix)
-        scenario["category"] = types[type_ids[0]]["category"] if type_ids and type_ids[0] in types else "OTHER"
+        scenario["category"] = types[type_ids[0]]["category"] if type_ids and type_ids[0] in types else "other"
 
         address = scenario.get("expectedAddress") or {}
         moscow = address.get("region") in (None, "Москва") and address.get("locality") in (None, "Москва", "Зеленоград")
@@ -95,7 +136,7 @@ def main() -> int:
         if not type_ids:
             problems.append(f"{scenario['id']}: не задан тип")
 
-    for name, data in (("scenarios.json", tickets), ("scenarios-generated.json", bank)):
+    for name, data in (("scenarios.json", tickets), ("scenarios-generated.json", bank), ("incident-types.json", type_list)):
         with open(SEED / name, "w", encoding="utf-8", newline="") as handle:
             json.dump(data, handle, ensure_ascii=False, indent=2)
             handle.write("\n")

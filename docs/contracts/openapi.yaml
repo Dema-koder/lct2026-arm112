@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.13
+  version: 0.3.14
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -2023,7 +2023,7 @@ components:
         id: {type: string}
         title: {type: string, maxLength: 200, description: "Название для преподавателя; обучающемуся не показывается"}
         source: {$ref: '#/components/schemas/ScenarioSource'}
-        category: {type: string}
+        category: {type: string, description: "Позиция «Что случилось?» (id из card-types: t101, t102, t103, t104, dtp, person_danger, death, accident_utility…), выведенная из раздела ЕКП главного типа. С 0.3.14 вычисляется сервером; до неё — FIRE, MEDICAL, POLICE, RESCUE, GAS, UTILITY, OTHER"}
         difficulty: {type: integer, minimum: 1, maximum: 10}
         callerText: {type: string, description: "Вводная «со слов заявителя»"}
         caller: {anyOf: [{$ref: '#/components/schemas/ScenarioCaller'}, {type: 'null'}]}
@@ -2051,7 +2051,7 @@ components:
         id: {type: string}
         title: {type: string}
         source: {$ref: '#/components/schemas/ScenarioSource'}
-        category: {type: string}
+        category: {type: string, description: "Позиция «Что случилось?» (id из card-types: t101, t102, t103, t104, dtp, person_danger, death, accident_utility…), выведенная из раздела ЕКП главного типа. С 0.3.14 вычисляется сервером; до неё — FIRE, MEDICAL, POLICE, RESCUE, GAS, UTILITY, OTHER"}
         difficulty: {type: integer}
         callerText: {type: string}
         rawAddress: {type: [string, 'null']}

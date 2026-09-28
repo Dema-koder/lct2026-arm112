@@ -97,7 +97,10 @@ class TeacherFlowIntegrationTest extends ApiTestSupport {
                         + ticket.get("callerText").asText() + "\",\"expectedIncidentTypes\":[\"fire.garbage\"],\"outboundCallRequired\":true}", teacher);
         assertThat(renamed.statusCode()).as(renamed.body()).isEqualTo(200);
         assertThat(json(renamed).get("title").asText()).isEqualTo("Пожар в депо у Киевской");
-        assertThat(json(get("/api/v1/teacher/scenarios?category=FIRE", teacher)).toString()).contains("Пожар в депо у Киевской");
+        // категорию сервер выводит из раздела ЕКП первого типа: присланный старый код FIRE
+        // игнорируется, сценарий находится под позицией «Что случилось?» — «101»
+        assertThat(json(renamed).get("category").asText()).isEqualTo("t101");
+        assertThat(json(get("/api/v1/teacher/scenarios?category=t101", teacher)).toString()).contains("Пожар в депо у Киевской");
 
         String assessmentId = json(assessed).get("id").asText();
         assertThat(get("/api/v1/assessments/" + assessmentId, tokenA).statusCode()).isEqualTo(403);
