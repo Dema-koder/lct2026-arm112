@@ -1,6 +1,22 @@
 name: arm112-training
 
 services:
+  phone-gateway:
+    build:
+      context: ./tools/mock-phone-gateway
+      dockerfile: Dockerfile
+    environment:
+      GATEWAY_TOKEN: ${ARM112_MOCK_PHONE_TOKEN:-local-mock-phone-token}
+      CALLBACK_BASE_URL: http://backend:8080/api/v1/integrations/phone/calls
+      DEFAULT_SCENARIO: ${ARM112_MOCK_PHONE_SCENARIO:-ANSWERED}
+      DEFAULT_DELAY_MS: ${ARM112_MOCK_PHONE_DELAY_MS:-1000}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8090/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     environment:
@@ -38,9 +54,10 @@ services:
       ARM112_SWAGGER_PUBLIC: ${ARM112_SWAGGER_PUBLIC:-false}
       ARM112_MATERIALS_DIR: /data/materials
       ARM112_LOG_FILE: /data/logs/arm112.log
-      ARM112_ALERT_CALL_GATEWAY_URL: ${ARM112_ALERT_CALL_GATEWAY_URL:-}
-      ARM112_ALERT_CALL_GATEWAY_TOKEN: ${ARM112_ALERT_CALL_GATEWAY_TOKEN:-}
-      ARM112_ALERT_PHONE_NUMBERS: ${ARM112_ALERT_PHONE_NUMBERS:-}
+      ARM112_ALERT_CALL_GATEWAY_URL: ${ARM112_ALERT_CALL_GATEWAY_URL:-http://phone-gateway:8090/calls}
+      ARM112_ALERT_CALL_GATEWAY_TOKEN: ${ARM112_ALERT_CALL_GATEWAY_TOKEN:-local-mock-phone-token}
+      ARM112_ALERT_CALL_MOCK_CONTROL_URL: ${ARM112_ALERT_CALL_MOCK_CONTROL_URL:-http://phone-gateway:8090/scenario}
+      ARM112_ALERT_PHONE_NUMBERS: ${ARM112_ALERT_PHONE_NUMBERS:-+74950000001,+74950000002}
       ARM112_ALERT_PHONE_NUMBER: ${ARM112_ALERT_PHONE_NUMBER:-}
     volumes:
       - backend_data:/data
@@ -49,6 +66,8 @@ services:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      phone-gateway:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]

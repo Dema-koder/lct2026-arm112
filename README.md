@@ -72,6 +72,11 @@ docker compose up --build
 http://localhost:8080/swagger-ui.html
 ```
 
+Локальный `docker compose up --build` также запускает учебный телефонный mock-шлюз. Войдите как
+`admin`, откройте **Сервисы → Режим проверки звонков**, выберите ответ и задержку, нажмите
+**Применить**, затем **Проверить звонок**. Результат и переход на резервный номер появятся в истории
+автоматически. Mock-контейнер отсутствует в `compose.production.yaml` и не выкатывается на сервер.
+
 Swagger использует зафиксированный контракт [`docs/contracts/openapi.yaml`](docs/contracts/openapi.yaml). Перед запросами нажмите **Authorize** и заполните:
 
 - `contractVersion`: `0.3`;

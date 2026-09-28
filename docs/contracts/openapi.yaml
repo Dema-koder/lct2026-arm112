@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.10
+  version: 0.3.11
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -1248,6 +1248,35 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/NotificationTestResult'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
+        '502': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/system/alerts/mock:
+    get:
+      tags: [Admin]
+      operationId: getMockPhoneGatewaySettings
+      description: Возвращает состояние локального mock-шлюза. В production всегда недоступен.
+      responses:
+        '200':
+          description: Текущий тестовый сценарий или признак недоступности mock-шлюза
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MockPhoneGatewaySettings'}
+    put:
+      tags: [Admin]
+      operationId: updateMockPhoneGatewaySettings
+      description: Выбирает результат следующего звонка в локальной среде разработки.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MockPhoneGatewayUpdate'}
+      responses:
+        '200':
+          description: Сценарий сохранён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MockPhoneGatewaySettings'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
         '502': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/alerts/history:
     get:
@@ -2662,6 +2691,25 @@ components:
         configured: {type: boolean}
         channel: {type: string, const: PHONE_CALL}
         recipientCount: {type: integer, minimum: 0}
+    MockPhoneGatewaySettings:
+      type: object
+      additionalProperties: false
+      required: [available, scenario, delayMs, allowedScenarios, message]
+      properties:
+        available: {type: boolean}
+        scenario: {type: [string, 'null'], enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE, null]}
+        delayMs: {type: [integer, 'null'], minimum: 100, maximum: 30000}
+        allowedScenarios:
+          type: array
+          items: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE]}
+        message: {type: [string, 'null']}
+    MockPhoneGatewayUpdate:
+      type: object
+      additionalProperties: false
+      required: [scenario, delayMs]
+      properties:
+        scenario: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE]}
+        delayMs: {type: integer, minimum: 100, maximum: 30000}
     NotificationTestResult:
       type: object
       additionalProperties: false

@@ -543,6 +543,13 @@ export type ServiceEvent = {
   occurredAt: string;
 };
 export type AlertConfiguration = { configured: boolean; channel: "PHONE_CALL"; recipientCount: number };
+export type MockPhoneGatewaySettings = {
+  available: boolean;
+  scenario: "ACCEPTED" | "ANSWERED" | "NOT_ANSWERED" | "FAILED" | "UNAVAILABLE" | null;
+  delayMs: number | null;
+  allowedScenarios: Array<"ACCEPTED" | "ANSWERED" | "NOT_ANSWERED" | "FAILED" | "UNAVAILABLE">;
+  message: string | null;
+};
 export type AlertCallAttempt = {
   id: string;
   retryOfId: string | null;
@@ -751,6 +758,11 @@ export const api = {
     serviceHistory: (token: string, serviceId?: string, limit = 50) =>
       request<ServiceEvent[]>(`/admin/system/services/history${q({ serviceId, limit })}`, {}, token),
     alertConfiguration: (token: string) => request<AlertConfiguration>("/admin/system/alerts", {}, token),
+    mockAlertSettings: (token: string) => request<MockPhoneGatewaySettings>("/admin/system/alerts/mock", {}, token),
+    updateMockAlertSettings: (token: string, scenario: string, delayMs: number) =>
+      request<MockPhoneGatewaySettings>("/admin/system/alerts/mock", {
+        method: "PUT", body: json({ scenario, delayMs }),
+      }, token),
     alertHistory: (token: string, limit = 50) =>
       request<AlertCallAttempt[]>(`/admin/system/alerts/history${q({ limit })}`, {}, token),
     retryAlert: (token: string, id: string) =>
