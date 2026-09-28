@@ -159,6 +159,12 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .service-alert-setup summary { color: var(--blue-dark); cursor: pointer; }
 .service-alert-setup p { margin: 5px 0; line-height: 1.4; }
 .service-alert-setup > code { display: block; padding: 2px 5px; background: #eef0f1; color: #24313a; }
+.mock-phone-panel { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(250px, 1fr) 130px auto; align-items: end; gap: 12px; padding: 10px 12px; margin: -1px 0 10px; border: 1px solid #bfd8e5; border-left: 4px solid #2785b3; background: #f2f9fc; }
+.mock-phone-panel > div { align-self: center; }
+.mock-phone-panel > div b, .mock-phone-panel > div span { display: block; }
+.mock-phone-panel > div span { margin-top: 3px; color: #60747e; font-size: 11px; }
+.mock-phone-panel label { display: grid; gap: 4px; color: #56656c; font-size: 10px; }
+.mock-phone-panel select, .mock-phone-panel input { min-width: 0; height: 32px; }
 .service-history { margin-top: 12px; overflow-x: auto; background: white; border: 1px solid #d7dcde; }
 .service-history .panel-head { border: 0; border-bottom: 1px solid #d7dcde; }
 .service-history .data-table { margin: 0; }
@@ -305,6 +311,7 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
   .audit-action-filter { flex-basis: 100%; min-width: 0; }
   .group-create-form, .student-options { grid-template-columns: 1fr; }
   .service-alert-status { align-items: flex-start; flex-direction: column; }
+  .mock-phone-panel { grid-template-columns: 1fr 1fr; }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
@@ -401,6 +408,7 @@ body { zoom: var(--ui-scale); }
 
 @media (max-width: 760px) {
   .managed-services { grid-template-columns: 1fr; }
+  .mock-phone-panel { grid-template-columns: 1fr; align-items: stretch; }
   .service-diagnostics { grid-template-columns: 1fr; }
 }
 

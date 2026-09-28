@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
+import { api, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type ManagedService, type MockPhoneGatewaySettings, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
@@ -39,27 +39,48 @@ const CALL_TRIGGER_LABELS: Record<AlertCallAttempt["triggerType"], string> = {
   MONITOR_FAILURE: "Сбой мониторинга", MONITOR_RECOVERY: "Мониторинг восстановлен", RETRY: "Повтор",
   ESCALATION: "Резервный номер", SYSTEM: "Система",
 };
+const MOCK_SCENARIO_LABELS: Record<NonNullable<MockPhoneGatewaySettings["scenario"]>, string> = {
+  ACCEPTED: "Шлюз принял, результата пока нет",
+  ANSWERED: "Абонент ответил",
+  NOT_ANSWERED: "Абонент не ответил — перейти к резервному",
+  FAILED: "Ошибка после принятия — перейти к резервному",
+  UNAVAILABLE: "Шлюз недоступен — HTTP 503",
+};
 
 function Services({ token }: { token: string }) {
   const [items, setItems] = useState<ManagedService[]>([]);
   const [history, setHistory] = useState<ServiceEvent[]>([]);
   const [calls, setCalls] = useState<AlertCallAttempt[]>([]);
   const [alerts, setAlerts] = useState<AlertConfiguration | null>(null);
+  const [mockGateway, setMockGateway] = useState<MockPhoneGatewaySettings | null>(null);
+  const [mockScenario, setMockScenario] = useState("ANSWERED");
+  const [mockDelayMs, setMockDelayMs] = useState(1000);
   const [pending, setPending] = useState<{ service: ManagedService; action: "START" | "STOP" | "RESTART" } | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
 
   const load = useCallback(async () => {
-    const [serviceItems, serviceHistory, alertState, callHistory] = await Promise.all([
+    const [serviceItems, serviceHistory, alertState, callHistory, mockState] = await Promise.all([
       api.admin.services(token), api.admin.serviceHistory(token), api.admin.alertConfiguration(token), api.admin.alertHistory(token),
+      api.admin.mockAlertSettings(token),
     ]);
     setItems(serviceItems);
     setHistory(serviceHistory);
     setAlerts(alertState);
     setCalls(callHistory);
+    setMockGateway(mockState);
+    if (mockState.scenario) setMockScenario(mockState.scenario);
+    if (mockState.delayMs != null) setMockDelayMs(mockState.delayMs);
   }, [token]);
   useEffect(() => { void run(load); }, [load, run]);
+  useEffect(() => {
+    if (!mockGateway?.available) return;
+    const interval = window.setInterval(() => {
+      void api.admin.alertHistory(token).then(setCalls).catch(() => undefined);
+    }, 1500);
+    return () => window.clearInterval(interval);
+  }, [mockGateway?.available, token]);
 
   const execute = () => pending && run(async () => {
     await api.admin.serviceAction(token, pending.service.id, pending.action);
@@ -80,6 +101,12 @@ function Services({ token }: { token: string }) {
   const checkNow = () => run(async () => {
     setItems(await api.admin.checkServices(token));
     setNotice("Проверка сервисов завершена");
+  });
+
+  const saveMockScenario = () => run(async () => {
+    const updated = await api.admin.updateMockAlertSettings(token, mockScenario, mockDelayMs);
+    setMockGateway(updated);
+    setNotice("Сценарий тестового звонка сохранён");
   });
 
   const retryCall = (id: string) => run(async () => {
@@ -118,6 +145,26 @@ function Services({ token }: { token: string }) {
         </div>
         <button className="secondary" disabled={working || !alerts?.configured} onClick={testCall}>Проверить звонок</button>
       </div>
+      {mockGateway?.available && (
+        <div className="mock-phone-panel">
+          <div>
+            <b>Режим проверки звонков</b>
+            <span>Только локальная среда: выберите, как mock-шлюз ответит на следующий звонок.</span>
+          </div>
+          <label>Результат
+            <select value={mockScenario} onChange={(event) => setMockScenario(event.target.value)}>
+              {mockGateway.allowedScenarios.map((scenario) => (
+                <option key={scenario} value={scenario}>{MOCK_SCENARIO_LABELS[scenario]}</option>
+              ))}
+            </select>
+          </label>
+          <label>Задержка, мс
+            <input type="number" min={100} max={30000} step={100} value={mockDelayMs}
+              onChange={(event) => setMockDelayMs(Math.max(100, Math.min(30000, Number(event.target.value) || 100)))} />
+          </label>
+          <button className="secondary" disabled={working} onClick={saveMockScenario}>Применить</button>
+        </div>
+      )}
       <div className="managed-services">
         {items.map((service) => (
           <article className={`managed-service ${service.state.toLowerCase()} ${service.critical ? "critical" : ""}`} key={service.id}>
