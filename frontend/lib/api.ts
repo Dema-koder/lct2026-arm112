@@ -521,6 +521,12 @@ export type ManagedService = {
   critical: boolean;
   metrics: ServiceMetric[];
   allowedActions: Array<"START" | "STOP" | "RESTART">;
+  lastCheckedAt: string;
+  lastSuccessfulAt: string | null;
+  responseTimeMs: number | null;
+  issue: string | null;
+  recommendedAction: string;
+  dependencies: string[];
 };
 export type ServiceEvent = {
   id: string;
@@ -536,7 +542,23 @@ export type ServiceEvent = {
   notified: boolean;
   occurredAt: string;
 };
-export type AlertConfiguration = { configured: boolean; channel: "PHONE_CALL" };
+export type AlertConfiguration = { configured: boolean; channel: "PHONE_CALL"; recipientCount: number };
+export type AlertCallAttempt = {
+  id: string;
+  retryOfId: string | null;
+  serviceId: string | null;
+  triggerType: "TEST" | "SERVICE_PROBLEM" | "SERVICE_RECOVERY" | "MONITOR_FAILURE" | "MONITOR_RECOVERY" | "RETRY" | "ESCALATION" | "SYSTEM";
+  recipient: string;
+  message: string;
+  status: "ACCEPTED" | "ANSWERED" | "NOT_ANSWERED" | "FAILED";
+  answered: boolean | null;
+  attemptNumber: number;
+  recipientOrder: number;
+  gatewayCallId: string | null;
+  errorMessage: string | null;
+  requestedAt: string;
+  updatedAt: string;
+};
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
 
 // ------------------------------------------------------------------ transport
@@ -725,9 +747,14 @@ export const api = {
       request<AuditPage>(`/admin/audit${q(filter)}`, {}, token),
     health: (token: string) => request<SystemHealth>("/admin/system/health", {}, token),
     services: (token: string) => request<ManagedService[]>("/admin/system/services", {}, token),
+    checkServices: (token: string) => request<ManagedService[]>("/admin/system/services/diagnostics", { method: "POST" }, token),
     serviceHistory: (token: string, serviceId?: string, limit = 50) =>
       request<ServiceEvent[]>(`/admin/system/services/history${q({ serviceId, limit })}`, {}, token),
     alertConfiguration: (token: string) => request<AlertConfiguration>("/admin/system/alerts", {}, token),
+    alertHistory: (token: string, limit = 50) =>
+      request<AlertCallAttempt[]>(`/admin/system/alerts/history${q({ limit })}`, {}, token),
+    retryAlert: (token: string, id: string) =>
+      request<AlertCallAttempt>(`/admin/system/alerts/history/${encodeURIComponent(id)}/retry`, { method: "POST" }, token),
     testAlert: (token: string) => request<{ status: string; message: string }>("/admin/system/alerts/test", { method: "POST" }, token),
     serviceAction: (token: string, id: string, action: "START" | "STOP" | "RESTART") =>
       request<ManagedService>(`/admin/system/services/${encodeURIComponent(id)}/actions`, {

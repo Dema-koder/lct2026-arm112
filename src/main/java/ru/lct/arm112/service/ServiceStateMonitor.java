@@ -42,13 +42,14 @@ public class ServiceStateMonitor {
                 String message = problem
                         ? "ARM-112: сервис «" + service.label() + "» перешёл в состояние " + service.state()
                         : "ARM-112: сервис «" + service.label() + "» восстановлен (" + service.state() + ")";
-                boolean notified = (problem || recovery) && alerts.send(message);
+                boolean notified = (problem || recovery) && alerts.send(message,
+                        recovery ? "SERVICE_RECOVERY" : "SERVICE_PROBLEM", service.id());
                 events.insert(new ServiceEvent(UUID.randomUUID(), service.id(), "STATE_CHANGE", old,
                         service.state(), null, "SUCCESS", message, null, null, notified, Instant.now()));
             }
             if (checkFailed) {
                 String message = "ARM-112: автоматическая проверка сервисов снова работает";
-                boolean notified = alerts.send(message);
+                boolean notified = alerts.send(message, "MONITOR_RECOVERY", "database");
                 events.insert(new ServiceEvent(UUID.randomUUID(), "database", "STATE_CHANGE", "FAILED",
                         "RUNNING", null, "SUCCESS", message, null, null, notified, Instant.now()));
                 checkFailed = false;
@@ -57,7 +58,8 @@ public class ServiceStateMonitor {
             log.warn("Проверка состояния сервисов завершилась ошибкой: {}", exception.getMessage());
             if (!checkFailed) {
                 checkFailed = true;
-                alerts.send("ARM-112: автоматическая проверка сервисов недоступна; проверьте backend и PostgreSQL");
+                alerts.send("ARM-112: автоматическая проверка сервисов недоступна; проверьте backend и PostgreSQL",
+                        "MONITOR_FAILURE", "database");
             }
         }
     }

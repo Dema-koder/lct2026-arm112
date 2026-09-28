@@ -182,6 +182,11 @@ public class AdminController {
         return serviceManagement.list();
     }
 
+    @PostMapping("/system/services/diagnostics")
+    public List<ManagedService> checkServicesNow() {
+        return serviceManagement.list();
+    }
+
     @PostMapping("/system/services/{id}/actions")
     public ManagedService serviceAction(@PathVariable String id, @Valid @RequestBody ServiceAction request,
                                         CurrentUser actor) {
@@ -196,7 +201,7 @@ public class AdminController {
 
     @GetMapping("/system/alerts")
     public AlertConfiguration alertConfiguration() {
-        return new AlertConfiguration(serviceAlerts.configured(), "PHONE_CALL");
+        return new AlertConfiguration(serviceAlerts.configured(), "PHONE_CALL", serviceAlerts.recipientCount());
     }
 
     @PostMapping("/system/alerts/test")
@@ -205,12 +210,23 @@ public class AdminController {
             throw new ApiException(HttpStatus.CONFLICT, "ALERTS_NOT_CONFIGURED",
                     "Телефонные оповещения не настроены на сервере");
         }
-        boolean sent = serviceAlerts.send("ARM-112: тестовое уведомление администратора");
-        if (!sent) {
+        AlertCallAttempt attempt = serviceAlerts.sendDetailed(
+                "ARM-112: тестовое уведомление администратора", "TEST", null);
+        if (attempt.status().equals("FAILED")) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "ALERT_DELIVERY_FAILED",
                     "Телефонный шлюз не подтвердил запуск тестового звонка");
         }
         return new NotificationTestResult("SENT", "Тестовый звонок запущен");
+    }
+
+    @GetMapping("/system/alerts/history")
+    public List<AlertCallAttempt> alertHistory(@RequestParam(defaultValue = "50") int limit) {
+        return serviceAlerts.history(Math.max(1, Math.min(limit, 500)));
+    }
+
+    @PostMapping("/system/alerts/history/{id}/retry")
+    public AlertCallAttempt retryAlert(@PathVariable UUID id) {
+        return serviceAlerts.retry(id);
     }
 
     @GetMapping("/backups")

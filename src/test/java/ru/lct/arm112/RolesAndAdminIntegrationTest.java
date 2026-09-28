@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.lct.arm112.persistence.AuditRepository;
+import ru.lct.arm112.service.PhoneCallAlertService;
 import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
@@ -17,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RolesAndAdminIntegrationTest extends ApiTestSupport {
     @Autowired
     AuditRepository auditRepository;
+    @Autowired
+    PhoneCallAlertService phoneCalls;
 
     @Value("${arm112.materials.dir}")
     String materialsDirectory;
@@ -61,8 +64,10 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         assertThat(services.statusCode()).as(services.body()).isEqualTo(200);
         assertThat(services.body()).contains("\"id\":\"backend\"", "\"id\":\"database\"",
                 "\"id\":\"simulation\"", "\"id\":\"telephony\"", "\"id\":\"realtime\"",
-                "\"id\":\"jobs\"", "\"purpose\":", "\"stopEffect\":", "\"restartWhen\":");
+                "\"id\":\"jobs\"", "\"purpose\":", "\"stopEffect\":", "\"restartWhen\":",
+                "\"lastCheckedAt\":", "\"responseTimeMs\":", "\"recommendedAction\":", "\"dependencies\":");
         assertThat(get("/api/v1/admin/system/services", teacher).statusCode()).isEqualTo(403);
+        assertThat(post("/api/v1/admin/system/services/diagnostics", null, admin, null).statusCode()).isEqualTo(200);
 
         HttpResponse<String> stopped = post("/api/v1/admin/system/services/jobs/actions",
                 "{\"action\":\"STOP\"}", admin, null);
@@ -85,6 +90,17 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         assertThat(alerts.statusCode()).isEqualTo(200);
         assertThat(alerts.body()).contains("\"configured\":false", "\"channel\":\"PHONE_CALL\"");
         assertThat(post("/api/v1/admin/system/alerts/test", null, admin, null).statusCode()).isEqualTo(409);
+        phoneCalls.sendDetailed("Проверка истории", "TEST", null);
+        HttpResponse<String> callHistory = get("/api/v1/admin/system/alerts/history", admin);
+        assertThat(callHistory.statusCode()).isEqualTo(200);
+        assertThat(callHistory.body()).contains("Проверка истории", "\"status\":\"FAILED\"",
+                "Телефонный шлюз не настроен");
+        String attemptId = json(callHistory).get(0).get("id").asText();
+        HttpResponse<String> repeated = post("/api/v1/admin/system/alerts/history/" + attemptId + "/retry",
+                null, admin, null);
+        assertThat(repeated.statusCode()).isEqualTo(409);
+        assertThat(repeated.body()).contains("ALERTS_NOT_CONFIGURED");
+        assertThat(get("/api/v1/admin/system/alerts/history", teacher).statusCode()).isEqualTo(403);
 
         HttpResponse<String> protectedService = post("/api/v1/admin/system/services/backend/actions",
                 "{\"action\":\"STOP\"}", admin, null);
