@@ -75,6 +75,17 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
         assertThat(started.statusCode()).as(started.body()).isEqualTo(200);
         assertThat(json(started).get("state").asText()).isEqualTo("RUNNING");
 
+        HttpResponse<String> history = get("/api/v1/admin/system/services/history?serviceId=jobs", admin);
+        assertThat(history.statusCode()).as(history.body()).isEqualTo(200);
+        assertThat(history.body()).contains("\"serviceId\":\"jobs\"", "\"actorLogin\":\"admin\"",
+                "\"action\":\"START\"", "\"action\":\"STOP\"");
+        assertThat(get("/api/v1/admin/system/services/history", teacher).statusCode()).isEqualTo(403);
+
+        HttpResponse<String> alerts = get("/api/v1/admin/system/alerts", admin);
+        assertThat(alerts.statusCode()).isEqualTo(200);
+        assertThat(alerts.body()).contains("\"configured\":false", "\"channel\":\"PHONE_CALL\"");
+        assertThat(post("/api/v1/admin/system/alerts/test", null, admin, null).statusCode()).isEqualTo(409);
+
         HttpResponse<String> protectedService = post("/api/v1/admin/system/services/backend/actions",
                 "{\"action\":\"STOP\"}", admin, null);
         assertThat(protectedService.statusCode()).isEqualTo(409);

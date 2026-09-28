@@ -50,6 +50,9 @@ services:
       ARM112_SWAGGER_PUBLIC: 'false'
       ARM112_MATERIALS_DIR: /data/materials
       ARM112_LOG_FILE: /data/logs/arm112.log
+      ARM112_ALERT_CALL_GATEWAY_URL: ${ARM112_ALERT_CALL_GATEWAY_URL:-}
+      ARM112_ALERT_CALL_GATEWAY_TOKEN: ${ARM112_ALERT_CALL_GATEWAY_TOKEN:-}
+      ARM112_ALERT_PHONE_NUMBER: ${ARM112_ALERT_PHONE_NUMBER:-}
     volumes:
       - backend_data:/data
       - ${ARM112_OFFSITE_BACKUP_DIR:-/opt/arm112/offsite-backups}:/offsite-backups

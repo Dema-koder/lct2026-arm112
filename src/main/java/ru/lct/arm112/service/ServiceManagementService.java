@@ -6,10 +6,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.ManagedService;
+import ru.lct.arm112.api.ApiModels.ServiceEvent;
 import ru.lct.arm112.api.ApiModels.ServiceMetric;
 import ru.lct.arm112.persistence.JobRepository;
 import ru.lct.arm112.persistence.SessionRepository;
+import ru.lct.arm112.persistence.ServiceEventRepository;
+import ru.lct.arm112.security.CurrentUser;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,17 +40,20 @@ public class ServiceManagementService {
     private final EventService events;
     private final SessionRepository sessions;
     private final JobRepository jobs;
+    private final ServiceEventRepository history;
     private final TrainingEngine engine;
     private final String version;
 
     public ServiceManagementService(SettingsService settings, JdbcTemplate jdbc, EventService events,
                                     SessionRepository sessions, JobRepository jobs, TrainingEngine engine,
+                                    ServiceEventRepository history,
                                     @Value("${arm112.version:0.3.0}") String version) {
         this.settings = settings;
         this.jdbc = jdbc;
         this.events = events;
         this.sessions = sessions;
         this.jobs = jobs;
+        this.history = history;
         this.engine = engine;
         this.version = version;
     }
@@ -75,36 +82,65 @@ public class ServiceManagementService {
                 runtime("jobs", "Фоновые задания", "Генерация сценариев и персональные разборы занятий.",
                         List.of(new ServiceMetric("В очереди", String.valueOf(jobs.countByState(JobRepository.READY))),
                                 new ServiceMetric("В работе", String.valueOf(jobs.countByState(JobRepository.RUNNING))),
-                                new ServiceMetric("С ошибкой", String.valueOf(jobs.countByState(JobRepository.FAILED)))), false)
+                                new ServiceMetric("С ошибкой", String.valueOf(jobs.countByState(JobRepository.FAILED)))), false,
+                        jobs.countByState(JobRepository.FAILED) > 0 ? "DEGRADED" : null)
         );
     }
 
-    public ManagedService execute(String id, String requestedAction, UUID actorId) {
+    public ManagedService execute(String id, String requestedAction, CurrentUser actor) {
         String key = KEYS.get(id);
         if (key == null) {
             throw new ApiException(HttpStatus.CONFLICT, "SERVICE_NOT_CONTROLLABLE",
                     "Этот компонент управляется через Docker/CI и недоступен для переключения из приложения");
         }
         boolean wasEnabled = settings.enabled(key);
+        String previousState = wasEnabled ? "RUNNING" : "STOPPED";
         String action = requestedAction == null ? "" : requestedAction.trim().toUpperCase(Locale.ROOT);
-        switch (action) {
-            case "START" -> settings.update(Map.of(key, "true"), actorId);
-            case "STOP" -> settings.update(Map.of(key, "false"), actorId);
-            case "RESTART" -> {
-                settings.update(Map.of(key, "false"), actorId);
-                settings.update(Map.of(key, "true"), actorId);
-            }
-            default -> throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+        if (!List.of("START", "STOP", "RESTART").contains(action)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
                     "Допустимые действия: START, STOP, RESTART");
         }
-        if (id.equals("telephony") && !wasEnabled && settings.enabled(key)) engine.resumeTelephony();
-        return list().stream().filter(service -> service.id().equals(id)).findFirst().orElseThrow();
+        try {
+            switch (action) {
+                case "START" -> settings.update(Map.of(key, "true"), actor.id());
+                case "STOP" -> settings.update(Map.of(key, "false"), actor.id());
+                case "RESTART" -> {
+                    settings.update(Map.of(key, "false"), actor.id());
+                    settings.update(Map.of(key, "true"), actor.id());
+                }
+                default -> throw new IllegalStateException("Неизвестное действие после валидации");
+            }
+            if (id.equals("telephony") && !wasEnabled && settings.enabled(key)) engine.resumeTelephony();
+            ManagedService result = list().stream().filter(service -> service.id().equals(id)).findFirst().orElseThrow();
+            record(id, previousState, result.state(), action, "SUCCESS", "Команда выполнена", actor, false);
+            return result;
+        } catch (RuntimeException exception) {
+            String currentState = settings.enabled(key) ? "RUNNING" : "STOPPED";
+            record(id, previousState, currentState, action, "FAILED", exception.getMessage(), actor, false);
+            throw exception;
+        }
+    }
+
+    public List<ServiceEvent> history(String serviceId, int limit) {
+        return history.list(serviceId, limit);
+    }
+
+    private void record(String serviceId, String previousState, String currentState, String action,
+                        String outcome, String message, CurrentUser actor, boolean notified) {
+        history.insert(new ServiceEvent(UUID.randomUUID(), serviceId, "ACTION",
+                previousState, currentState, action, outcome, message, actor.id(), actor.login(), notified, Instant.now()));
     }
 
     private ManagedService runtime(String id, String label, String description,
                                    List<ServiceMetric> metrics, boolean critical) {
+        return runtime(id, label, description, metrics, critical, null);
+    }
+
+    private ManagedService runtime(String id, String label, String description,
+                                   List<ServiceMetric> metrics, boolean critical, String healthState) {
         boolean enabled = settings.enabled(KEYS.get(id));
-        return new ManagedService(id, label, description, enabled ? "RUNNING" : "STOPPED",
+        String state = enabled ? (healthState == null ? "RUNNING" : healthState) : "STOPPED";
+        return new ManagedService(id, label, description, state,
                 true, critical, metrics, enabled ? List.of("STOP", "RESTART") : List.of("START"));
     }
 

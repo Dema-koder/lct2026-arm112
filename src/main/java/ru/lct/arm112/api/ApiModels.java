@@ -393,6 +393,11 @@ public final class ApiModels {
                                  boolean controllable, boolean critical,
                                  List<ServiceMetric> metrics, List<String> allowedActions) {}
     public record ServiceAction(@NotBlank String action) {}
+    public record ServiceEvent(UUID id, String serviceId, String eventType, String previousState,
+                               String currentState, String action, String outcome, String message,
+                               UUID actorUserId, String actorLogin, boolean notified, Instant occurredAt) {}
+    public record AlertConfiguration(boolean configured, String channel) {}
+    public record NotificationTestResult(String status, String message) {}
     public record BackupInfo(String fileName, long sizeBytes, Instant createdAt) {}
     public record RestoreRequest(@NotBlank String confirm) {}
     public record LogTail(List<String> lines) {}

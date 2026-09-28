@@ -513,12 +513,27 @@ export type ManagedService = {
   id: string;
   label: string;
   description: string;
-  state: "RUNNING" | "STOPPED" | "FAILED";
+  state: "RUNNING" | "STOPPED" | "DEGRADED" | "FAILED";
   controllable: boolean;
   critical: boolean;
   metrics: ServiceMetric[];
   allowedActions: Array<"START" | "STOP" | "RESTART">;
 };
+export type ServiceEvent = {
+  id: string;
+  serviceId: string;
+  eventType: "ACTION" | "STATE_CHANGE";
+  previousState: string | null;
+  currentState: string;
+  action: "START" | "STOP" | "RESTART" | null;
+  outcome: "SUCCESS" | "FAILED";
+  message: string | null;
+  actorUserId: string | null;
+  actorLogin: string | null;
+  notified: boolean;
+  occurredAt: string;
+};
+export type AlertConfiguration = { configured: boolean; channel: "PHONE_CALL" };
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
 
 // ------------------------------------------------------------------ transport
@@ -705,6 +720,10 @@ export const api = {
       request<AuditPage>(`/admin/audit${q(filter)}`, {}, token),
     health: (token: string) => request<SystemHealth>("/admin/system/health", {}, token),
     services: (token: string) => request<ManagedService[]>("/admin/system/services", {}, token),
+    serviceHistory: (token: string, serviceId?: string, limit = 50) =>
+      request<ServiceEvent[]>(`/admin/system/services/history${q({ serviceId, limit })}`, {}, token),
+    alertConfiguration: (token: string) => request<AlertConfiguration>("/admin/system/alerts", {}, token),
+    testAlert: (token: string) => request<{ status: string; message: string }>("/admin/system/alerts/test", { method: "POST" }, token),
     serviceAction: (token: string, id: string, action: "START" | "STOP" | "RESTART") =>
       request<ManagedService>(`/admin/system/services/${encodeURIComponent(id)}/actions`, {
         method: "POST", body: json({ action }),

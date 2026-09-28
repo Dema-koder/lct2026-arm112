@@ -112,18 +112,28 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .managed-service { display: flex; flex-direction: column; min-height: 190px; padding: 12px; background: white; border: 1px solid #d7dcde; border-left: 4px solid #2f9a5a; }
 .managed-service.stopped { border-left-color: #8e9ca3; }
 .managed-service.failed { border-left-color: #b03f2e; }
+.managed-service.degraded { border-left-color: #c47a16; }
 .managed-service > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .managed-service > header b { font-size: 14px; }
 .managed-service > header p { min-height: 34px; margin: 4px 0 0; color: #6d797f; font-size: 11px; line-height: 1.4; }
 .service-state { flex: none; padding: 3px 8px; color: white; background: #2f9a5a; font-size: 10px; text-transform: uppercase; }
 .service-state.stopped { background: #8e9ca3; }
 .service-state.failed { background: #b03f2e; }
+.service-state.degraded { background: #c47a16; }
 .managed-service dl { display: flex; flex-wrap: wrap; gap: 5px 14px; margin: 12px 0; }
 .managed-service dl div { min-width: 90px; }
 .managed-service dt { color: #6d797f; font-size: 10px; }
 .managed-service dd { margin: 2px 0 0; font-weight: bold; }
 .managed-service footer { display: flex; align-items: center; gap: 7px; min-height: 30px; margin-top: auto; }
 .managed-service footer small { color: #6d797f; }
+.service-alert-status { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; margin-bottom: 10px; border: 1px solid #d7dcde; border-left: 4px solid #8e9ca3; background: white; }
+.service-alert-status.configured { border-left-color: #2f9a5a; }
+.service-alert-status div { display: flex; flex-direction: column; gap: 3px; }
+.service-alert-status span { color: #6d797f; font-size: 11px; }
+.service-history { margin-top: 12px; overflow-x: auto; background: white; border: 1px solid #d7dcde; }
+.service-history .panel-head { border: 0; border-bottom: 1px solid #d7dcde; }
+.service-history .data-table { margin: 0; }
+.history-outcome.failed { color: #b03f2e; font-weight: bold; }
 .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span { position: absolute; inset: 0; background: #b1babf; transition: .15s; }
