@@ -183,23 +183,28 @@ export function TeacherAnalytics({ token }: { token: string }) {
   const meanTiming = avg(focusRows.map((r) => r.timingScore));
   const needsTeacher = focusRows.filter((r) => r.aiTotal !== null && r.teacherTotal === null).length;
 
-  const byTrainee = useMemo(() => {
+  const traineeRanks = useMemo(() => {
     const map = new Map<string, { name: string; arm: string; scores: number[] }>();
     for (const r of focusRows) {
       const cur = map.get(r.traineeId) ?? { name: r.traineeName, arm: r.workstationNumber ?? "—", scores: [] };
       cur.scores.push(r.finalTotal!);
       map.set(r.traineeId, cur);
     }
-    return [...map.entries()]
+    const ranked = [...map.entries()]
       .map(([id, v]) => ({
         key: id,
         label: `АРМ ${v.arm}`,
         value: avg(v.scores) ?? 0,
         hint: `${v.name} · ${v.scores.length} зан.`,
-        color: (avg(v.scores) ?? 0) < 70 ? "#b03f2e" : "#0784c6",
       }))
-      .sort((a, b) => a.value - b.value)
-      .slice(0, 12);
+      .sort((a, b) => a.value - b.value);
+    // порог 70: ниже — худшие, от 70 — лучшие (до 5 в каждой группе)
+    const below = ranked.filter((item) => item.value < 70);
+    const above = ranked.filter((item) => item.value >= 70);
+    const worst = below.slice(0, 5).map((item) => ({ ...item, color: "#b03f2e" }));
+    const best = (above.length <= 5 ? above : above.slice(-5))
+      .map((item) => ({ ...item, color: "#2f9a5a" }));
+    return { worst, best };
   }, [focusRows]);
 
   const lessonRanks = useMemo(() => {
@@ -319,12 +324,27 @@ export function TeacherAnalytics({ token }: { token: string }) {
           <p className="chart-note">Шкала 0–100 · красный — слабые, зелёный — сильные</p>
         </article>
 
-        <article className="analytics-card">
-          <header><b>Обучающиеся (от слабых к сильным)</b></header>
-          {byTrainee.length === 0
+        <article className="analytics-card wide">
+          <header><b>Обучающиеся</b></header>
+          {traineeRanks.worst.length === 0 && traineeRanks.best.length === 0
             ? <p className="muted chart-empty">Нет оценённых сессий</p>
-            : <HorizontalBars items={byTrainee} scale="score" />}
-          <p className="chart-note">Средний балл 0–100. Подсказка — ФИО и число занятий</p>
+            : (
+              <div className="chart-split">
+                {traineeRanks.worst.length > 0 && (
+                  <div className="chart-split-block">
+                    <p className="chart-subhead">5 худших</p>
+                    <HorizontalBars items={traineeRanks.worst} scale="score" />
+                  </div>
+                )}
+                {traineeRanks.best.length > 0 && (
+                  <div className="chart-split-block">
+                    <p className="chart-subhead">5 лучших</p>
+                    <HorizontalBars items={traineeRanks.best} scale="score" />
+                  </div>
+                )}
+              </div>
+            )}
+          <p className="chart-note">Средний балл 0–100 · от 70 — лучшие, ниже 70 — худшие · до 5 в каждой группе</p>
         </article>
       </div>
 

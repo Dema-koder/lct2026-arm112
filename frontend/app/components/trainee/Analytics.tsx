@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api, type Assessment, type Rating, type ResultItem } from "../../../lib/api";
-import { getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
+import { getMessage, dateOnly, kindLabels, modeLabels, score } from "../../../lib/format";
 import { avg, BarChart, Donut, HorizontalBars, KpiGrid, Sparkline } from "../analytics/charts";
 
 /**
@@ -42,11 +42,16 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
 
   const visible = useMemo(() => items.filter((i) => i.visible && i.finalTotal !== null), [items]);
   const pending = items.filter((i) => !i.visible).length;
-  const history = useMemo(
-    () => [...visible].reverse().map((i) => ({ ...i, total: i.finalTotal! })),
-    [visible],
-  );
-  const spark = history.map((h) => h.total);
+  // динамика оценок — только занятия за последний месяц, по дате завершения
+  const historyMonth = useMemo(() => {
+    const from = new Date();
+    from.setMonth(from.getMonth() - 1);
+    return [...visible]
+      .filter((i) => i.completedAt && new Date(i.completedAt) >= from)
+      .sort((a, b) => new Date(a.completedAt!).getTime() - new Date(b.completedAt!).getTime())
+      .map((i) => ({ ...i, total: i.finalTotal! }));
+  }, [visible]);
+  const spark = historyMonth.map((h) => h.total);
   const mean = avg(visible.map((v) => v.finalTotal));
   const last = visible[0]?.finalTotal ?? null;
   const prev = visible[1]?.finalTotal ?? null;
@@ -177,18 +182,28 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
             <b>Динамика оценок</b>
             <Sparkline values={spark} width={140} height={32} />
           </header>
-          <BarChart
-            ariaLabel="Итоги по занятиям"
-            scale="score"
-            items={history.slice(-12).map((h, i) => ({
-              key: h.sessionId,
-              label: String(i + 1),
-              value: h.total,
-              color: h.source === "TEACHER" ? "#0784c6" : "#5a6a72",
-              hint: `${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]} · ${Math.round(h.total)} из 100`,
-            }))}
-          />
-          <p className="chart-note">Шкала 0–100. Синий — оценка преподавателя, серый — оценка системы</p>
+          {historyMonth.length === 0
+            ? <p className="muted chart-empty">За последний месяц оценок пока нет</p>
+            : (
+              <BarChart
+                ariaLabel="Итоги по занятиям за последний месяц"
+                scale="score"
+                items={historyMonth.map((h) => {
+                  const when = h.completedAt ? new Date(h.completedAt) : null;
+                  const axis = when
+                    ? new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(when)
+                    : "—";
+                  return {
+                    key: h.sessionId,
+                    label: axis,
+                    value: h.total,
+                    color: h.source === "TEACHER" ? "#0784c6" : "#5a6a72",
+                    hint: `${dateOnly(h.completedAt)} · ${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]} · ${Math.round(h.total)} из 100`,
+                  };
+                })}
+              />
+            )}
+          <p className="chart-note">За последний месяц · шкала 0–100. Синий — преподаватель, серый — система</p>
         </article>
 
         <article className="analytics-card">
