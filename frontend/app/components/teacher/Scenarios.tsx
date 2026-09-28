@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { api, type GenerationJob, type GenerationReport, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
-import { categoryLabels, dateTime, sourceLabels } from "../../../lib/format";
+import { categoryLabel, categoryLabels, dateTime, scenarioCategories, sourceLabels } from "../../../lib/format";
 import { ErrorBanner, Modal, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
 
 /** Развёрнутая карточка сценария: вводная целиком, адреса, эталон с подсветкой правильных ответов. */
@@ -23,7 +23,7 @@ export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListIt
           ? scenario.expectedServices.map((code) => <mark key={code} className="ref-ok chip-inline">{code}</mark>)
           : "—"}</p>
       </div>
-      <p className="muted">{sourceLabels[scenario.source]} · {categoryLabels[scenario.category] ?? scenario.category} · сложность {scenario.difficulty} · {scenario.referenceConfirmed ? "эталон подтверждён" : "эталон не подтверждён"} · {scenario.id}</p>
+      <p className="muted">{sourceLabels[scenario.source]} · {categoryLabel(scenario.category)} · сложность {scenario.difficulty} · {scenario.referenceConfirmed ? "эталон подтверждён" : "эталон не подтверждён"} · {scenario.id}</p>
     </div>
   );
 }
@@ -109,7 +109,7 @@ function GenerateDialog({ token, library, initialCategory, onClose, onDone }: {
     for (const s of library) map[s.category] = (map[s.category] ?? 0) + 1;
     return map;
   }, [library]);
-  const categories = Object.keys(categoryLabels).filter((k) => k !== "OTHER" || counts[k]);
+  const categories = scenarioCategories;
 
   const start = async () => {
     setError("");
@@ -233,7 +233,7 @@ export function Scenarios({ token }: { token: string }) {
         <b>Сценарии</b>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">все категории</option>
-          {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          {scenarioCategories.map((k) => <option key={k} value={k}>{categoryLabels[k]}</option>)}
         </select>
         <select value={source} onChange={(e) => setSource(e.target.value)}>
           <option value="">все источники</option>
@@ -299,6 +299,8 @@ function ScenarioEdit({ token, scenario, types, onBack }: { token: string; scena
   const [notice, setNotice] = useNotice();
   const [working, run] = useAction(setError);
   const addr = s.expectedAddress ?? {};
+  // категорию сервер выводит сам из первого типа; здесь — чтобы показать её до сохранения
+  const derivedCategory = types.find((t) => t.id === s.expectedIncidentTypes[0])?.category ?? s.category;
 
   const save = () => run(async () => {
     setS(await api.teacher.updateScenario(token, s.id, {
@@ -326,10 +328,9 @@ function ScenarioEdit({ token, scenario, types, onBack }: { token: string; scena
           <input value={s.title} maxLength={200} onChange={(e) => setS({ ...s, title: e.target.value })} /></label>
         <label className="wide"><span>Вводная «со слов заявителя»</span>
           <textarea value={s.callerText} onChange={(e) => setS({ ...s, callerText: e.target.value })} /></label>
-        <label><span>Категория</span>
-          <select value={s.category} onChange={(e) => setS({ ...s, category: e.target.value })}>
-            {Object.entries(categoryLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select></label>
+        <label><span>Категория «Что случилось?»</span>
+          <input value={derivedCategory ? categoryLabel(derivedCategory) : "определится по типу"} readOnly
+            title="Выводится из раздела ЕКП первого типа эталона; поменять — сменив тип" /></label>
         <label><span>Сложность 1–10</span><input type="number" min={1} max={10} value={s.difficulty} onChange={(e) => setS({ ...s, difficulty: Number(e.target.value) || 1 })} /></label>
         <label className="wide"><span>Адрес со слов заявителя</span><input value={s.rawAddress ?? ""} onChange={(e) => setS({ ...s, rawAddress: e.target.value })} /></label>
       </div>

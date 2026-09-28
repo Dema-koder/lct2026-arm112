@@ -4,7 +4,7 @@
     "source": "TICKET",
     "ticket": 1,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Возгорание мусорного контейнера, пострадавших нет",
     "caller": {
@@ -53,7 +53,7 @@
     "source": "TICKET",
     "ticket": 1,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 5,
     "callerText": "Дерутся 10-15 человек, 5 пострадавших с различными травмами, дерутся палками и железными прутами",
     "caller": {
@@ -95,7 +95,7 @@
     "source": "TICKET",
     "ticket": 1,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Ребенок 11 лет,  упал с велосипеда, упал сам, отек руки и ноги. Вызывает мама",
     "caller": {
@@ -133,7 +133,7 @@
     "source": "TICKET",
     "ticket": 2,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Задымление мусоропровода в жилом доме, в доме 17 этажей, заявитель находится на 7-м этаже. Открытого пламени не видит, пострадавших людей нет",
     "caller": {
@@ -183,7 +183,7 @@
     "source": "TICKET",
     "ticket": 2,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Поругался с продавцом «Мегафон», бросил трубку",
     "caller": {
@@ -222,7 +222,7 @@
     "source": "TICKET",
     "ticket": 2,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "Падение автомашины в воду",
     "caller": {
@@ -269,7 +269,7 @@
     "source": "TICKET",
     "ticket": 3,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит крыша частного дома, пострадавших нет, дом не газифицирован",
     "caller": {
@@ -322,7 +322,7 @@
     "source": "TICKET",
     "ticket": 3,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Громко играет музыка во дворе",
     "caller": {
@@ -361,7 +361,7 @@
     "source": "TICKET",
     "ticket": 3,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "На машину упало бревно с грузовика. В машине Ваз красный, водитель заблокирован",
     "caller": {
@@ -407,7 +407,7 @@
     "source": "TICKET",
     "ticket": 4,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит балкон и два окна рядом на 13-м этаже, открытое пламя, пострадавших не видят, наблюдают с улицы, (этажность — 14, дом газифицирован)",
     "caller": {
@@ -458,7 +458,7 @@
     "source": "TICKET",
     "ticket": 4,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Плохо женщине на автомобильной парковке. Потеря сознания. На вид 40 лет",
     "caller": {
@@ -496,7 +496,7 @@
     "source": "TICKET",
     "ticket": 4,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Открыть дверь в квартиру. В квартире проживает пожилой инвалид, одинокий, не открывает дверь 3-ий день",
     "caller": {
@@ -539,7 +539,7 @@
     "source": "TICKET",
     "ticket": 5,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Горит одно окно на 9 этаже, открытое пламя, рядом на балконе 2-е людей кричат о помощи, заявитель наблюдает с улицы, (этажность — 17, дом не газифицирован)",
     "caller": {
@@ -590,7 +590,7 @@
     "source": "TICKET",
     "ticket": 5,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Женщина выпила случайно не те лекарственные препараты, потеряла сознание. , д/р 10.03.1975, вызывает супруг",
     "caller": {
@@ -628,7 +628,7 @@
     "source": "TICKET",
     "ticket": 5,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "На стройке жилого дома рабочий упал в котлован",
     "caller": {
@@ -666,7 +666,7 @@
     "source": "TICKET",
     "ticket": 6,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит а/м фольксваген цвет красный Х 863 МН 199, пострадавших нет,  (очевидец)",
     "caller": {
@@ -714,7 +714,7 @@
     "source": "TICKET",
     "ticket": 6,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Мужчина 40 лет, плохо. Находится в автомобиле форд синий А284ТК 777, вызывает себе",
     "caller": {
@@ -752,7 +752,7 @@
     "source": "TICKET",
     "ticket": 6,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Трое мужчин плывут на льдине",
     "caller": {
@@ -796,7 +796,7 @@
     "source": "TICKET",
     "ticket": 7,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит а/м Тойота цвет бежевый Р 254 ТС 99, пострадал водитель, 54 года, Дюжев Юрий Петрович, ожог рук,;  (очевидец)",
     "caller": {
@@ -844,7 +844,7 @@
     "source": "TICKET",
     "ticket": 7,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Сильная головная, А/Д 150/80, д/р 30.06.2001, вызывает себе",
     "caller": {
@@ -882,7 +882,7 @@
     "source": "TICKET",
     "ticket": 7,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "85 лет, Марков Илья Кузьмич, страдает потерей памяти, 6 часов назад ушел в поликлинику и не вернулся, дочь",
     "caller": {
@@ -921,7 +921,7 @@
     "source": "TICKET",
     "ticket": 8,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Задымление на минус первом этаже в торговом центре, источник не установлен, о пострадавших людях точной информации нет,  (работник мебельного магазина)",
     "caller": {
@@ -974,7 +974,7 @@
     "source": "TICKET",
     "ticket": 8,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Лежит мужчина неизвестный, около 50 лет, без сознания, видимых травм и кровотечений нет,  (прохожий)",
     "caller": {
@@ -1012,7 +1012,7 @@
     "source": "TICKET",
     "ticket": 8,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Тонет человек в настоящее время. Мужчина, кричит о помощи",
     "caller": {
@@ -1056,7 +1056,7 @@
     "source": "TICKET",
     "ticket": 9,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Задымление на платформе, пострадавших людей нет",
     "caller": {
@@ -1109,7 +1109,7 @@
     "source": "TICKET",
     "ticket": 9,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Минина Ольга Петровна, 36 лет, беременность 39 недель, отошли воды, вызывает супруг",
     "caller": {
@@ -1147,7 +1147,7 @@
     "source": "TICKET",
     "ticket": 9,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Мужчина упал с моста в воду, кричит, что не умеет плавать",
     "caller": {
@@ -1191,7 +1191,7 @@
     "source": "TICKET",
     "ticket": 10,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Горит помещение кассы, открытый огонь, пострадала кассир 45 л, Гвоздикова Анна Павловна, ожог лица и рук;  (очевидец)",
     "caller": {
@@ -1244,7 +1244,7 @@
     "source": "TICKET",
     "ticket": 10,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Пожилая женщина, неизвестная, около 70 лет, сильные головные боли, стоит на перекрестке, останавливает машины, просит вызвать 03;  (прохожий)",
     "caller": {
@@ -1282,7 +1282,7 @@
     "source": "TICKET",
     "ticket": 10,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Женщина просит о помощи из-за двери квартиры, дверь в квартиру закрыта, на месте сотрудники полиции,  (соседка)",
     "caller": {
@@ -1325,7 +1325,7 @@
     "source": "TICKET",
     "ticket": 11,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит кабина автобуса, № маршрута 63, бортовой № 15477, гос. знак назвать не может, пострадавших нет,  (очевидец)",
     "caller": {
@@ -1373,7 +1373,7 @@
     "source": "TICKET",
     "ticket": 11,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Легкодушев Дмитрий Константинович, д/р 31.05.2011, головокружение, теряет сознание. Вызывает отец",
     "caller": {
@@ -1411,7 +1411,7 @@
     "source": "TICKET",
     "ticket": 11,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Женщина собирала грибы, заблудилась. , 63 г, зарядка 10% на телефоне, 03 не треб. Звонит сама",
     "caller": {
@@ -1450,7 +1450,7 @@
     "source": "TICKET",
     "ticket": 12,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Сильное задымление в зале ресторана, о пострадавших точной информации нет,  (посетитель)",
     "caller": {
@@ -1503,7 +1503,7 @@
     "source": "TICKET",
     "ticket": 12,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Сильные боли в сердце, женщина Сергеева Наталья Петрова 55 лет. Вызывает подруга",
     "caller": {
@@ -1541,7 +1541,7 @@
     "source": "TICKET",
     "ticket": 12,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Мужчины на ограждении моста в крови",
     "caller": {
@@ -1579,7 +1579,7 @@
     "source": "TICKET",
     "ticket": 13,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горят деревья в парке, площадь возгорания 10 м х 10 м, пострадавших людей нет",
     "caller": {
@@ -1626,7 +1626,7 @@
     "source": "TICKET",
     "ticket": 13,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Рожает жена, 40 недель, кровотечения нет, воды отошли 2 мин назад, д/р 20.05.1979, в автомобиле фольксваген синий О345ВН 177",
     "caller": {
@@ -1664,7 +1664,7 @@
     "source": "TICKET",
     "ticket": 13,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "На обочине лежит мужчина в крови. На вид 40 лет",
     "caller": {
@@ -1702,7 +1702,7 @@
     "source": "TICKET",
     "ticket": 14,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит сухая трава рядом с АЗС Роснефть, огонь подходит к территории АЗС,  (работник АЗС)",
     "caller": {
@@ -1749,7 +1749,7 @@
     "source": "TICKET",
     "ticket": 14,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Подросток 12 лет задыхается, астма, вызывает брат (брату 19 лет)",
     "caller": {
@@ -1787,7 +1787,7 @@
     "source": "TICKET",
     "ticket": 14,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Неизвестные затащили жену в машину у метро Комсомольская, скрылись в сторону ТТК. Иномарка белая, гос. номер не запомнил. Двое мужчин, кавказцы",
     "caller": {
@@ -1828,7 +1828,7 @@
     "source": "TICKET",
     "ticket": 15,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Горит лес за деревней Варварино, пострадавших нет, проезжала мимо",
     "caller": {
@@ -1875,7 +1875,7 @@
     "source": "TICKET",
     "ticket": 15,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Мужчина 30 лет нырнул в воду, ударился о камень, рассек голову, кровотечение, в сознании,  (очевидец)",
     "caller": {
@@ -1913,7 +1913,7 @@
     "source": "TICKET",
     "ticket": 15,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Сожитель ударил ножом в ногу. Кровотечение",
     "caller": {
@@ -1939,12 +1939,12 @@
       "descriptive": "Москва, ул. Зверенецкая, дом 22, кв. 7, под. 1, эт. 2, код 7В"
     },
     "expectedIncidentTypes": [
-      "medical.trauma",
-      "fight"
+      "fight",
+      "medical.trauma"
     ],
     "expectedServices": [
-      "103",
       "102",
+      "103",
       "MAYOR",
       "ROSGVARD"
     ],
@@ -1955,7 +1955,7 @@
     "source": "TICKET",
     "ticket": 16,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Видит столб черного дыма со стороны жилых домов поселка, информации о пострадавших нет",
     "caller": {
@@ -2008,7 +2008,7 @@
     "source": "TICKET",
     "ticket": 16,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Ребенок 11 лет,  упал с велосипеда, упал сам, отек руки и ноги. Вызывает мама",
     "caller": {
@@ -2046,7 +2046,7 @@
     "source": "TICKET",
     "ticket": 16,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Петрова Светлана Павловна 35 лет, выпила упаковку снотворного «Донормил», вызывает муж",
     "caller": {
@@ -2088,7 +2088,7 @@
     "source": "TICKET",
     "ticket": 17,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "В жилом доме сработала пожарная сигнализация. Дыма и возгорания нет",
     "caller": {
@@ -2137,7 +2137,7 @@
     "source": "TICKET",
     "ticket": 17,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "У покупателя в магазине судороги, пена изо рта. При падении разбил голову. Мужчина 40-45 лет. Вызывает кассир магазина",
     "caller": {
@@ -2175,7 +2175,7 @@
     "source": "TICKET",
     "ticket": 17,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Избита женщина, около 30 лет, неизвестная, травма головы, кровотечение,  (прохожий)",
     "caller": {
@@ -2201,12 +2201,12 @@
       "descriptive": "около магазина «Пятёрочка»"
     },
     "expectedIncidentTypes": [
-      "medical.trauma",
-      "fight"
+      "fight",
+      "medical.trauma"
     ],
     "expectedServices": [
-      "103",
       "102",
+      "103",
       "MAYOR",
       "ROSGVARD"
     ],
@@ -2217,7 +2217,7 @@
     "source": "TICKET",
     "ticket": 18,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Видит пожар, что горит не знает",
     "caller": {
@@ -2264,7 +2264,7 @@
     "source": "TICKET",
     "ticket": 18,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Не может разбудить мужа. Муж издает хрипы. , 10.08.1977г",
     "caller": {
@@ -2302,7 +2302,7 @@
     "source": "TICKET",
     "ticket": 18,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "С улицы слышны крики о помощи, кричит мужчина",
     "caller": {
@@ -2345,7 +2345,7 @@
     "source": "TICKET",
     "ticket": 19,
     "ordinal": 1,
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 3,
     "callerText": "Горит поле, пострадавших нет",
     "caller": {
@@ -2392,7 +2392,7 @@
     "source": "TICKET",
     "ticket": 19,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Прихожанина укусила змея. В сознании. Мужчина 60 лет, Сизов Иван Петрович. Вызывает прохожий",
     "caller": {
@@ -2430,7 +2430,7 @@
     "source": "TICKET",
     "ticket": 19,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "Мужчину сбила электричка, на ж/д переходе. Доступ есть",
     "caller": {
@@ -2476,7 +2476,7 @@
     "source": "TICKET",
     "ticket": 20,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Дерутся 3 человека, без пострадавших, без оружия, Иванов Сергей Петрович (очевидец)",
     "caller": {
@@ -2517,7 +2517,7 @@
     "source": "TICKET",
     "ticket": 20,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Женщина, речь невнятная, лицо перекошено. Просит вызвать 03. На вид 70 лет. Вызывает прохожий",
     "caller": {
@@ -2555,7 +2555,7 @@
     "source": "TICKET",
     "ticket": 20,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Изнасиловали женщину, около 30 лет, травмы, просит вызвать полицию",
     "caller": {
@@ -2593,7 +2593,7 @@
     "source": "TICKET",
     "ticket": 21,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 5,
     "callerText": "Дерутся 10-15 человек, 5 пострадавших с различными травмами, дерутся палками и железными прутами",
     "caller": {
@@ -2635,7 +2635,7 @@
     "source": "TICKET",
     "ticket": 21,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "д/р 10.02.1956 рубила дрова и ударила топором себя по руке, случайно, кровотечение. Вызывает себе",
     "caller": {
@@ -2673,7 +2673,7 @@
     "source": "TICKET",
     "ticket": 21,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Ребенок 4 года один в а/м, двери заблокировались",
     "caller": {
@@ -2716,7 +2716,7 @@
     "source": "TICKET",
     "ticket": 22,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Дерутся в квартире, 2 мужчин, без пострадавших, без оружия,  (сосед)",
     "caller": {
@@ -2757,7 +2757,7 @@
     "source": "TICKET",
     "ticket": 22,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "Ребенок 4 года , боль в животе, рвота с кровью. Находится в автомобиле Мазда-6, цвет белый, П325ОР 197, вызывает папа",
     "caller": {
@@ -2795,7 +2795,7 @@
     "source": "TICKET",
     "ticket": 22,
     "ordinal": 3,
-    "category": "MEDICAL",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Знакомый отправил СМС — хочет повеситься. Доступа в квартиру нет,  (подруга)",
     "caller": {
@@ -2837,7 +2837,7 @@
     "source": "TICKET",
     "ticket": 23,
     "ordinal": 1,
-    "category": "MEDICAL",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Скандал с пьяным мужем, требуется скорая для женщины, 28 лет, Петровой Елены Михайловны, травма головы, кровотечение,  (сосед)",
     "caller": {
@@ -2863,12 +2863,12 @@
       "descriptive": "Москва, ул. Тихомирова дом 15 корп. 1, кв. 79, под. 2, эт. 4, код 80В"
     },
     "expectedIncidentTypes": [
-      "medical.trauma",
-      "fight"
+      "fight",
+      "medical.trauma"
     ],
     "expectedServices": [
-      "103",
       "102",
+      "103",
       "MAYOR",
       "ROSGVARD"
     ],
@@ -2879,7 +2879,7 @@
     "source": "TICKET",
     "ticket": 23,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 5,
     "callerText": "10.03.1977. Чистила ухо, повредила барабанную перепонку, кровотечение, вызывает себе",
     "caller": {
@@ -2917,7 +2917,7 @@
     "source": "TICKET",
     "ticket": 23,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Потерялся ребенок 30 минут назад — 5 лет, Степанов Гриша, одет в синюю куртку, желтую шапку, желтые шарф и варежки, синие брюки и черные ботинки, гулял с бабушкой во дворе, бабушка",
     "caller": {
@@ -2956,7 +2956,7 @@
     "source": "TICKET",
     "ticket": 24,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Ссора во дворе из-за парковки,  (очевидец)",
     "caller": {
@@ -2995,7 +2995,7 @@
     "source": "TICKET",
     "ticket": 24,
     "ordinal": 2,
-    "category": "MEDICAL",
+    "category": "t103",
     "difficulty": 3,
     "callerText": "8 лет, упал сам с горки, высота 1,5 метра, травма лица, кровотечение, вызывает мама",
     "caller": {
@@ -3033,7 +3033,7 @@
     "source": "TICKET",
     "ticket": 24,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 3,
     "callerText": "Женщина с младенцем на руках, попрошайничает, пристает к гражданам. У ребенка окровавленное лицо",
     "caller": {
@@ -3076,7 +3076,7 @@
     "source": "TICKET",
     "ticket": 25,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 5,
     "callerText": "На улице, на остановке трамвая мужчина нетрезвый сильно ругается и хватает прохожих за руки, 03 не требуется,  (очевидец)",
     "caller": {
@@ -3115,7 +3115,7 @@
     "source": "TICKET",
     "ticket": 25,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
     "caller": {
@@ -3156,7 +3156,7 @@
     "source": "TICKET",
     "ticket": 25,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "death",
     "difficulty": 3,
     "callerText": "Заявитель пришел в квартиру бывшей супруги, т.к. ему позвонили соседи и сообщили, что в квартире 4 дня воет собака. Обнаружил труп бывшей жены, лежит на полу, трупные пятна, рядом большая лужа крови.",
     "caller": {
@@ -3199,7 +3199,7 @@
     "source": "TICKET",
     "ticket": 26,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 5,
     "callerText": "У входа на стадион — группа молодых людей, 10-12 человек, пытаются сломать тумбу с афишей, разбили стекло и бьют битами и железными палками. Пострадавших нет,  (очевидец)",
     "caller": {
@@ -3238,7 +3238,7 @@
     "source": "TICKET",
     "ticket": 26,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
     "caller": {
@@ -3279,7 +3279,7 @@
     "source": "TICKET",
     "ticket": 26,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "death",
     "difficulty": 3,
     "callerText": "В доме престарелых скончалась женщина, после инсульта. Кривенко Лариса Степановна. Вызывает администратор , тел.",
     "caller": {
@@ -3322,7 +3322,7 @@
     "source": "TICKET",
     "ticket": 27,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "terror_threat",
     "difficulty": 3,
     "callerText": "Подозрительный автомобиль ваз2110 черная, очень грязная, гос. номер а155ат 33, приехала во двор ночью, чем-то сильно нагружена (просели задние колеса), под машиной лежит непонятная коробка с проводами,  (прохожий)",
     "caller": {
@@ -3372,7 +3372,7 @@
     "source": "TICKET",
     "ticket": 27,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
     "caller": {
@@ -3413,7 +3413,7 @@
     "source": "TICKET",
     "ticket": 27,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "difficulty": 3,
     "callerText": "Соседи делают ремонт, со стены в ванной комнаты отлетела плитка и образовалась трещина около 1 м в длину. Пострадавших нет.  Петровна",
     "caller": {
@@ -3462,7 +3462,7 @@
     "source": "TICKET",
     "ticket": 28,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "У подъезда молодой человек, лет 20, в синей джинсовой куртке в синих джинсах, черных ботинках, славянской внешности, стоит у домофона и кого-то ждет, в подъезд не заходит и причину своего присутствия старшей по подъезду не пояснил;  (старшая по подъезду)",
     "caller": {
@@ -3501,7 +3501,7 @@
     "source": "TICKET",
     "ticket": 28,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "ДТП, Б/П, Б/Р, пежо + фольксваген",
     "caller": {
@@ -3542,7 +3542,7 @@
     "source": "TICKET",
     "ticket": 28,
     "ordinal": 3,
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "difficulty": 3,
     "callerText": "На Ярославском вокзале нет одного крепления на табло с указанием расписания пригородных поездов, есть угроза падения на торговую палатку. Пострадавших нет.",
     "caller": {
@@ -3591,7 +3591,7 @@
     "source": "TICKET",
     "ticket": 29,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "terror_threat",
     "difficulty": 3,
     "callerText": "На дорожке в парке лежит большая коробка, замотана скотчем, внутри что-то тикает,  (прохожий)",
     "caller": {
@@ -3641,7 +3641,7 @@
     "source": "TICKET",
     "ticket": 29,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "ДТП, Б/П, Б/Р, драка между водителями, без пострадавших, без оружия",
     "caller": {
@@ -3685,7 +3685,7 @@
     "source": "TICKET",
     "ticket": 29,
     "ordinal": 3,
-    "category": "POLICE",
+    "category": "terror_threat",
     "difficulty": 3,
     "callerText": "Муж угрожает взорвать квартиру бывшей супруги.",
     "caller": {
@@ -3735,7 +3735,7 @@
     "source": "TICKET",
     "ticket": 30,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Угон машины, видели в последний раз вчера вечером, тойота синяя А128НА 177",
     "caller": {
@@ -3776,7 +3776,7 @@
     "source": "TICKET",
     "ticket": 30,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "Наезд на пешехода, мужчина, без сознания, на месте ваз2110 красный а128 аа177",
     "caller": {
@@ -3822,7 +3822,7 @@
     "source": "TICKET",
     "ticket": 30,
     "ordinal": 3,
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 3,
     "callerText": "В частном доме запах газа от трубы на вводе в дом, слышит шум в трубе. Газ магистральный. 03 не требуется",
     "caller": {
@@ -3866,7 +3866,7 @@
     "source": "TICKET",
     "ticket": 31,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Угон машины мерседес черный А128АА 177, на глазах владельца, уехала в сторону садового кольца",
     "caller": {
@@ -3907,7 +3907,7 @@
     "source": "TICKET",
     "ticket": 31,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "Наезд на пешехода, мужчина в сознании, травма головы, с места скрылась ваз 2110 красная ? 128 ?? 177, в сторону области",
     "caller": {
@@ -3953,7 +3953,7 @@
     "source": "TICKET",
     "ticket": 31,
     "ordinal": 3,
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 3,
     "callerText": "Свист от газовой трубы в квартире, на кухне. 03 не треб.",
     "caller": {
@@ -3997,7 +3997,7 @@
     "source": "TICKET",
     "ticket": 32,
     "ordinal": 1,
-    "category": "POLICE",
+    "category": "t102",
     "difficulty": 3,
     "callerText": "Завладение автотранспортом, остановили (перегородили проезд) машиной ваз 2115 черная, грязная, вытащили из машины и уехали на мерседес черный а 128 аа 177 в сторону Ходынского бульвара, 03 не требуется, ваз 2115 бросили на проезжей части",
     "caller": {
@@ -4038,7 +4038,7 @@
     "source": "TICKET",
     "ticket": 32,
     "ordinal": 2,
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 3,
     "callerText": "ДТП, 3 пострадавших в троллейбусе, не блокированы, троллейбус маршрут 27, бортовой номер 11 458, + ваз2115, течет бензин",
     "caller": {
@@ -4084,7 +4084,7 @@
     "source": "TICKET",
     "ticket": 32,
     "ordinal": 3,
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 3,
     "callerText": "На МКАД (внутренняя и внешняя сторона) на протяжении от Ленинградского шоссе до Волоколамского горит уличное освещение.",
     "caller": {

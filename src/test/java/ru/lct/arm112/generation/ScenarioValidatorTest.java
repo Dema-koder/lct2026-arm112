@@ -32,7 +32,7 @@ class ScenarioValidatorTest {
 
     /** Заведомо годный сценарий: улица из справочника, тип следует из текста, служб по ЕКП. */
     private static ScenarioUpsert good() {
-        return new ScenarioUpsert(null, "Возгорание мусора на Цюрупы", "FIRE", 5,
+        return new ScenarioUpsert(null, "Возгорание мусора на Цюрупы", "t101", 5,
                 "Во дворе горит мусорный контейнер, огонь до метра, пострадавших нет.",
                 null, "Цюрупы, во дворе",
                 new FormalAddress("Россия", null, "Москва", null, null, null, "Цюрупы", "12",

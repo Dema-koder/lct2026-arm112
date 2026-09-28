@@ -98,10 +98,11 @@ class IncidentTypeClassifierTest {
         // tools/build_seed.py тем же поиском по ключевым словам, на котором работает
         // классификатор, — он сверялся сам с собой. После ручной разметки всех 96 билетов
         // (docs/materials/data/scenario-overrides.json) честные цифры — 36.5 / 56.3 / 0.35.
+        // После правила «первым идёт главный тип» (драка с травмами — сначала драка) — 35.4 / 54.2 / 0.35.
         // Их и фиксируем; поднимать — задачей на сам классификатор, а не порогом.
         assertThat(accuracy1).as("точность top-1").isGreaterThanOrEqualTo(35.0);
         assertThat(accuracy3).as("точность top-3: на ней держится подсказка-список")
-                .isGreaterThanOrEqualTo(55.0);
+                .isGreaterThanOrEqualTo(54.0);
         assertThat(macroF1).as("macro-F1 по классам из разметки: классы несбалансированы, "
                         + "среднее по классам честнее общей точности")
                 .isGreaterThanOrEqualTo(0.33);

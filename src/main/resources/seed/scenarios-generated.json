@@ -2,7 +2,7 @@
   {
     "id": "gen-seed-01",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит квартира на 4 этаже, из окна валит дым, жильцы выбегают на лестницу, в квартире оставалась пожилая женщина",
     "caller": {
@@ -51,7 +51,7 @@
   {
     "id": "gen-seed-02",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит одноэтажное строение во дворе школы, пламя на крыше, детей вывели, внутри никого",
     "caller": {
@@ -102,7 +102,7 @@
   {
     "id": "gen-seed-03",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Сработала сигнализация в торговом центре, посетителей выводят, дыма и огня не видно",
     "caller": {
@@ -149,7 +149,7 @@
   {
     "id": "gen-seed-04",
     "source": "GENERATED",
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 5,
     "callerText": "Две машины столкнулись на перекрёстке, помяты крылья, водители не пострадали, спорят о виновнике, движение частично перекрыто",
     "caller": {
@@ -188,7 +188,7 @@
   {
     "id": "gen-seed-05",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "explosion",
     "difficulty": 5,
     "callerText": "Громкий хлопок в подвале жилого дома, из продухов идёт пыль, в подъезде выбило две двери, люди выбежали во двор",
     "caller": {
@@ -239,7 +239,7 @@
   {
     "id": "gen-seed-06",
     "source": "GENERATED",
-    "category": "MEDICAL",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Мужчина стоит на парапете балкона 9 этажа, говорит, что спрыгнет, родственники за дверью, дверь заперта",
     "caller": {
@@ -279,7 +279,7 @@
   {
     "id": "gen-seed-07",
     "source": "GENERATED",
-    "category": "POLICE",
+    "category": "death",
     "difficulty": 5,
     "callerText": "В квартире нашли мужчину без признаков жизни, около 60 лет, дверь открыли соседи, запах в подъезде третий день",
     "caller": {
@@ -320,7 +320,7 @@
   {
     "id": "gen-seed-08",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Прорвало трубу в подвале, вода поднялась выше колена, заливает электрощитовую, в доме моргает свет",
     "caller": {
@@ -365,7 +365,7 @@
   {
     "id": "gen-seed-09",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Застряли в лифте между 5 и 6 этажом, внутри двое взрослых и ребёнок, кнопка связи не работает, душно",
     "caller": {
@@ -405,7 +405,7 @@
   {
     "id": "gen-seed-10",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Открытый колодец на тротуаре у остановки, крышки нет, ограждения нет, вечером темно, рядом ходят дети",
     "caller": {
@@ -451,7 +451,7 @@
   {
     "id": "gen-seed-11",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 5,
     "callerText": "Сильный запах газа на лестничной клетке, идёт от квартиры соседей, дверь не открывают, жильцы вышли на улицу",
     "caller": {
@@ -493,7 +493,7 @@
   {
     "id": "gen-seed-12",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Отключилось электричество во всём подъезде, лифт встал, в двух квартирах люди на аппаратах, у подъезда искрит кабель",
     "caller": {
@@ -540,7 +540,7 @@
   {
     "id": "gen-seed-13",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Дерево упало на припаркованные машины и перегородило проезд, задело провода, провода провисли над тротуаром",
     "caller": {
@@ -586,7 +586,7 @@
   {
     "id": "gen-seed-14",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "difficulty": 5,
     "callerText": "По стене дома пошла трещина от третьего до пятого этажа, сыплется кирпич, жильцы боятся заходить в подъезд",
     "caller": {
@@ -633,7 +633,7 @@
   {
     "id": "gen-seed-15",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Двое подростков вышли на лёд пруда, лёд треснул, один провалился по пояс, второй пытается вытащить",
     "caller": {
@@ -675,7 +675,7 @@
   {
     "id": "gen-seed-16",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 4,
     "callerText": "Запах газа в подъезде на первом этаже, у почтовых ящиков, соседи жалуются уже полчаса, газовую службу никто не вызывал",
     "caller": {
@@ -717,7 +717,7 @@
   {
     "id": "gen-seed-17",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 5,
     "callerText": "На кухне сильно пахнет газом, плита выключена, в квартире пожилая мать, окна открыли, свет не включали",
     "caller": {
@@ -759,7 +759,7 @@
   {
     "id": "gen-seed-18",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 6,
     "callerText": "Во дворе у газового шкафа шипит и сильно пахнет газом, дверца шкафа открыта, рядом детская площадка, дети играют",
     "caller": {
@@ -801,7 +801,7 @@
   {
     "id": "gen-seed-19",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 5,
     "callerText": "В кафе на первом этаже жилого дома запах газа из подсобки, посетителей вывели на улицу, повар говорит, что треснул шланг плиты",
     "caller": {
@@ -843,7 +843,7 @@
   {
     "id": "gen-seed-20",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 4,
     "callerText": "Сверху заливает квартиру, вода течёт по стене и через люстру, соседей сверху нет дома, дверь не открывают",
     "caller": {
@@ -888,7 +888,7 @@
   {
     "id": "gen-seed-21",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "На проезжей части из-под асфальта бьёт вода, разлилась большая лужа, машины объезжают по встречной полосе",
     "caller": {
@@ -933,7 +933,7 @@
   {
     "id": "gen-seed-22",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "В лифте застрял пожилой мужчина, кнопка связи с диспетчером не отвечает, говорит, что ему душно и тяжело дышать",
     "caller": {
@@ -973,7 +973,7 @@
   {
     "id": "gen-seed-23",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 6,
     "callerText": "Во всём доме нет света второй час, на седьмом этаже лежачий больной на кислородном аппарате, аппарат работает от батареи",
     "caller": {
@@ -1020,7 +1020,7 @@
   {
     "id": "gen-seed-24",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "После сильного ветра дерево упало на проезжую часть, перегородило обе полосы, зацепило провода, под деревом машин нет",
     "caller": {
@@ -1066,7 +1066,7 @@
   {
     "id": "gen-seed-25",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 4,
     "callerText": "Во дворе люк без крышки, рядом школа, ребёнок чуть не упал в колодец, огородить нечем",
     "caller": {
@@ -1112,7 +1112,7 @@
   {
     "id": "gen-seed-26",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Пожилая соседка упала дома и не может встать, дверь заперта изнутри, просит открыть дверь, ключей ни у кого нет",
     "caller": {
@@ -1153,7 +1153,7 @@
   {
     "id": "gen-seed-27",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 6,
     "callerText": "На пруду мужчина провалился под лёд у берега, держится за край, сам выбраться не может, мы боимся подходить",
     "caller": {
@@ -1195,7 +1195,7 @@
   {
     "id": "gen-seed-28",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "difficulty": 5,
     "callerText": "На фасаде отошла облицовочная плитка на уровне пятого этажа, куски падают на тротуар у входа в магазин",
     "caller": {
