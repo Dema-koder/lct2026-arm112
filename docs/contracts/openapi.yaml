@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.10
+  version: 0.3.15
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -637,6 +637,11 @@ paths:
     post:
       tags: [Teacher]
       operationId: generateScenarios
+      deprecated: true
+      description: >
+        Синхронная генерация. Устарела: пачка на языковой модели идёт минуту-полторы.
+        Использует тот же путь с проверкой, что и задача генерации; без модели возвращает
+        пустой список. Новым клиентам — POST /teacher/scenarios/generation-jobs.
       requestBody:
         required: true
         content:
@@ -650,6 +655,49 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Scenario'}
+  /teacher/scenarios/generation-status:
+    get:
+      tags: [Teacher]
+      operationId: getScenarioGenerationStatus
+      description: Чем будет сгенерировано — чтобы показать до запуска, подключена ли модель.
+      responses:
+        '200':
+          description: Источник генерации
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationStatus'}
+  /teacher/scenarios/generation-jobs:
+    post:
+      tags: [Teacher]
+      operationId: startScenarioGeneration
+      description: >
+        Ставит задачу генерации в очередь. Кандидаты от языковой модели проходят проверку
+        справочниками; в библиотеку попадают только принятые, с неподтверждённым эталоном.
+        Без модели задача завершается с generator = none и нулём кандидатов.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GenerateRequest'}
+      responses:
+        '202':
+          description: Задача поставлена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationJob'}
+  /teacher/scenarios/generation-jobs/{id}:
+    get:
+      tags: [Teacher]
+      operationId: getScenarioGeneration
+      parameters:
+        - {$ref: '#/components/parameters/Id'}
+      responses:
+        '200':
+          description: Состояние задачи; отчёт — после завершения
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GenerationJob'}
+        '404': {$ref: '#/components/responses/ErrorResponse'}
   /teacher/scenarios/{id}:
     get:
       tags: [Teacher]
@@ -867,7 +915,7 @@ paths:
       operationId: calibrationReport
       summary: Расхождение оценки ИИ с оценкой преподавателя
       description: >
-        Предложение по калибровке, а не применённое изменение: решение за преподавателем.
+        Диагностическое предложение по калибровке. Включение версий доступно администратору.
         Критерии, где калибровать нечего, попадают в skipped с объяснением.
       parameters:
         - name: mode
@@ -1112,6 +1160,59 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Group'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/assessment-calibration:
+    get:
+      tags: [Admin]
+      operationId: getAssessmentCalibration
+      summary: Текущая версия и новый расчёт коррекции оценок ИИ
+      description: Исходные и уже выставленные оценки не изменяются; активная версия действует только на будущие оценки ИИ.
+      parameters:
+        - name: mode
+          in: query
+          schema: {type: string, enum: [CARD_FILL, CARD_ACTIONS], default: CARD_FILL}
+      responses:
+        '200':
+          description: Состояние коррекции
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
+  /admin/assessment-calibration/activate:
+    post:
+      tags: [Admin]
+      operationId: activateAssessmentCalibration
+      summary: Рассчитать и включить новую версию коррекции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CalibrationCommand'}
+      responses:
+        '200':
+          description: Новая версия включена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
+        '409':
+          description: Недостаточно данных или расчёт не улучшает качество
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+  /admin/assessment-calibration/deactivate:
+    post:
+      tags: [Admin]
+      operationId: deactivateAssessmentCalibration
+      summary: Отключить активную коррекцию для будущих оценок
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CalibrationCommand'}
+      responses:
+        '200':
+          description: Коррекция отключена, история версий сохранена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
   /admin/settings:
     get:
       tags: [Admin]
@@ -1248,6 +1349,35 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/NotificationTestResult'}
         '409': {$ref: '#/components/responses/ErrorResponse'}
+        '502': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/system/alerts/mock:
+    get:
+      tags: [Admin]
+      operationId: getMockPhoneGatewaySettings
+      description: Возвращает состояние локального mock-шлюза. В production всегда недоступен.
+      responses:
+        '200':
+          description: Текущий тестовый сценарий или признак недоступности mock-шлюза
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MockPhoneGatewaySettings'}
+    put:
+      tags: [Admin]
+      operationId: updateMockPhoneGatewaySettings
+      description: Выбирает результат следующего звонка в локальной среде разработки.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/MockPhoneGatewayUpdate'}
+      responses:
+        '200':
+          description: Сценарий сохранён
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MockPhoneGatewaySettings'}
+        '409': {$ref: '#/components/responses/ErrorResponse'}
+        '422': {$ref: '#/components/responses/ErrorResponse'}
         '502': {$ref: '#/components/responses/ErrorResponse'}
   /admin/system/alerts/history:
     get:
@@ -1946,7 +2076,7 @@ components:
         id: {type: string}
         title: {type: string, maxLength: 200, description: "Название для преподавателя; обучающемуся не показывается"}
         source: {$ref: '#/components/schemas/ScenarioSource'}
-        category: {type: string}
+        category: {type: string, description: "Позиция «Что случилось?» (id из card-types: t101, t102, t103, t104, dtp, person_danger, death, accident_utility…), выведенная из раздела ЕКП главного типа. С 0.3.14 вычисляется сервером; до неё — FIRE, MEDICAL, POLICE, RESCUE, GAS, UTILITY, OTHER"}
         difficulty: {type: integer, minimum: 1, maximum: 10}
         callerText: {type: string, description: "Вводная «со слов заявителя»"}
         caller: {anyOf: [{$ref: '#/components/schemas/ScenarioCaller'}, {type: 'null'}]}
@@ -1974,7 +2104,7 @@ components:
         id: {type: string}
         title: {type: string}
         source: {$ref: '#/components/schemas/ScenarioSource'}
-        category: {type: string}
+        category: {type: string, description: "Позиция «Что случилось?» (id из card-types: t101, t102, t103, t104, dtp, person_danger, death, accident_utility…), выведенная из раздела ЕКП главного типа. С 0.3.14 вычисляется сервером; до неё — FIRE, MEDICAL, POLICE, RESCUE, GAS, UTILITY, OTHER"}
         difficulty: {type: integer}
         callerText: {type: string}
         rawAddress: {type: [string, 'null']}
@@ -2013,6 +2143,41 @@ components:
         category: {type: string}
         count: {type: integer, minimum: 1, maximum: 20}
         difficulty: {type: integer, minimum: 1, maximum: 10}
+    GenerationReport:
+      type: object
+      additionalProperties: false
+      required: [generator, requested, produced, accepted, rejected, rejectionReasons, warnings, savedIds]
+      properties:
+        generator: {type: string, description: "llm, recombination или none (модель не подключена)"}
+        requested: {type: integer}
+        produced: {type: integer}
+        accepted: {type: integer}
+        rejected: {type: integer}
+        rejectionReasons: {type: object, additionalProperties: {type: integer}, description: "код проверки → число отсеянных"}
+        warnings: {type: object, additionalProperties: {type: integer}}
+        savedIds: {type: array, items: {type: string}}
+    GenerationStatus:
+      type: object
+      additionalProperties: false
+      required: [generator]
+      properties:
+        generator: {type: string, description: "llm — модель отвечает; none — не подключена; recombination — включён откат"}
+    GenerationJob:
+      type: object
+      additionalProperties: false
+      required: [id, state, category, count, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        state: {type: string, enum: [READY, RUNNING, DONE, FAILED]}
+        category: {type: string}
+        count: {type: integer}
+        error: {type: [string, 'null']}
+        createdAt: {type: string, format: date-time}
+        finishedAt: {type: [string, 'null'], format: date-time}
+        report:
+          oneOf:
+            - {$ref: '#/components/schemas/GenerationReport'}
+            - {type: 'null'}
     CreateDraftRequest:
       type: object
       additionalProperties: false
@@ -2451,6 +2616,41 @@ components:
           type: array
           description: критерии без калибровки с объяснением причины
           items: {type: string}
+    CalibrationModel:
+      type: object
+      additionalProperties: false
+      required: [id, mode, version, active, assessments, maeBefore, maeAfter, criteria, createdBy, createdAt, activatedAt, deactivatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
+        version: {type: integer}
+        active: {type: boolean}
+        assessments: {type: integer}
+        maeBefore: {type: [number, 'null']}
+        maeAfter: {type: [number, 'null']}
+        criteria: {type: array, items: {$ref: '#/components/schemas/CriterionCalibration'}}
+        createdBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        activatedAt: {type: [string, 'null'], format: date-time}
+        deactivatedAt: {type: [string, 'null'], format: date-time}
+    AdminCalibrationState:
+      type: object
+      additionalProperties: false
+      required: [mode, active, candidate, history]
+      properties:
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
+        active:
+          oneOf:
+            - {$ref: '#/components/schemas/CalibrationModel'}
+            - {type: 'null'}
+        candidate: {$ref: '#/components/schemas/CalibrationReport'}
+        history: {type: array, items: {$ref: '#/components/schemas/CalibrationModel'}}
+    CalibrationCommand:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
     Debrief:
       type: object
       additionalProperties: false
@@ -2662,6 +2862,25 @@ components:
         configured: {type: boolean}
         channel: {type: string, const: PHONE_CALL}
         recipientCount: {type: integer, minimum: 0}
+    MockPhoneGatewaySettings:
+      type: object
+      additionalProperties: false
+      required: [available, scenario, delayMs, allowedScenarios, message]
+      properties:
+        available: {type: boolean}
+        scenario: {type: [string, 'null'], enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE, null]}
+        delayMs: {type: [integer, 'null'], minimum: 100, maximum: 30000}
+        allowedScenarios:
+          type: array
+          items: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE]}
+        message: {type: [string, 'null']}
+    MockPhoneGatewayUpdate:
+      type: object
+      additionalProperties: false
+      required: [scenario, delayMs]
+      properties:
+        scenario: {type: string, enum: [ACCEPTED, ANSWERED, NOT_ANSWERED, FAILED, UNAVAILABLE]}
+        delayMs: {type: integer, minimum: 100, maximum: 30000}
     NotificationTestResult:
       type: object
       additionalProperties: false

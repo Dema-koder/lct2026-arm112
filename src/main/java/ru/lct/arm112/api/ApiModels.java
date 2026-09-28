@@ -173,6 +173,18 @@ public final class ApiModels {
     public record GenerateRequest(@NotBlank String category, @Min(1) @Max(20) int count,
                                   @Min(1) @Max(10) int difficulty) {}
 
+    /** Итог фоновой генерации: источник, сколько принято валидатором и почему отсеяно остальное. */
+    public record GenerationReport(String generator, int requested, int produced, int accepted, int rejected,
+                                   Map<String, Integer> rejectionReasons, Map<String, Integer> warnings,
+                                   List<String> savedIds) {}
+
+    /** Чем будет сгенерировано: llm — языковая модель отвечает, none — не подключена. */
+    public record GenerationStatus(String generator) {}
+
+    /** Задача генерации; report появляется, когда state = DONE. */
+    public record GenerationJob(UUID id, String state, String category, int count, String error,
+                                Instant createdAt, Instant finishedAt, GenerationReport report) {}
+
     public record CardDraft(UUID id, UUID sessionId, String scenarioId, String number,
                             Instant startedAt, Instant savedAt, Instant deadlineAt, String state,
                             String callerText, DraftPhones phones, DraftCaller caller,
@@ -360,6 +372,15 @@ public final class ApiModels {
     public record CalibrationReport(String mode, int assessments,
                                     List<CriterionCalibration> criteria, List<String> skipped) {}
 
+    /** Сохранённая версия коррекции. Старые оценки при её включении не пересчитываются. */
+    public record CalibrationModel(UUID id, String mode, int version, boolean active, int assessments,
+                                   Double maeBefore, Double maeAfter,
+                                   List<CriterionCalibration> criteria, UUID createdBy,
+                                   Instant createdAt, Instant activatedAt, Instant deactivatedAt) {}
+    public record AdminCalibrationState(String mode, CalibrationModel active,
+                                        CalibrationReport candidate, List<CalibrationModel> history) {}
+    public record CalibrationCommand(@NotBlank String mode) {}
+
     public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
                                 List<CardDraft> drafts, Assessment assessment) {}
 
@@ -401,6 +422,11 @@ public final class ApiModels {
                                String currentState, String action, String outcome, String message,
                                UUID actorUserId, String actorLogin, boolean notified, Instant occurredAt) {}
     public record AlertConfiguration(boolean configured, String channel, int recipientCount) {}
+    public record MockPhoneGatewaySettings(boolean available, String scenario, Long delayMs,
+                                           List<String> allowedScenarios, String message) {}
+    public record MockPhoneGatewayUpdate(@NotBlank String scenario,
+                                         @jakarta.validation.constraints.Min(100)
+                                         @jakarta.validation.constraints.Max(30000) long delayMs) {}
     public record NotificationTestResult(String status, String message) {}
     public record AlertCallAttempt(UUID id, UUID retryOfId, String serviceId, String triggerType,
                                    String recipient, String message, String status, Boolean answered,

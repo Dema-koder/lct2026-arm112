@@ -2,6 +2,7 @@ package ru.lct.arm112.service.generation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import ru.lct.arm112.api.ApiModels.ScenarioUpsert;
@@ -9,12 +10,16 @@ import ru.lct.arm112.api.ApiModels.ScenarioUpsert;
 import java.util.List;
 
 /**
- * Выбор источника сценариев: языковая модель, если она отвечает, иначе перестановка билетов.
+ * Выбор источника сценариев: языковая модель, если она отвечает.
  *
- * <p>Откат обязателен, а не желателен. Заказчик разворачивает систему в локальном контуре,
- * где сайдкар с моделью может быть не поставлен вовсе, не влезть в память или просто
- * не подняться. Генерация сценариев не должна в этом случае отказывать преподавателю —
- * она должна работать хуже.
+ * <p>Без модели новых сценариев нет, и это сознательно. Раньше здесь был откат на перестановку
+ * билетов — текст одного билета с адресом другого. Она давала несуразности, которые видел
+ * преподаватель: «рабочий упал в котлован» с адресом квартиры, «драка» в категории
+ * «медицина». Источник сценариев без модели — банк, написанный заранее вне контура
+ * (seed/scenarios-generated.json): он уже в библиотеке и проверен валидатором.
+ *
+ * <p>Перестановка оставлена за флагом {@code arm112.generation.recombination-fallback}:
+ * она нужна замерам и тестам конвейера, где важно, что валидатор отсеивает негодное.
  *
  * <p>Имя источника попадает в отчёт о задаче, поэтому по выгрузке всегда видно,
  * кто именно сгенерировал набор, и цифры отсева не смешиваются между источниками.
@@ -26,15 +31,20 @@ public class GeneratorRouter implements ScenarioGenerator {
 
     private final LlmGenerator llm;
     private final RecombiningGenerator fallback;
+    private final boolean recombination;
 
-    public GeneratorRouter(LlmGenerator llm, RecombiningGenerator fallback) {
+    public GeneratorRouter(LlmGenerator llm, RecombiningGenerator fallback,
+                           @Value("${arm112.generation.recombination-fallback:false}") boolean recombination) {
         this.llm = llm;
         this.fallback = fallback;
+        this.recombination = recombination;
     }
 
+    /** Имя источника для отчёта; {@code none} — модели нет, откат выключен. */
     @Override
     public String name() {
-        return llm.available() ? llm.name() : fallback.name();
+        if (llm.available()) return llm.name();
+        return recombination ? fallback.name() : "none";
     }
 
     @Override
@@ -42,10 +52,8 @@ public class GeneratorRouter implements ScenarioGenerator {
         if (llm.available()) {
             List<ScenarioUpsert> candidates = llm.generate(category, count, difficulty);
             if (!candidates.isEmpty()) return candidates;
-            // модель отозвалась на проверку здоровья, но ничего не выдала: не оставляем
-            // преподавателя без результата, дописываем перестановкой
-            log.warn("Модель доступна, но кандидатов не выдала — откат на перестановку билетов");
+            log.warn("Модель доступна, но кандидатов не выдала");
         }
-        return fallback.generate(category, count, difficulty);
+        return recombination ? fallback.generate(category, count, difficulty) : List.of();
     }
 }

@@ -159,6 +159,12 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .service-alert-setup summary { color: var(--blue-dark); cursor: pointer; }
 .service-alert-setup p { margin: 5px 0; line-height: 1.4; }
 .service-alert-setup > code { display: block; padding: 2px 5px; background: #eef0f1; color: #24313a; }
+.mock-phone-panel { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(250px, 1fr) 130px auto; align-items: end; gap: 12px; padding: 10px 12px; margin: -1px 0 10px; border: 1px solid #bfd8e5; border-left: 4px solid #2785b3; background: #f2f9fc; }
+.mock-phone-panel > div { align-self: center; }
+.mock-phone-panel > div b, .mock-phone-panel > div span { display: block; }
+.mock-phone-panel > div span { margin-top: 3px; color: #60747e; font-size: 11px; }
+.mock-phone-panel label { display: grid; gap: 4px; color: #56656c; font-size: 10px; }
+.mock-phone-panel select, .mock-phone-panel input { min-width: 0; height: 32px; }
 .service-history { margin-top: 12px; overflow-x: auto; background: white; border: 1px solid #d7dcde; }
 .service-history .panel-head { border: 0; border-bottom: 1px solid #d7dcde; }
 .service-history .data-table { margin: 0; }
@@ -187,6 +193,23 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 /* Своя служба (замечание 7): всегда первая, выделена рамкой — здесь проставляется статус */
 .service-tile.own { box-shadow: inset 0 0 0 2px #ffd166; }
 .service-tile.own .tile-body b::after { content: " · ваша"; font-weight: normal; font-size: 10px; color: #ffd166; }
+
+/* Администратор: управляемая коррекция оценок ИИ. */
+.calibration-page { padding-bottom: 24px; }
+.calibration-page .panel-head select { min-width: 280px; }
+.calibration-explainer { margin: 10px; padding: 14px 16px; border-left: 4px solid #2e86ab; background: #eef7fb; }
+.calibration-explainer p { margin: 5px 0 0; color: #4a5960; }
+.calibration-status { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 1px; margin: 10px; border-left: 4px solid #9aa5aa; background: #d8dddf; }
+.calibration-status.active { border-left-color: #2f9a5a; }
+.calibration-status > div { display: flex; flex-direction: column; gap: 6px; min-height: 55px; padding: 12px; background: white; }
+.calibration-status span { color: #68767d; font-size: 12px; }
+.calibration-table code { white-space: nowrap; }
+.calibration-table .positive { color: #247d49; font-weight: bold; }
+.calibration-empty { margin: 0 10px; padding: 24px; text-align: center; color: #68767d; background: white; border: 1px solid #d7dcde; }
+.calibration-skipped, .calibration-history { margin: 10px; padding: 10px 12px; background: white; border: 1px solid #d7dcde; }
+.calibration-skipped li { margin: 5px 0; color: #58666d; }
+.calibration-actions { margin: 10px; }
+@media (max-width: 900px) { .calibration-status { grid-template-columns: repeat(2, 1fr); } }
 
 /* =====================================================================
    Экран оператора 112 — режим заполнения карточки (card-01.png … card-09.png).
@@ -305,6 +328,7 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
   .audit-action-filter { flex-basis: 100%; min-width: 0; }
   .group-create-form, .student-options { grid-template-columns: 1fr; }
   .service-alert-status { align-items: flex-start; flex-direction: column; }
+  .mock-phone-panel { grid-template-columns: 1fr 1fr; }
 }
 
 /* --- масштаб интерфейса (замечание 8): zoom на корне, значение из localStorage --- */
@@ -352,6 +376,12 @@ body { zoom: var(--ui-scale); }
 .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-empty { margin: 18px 0; text-align: center; }
 .chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
+.chart-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.chart-split-block { min-width: 0; }
+.chart-subhead { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #3c4a51; }
+@media (max-width: 900px) {
+  .chart-split { grid-template-columns: 1fr; }
+}
 .hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .hbar-list li {
   display: grid;
@@ -401,6 +431,7 @@ body { zoom: var(--ui-scale); }
 
 @media (max-width: 760px) {
   .managed-services { grid-template-columns: 1fr; }
+  .mock-phone-panel { grid-template-columns: 1fr; align-items: stretch; }
   .service-diagnostics { grid-template-columns: 1fr; }
 }
 
@@ -432,3 +463,24 @@ body { zoom: var(--ui-scale); }
 .service-option:hover:not(:disabled) { background: #d9ecf7; }
 .service-option.selected { background: var(--blue); color: white; }
 .service-option:disabled { opacity: .75; }
+
+/* Генерация сценариев: окно с плитками категорий и пометка новых */
+.generate-dialog { display: grid; gap: 12px; }
+.generator-status { margin: 0; padding: 8px 12px; border-left: 4px solid #2f9a5a; background: #eef7f1; font-size: 13px; }
+.generator-status.off { border-left-color: #b03f2e; background: #fbeeec; }
+.generate-dialog .field-title { margin: 0; font-weight: 600; font-size: 13px; }
+.category-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.category-tile { display: grid; gap: 2px; padding: 10px 12px; text-align: left; border: 1px solid #c9cfd2; background: #f6f7f8; cursor: pointer; }
+.category-tile b { font-size: 14px; }
+.category-tile small { font-size: 11px; color: #56656c; }
+.category-tile.thin small { color: #b0561f; }
+.category-tile.selected { border-color: var(--blue); background: #e3f0f8; box-shadow: inset 0 0 0 1px var(--blue); }
+.category-tile:disabled { opacity: .6; cursor: default; }
+.generate-params { display: flex; gap: 16px; flex-wrap: wrap; }
+.generate-progress { margin: 0; color: #56656c; }
+.generate-result { margin: 0; padding: 8px 12px; background: #f3f5f6; }
+.badge-new { display: inline-block; margin-left: 8px; padding: 1px 6px; font-size: 10px; font-weight: 600; color: white; background: var(--orange); vertical-align: 1px; white-space: nowrap; }
+.data-table tr.just-generated td { background: #fff4e5; }
+.data-table tr.just-generated:hover td { background: #ffe9cc; }
+.fresh-filter span { color: #b0561f; }
+.badge-new.old { background: #8e9ca3; }

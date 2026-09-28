@@ -87,6 +87,10 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(teacher, /EXAM/);
   assert.match(admin, /RESTORE/);
   assert.match(admin, /Управление сервисами/);
+  assert.match(admin, /Коррекция оценки ИИ/);
+  assert.match(admin, /Обучить и включить новую версию/);
+  assert.match(teacher, /Подтвердить оценку ИИ/);
+  assert.match(api, /\/admin\/assessment-calibration/);
   assert.match(api, /\/admin\/system\/services/);
   assert.match(admin, /Поиск по ФИО, логину или номеру АРМ/);
   assert.match(api, /\/groups\/\$\{id\}\/members/);
