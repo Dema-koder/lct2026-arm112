@@ -726,14 +726,6 @@
       "label": "Хулиганство, нарушение тишины"
      },
      {
-      "id": "missing",
-      "label": "Пропал человек"
-     },
-     {
-      "id": "body",
-      "label": "Обнаружен труп"
-     },
-     {
       "id": "other",
       "label": "Другое"
      }
@@ -807,22 +799,6 @@
      ]
     },
     "type": "crime.robbery"
-   },
-   {
-    "when": {
-     "what": [
-      "missing"
-     ]
-    },
-    "type": "person.missing"
-   },
-   {
-    "when": {
-     "what": [
-      "body"
-     ]
-    },
-    "type": "person.body"
    }
   ],
   "defaultType": "crime.hooligan"
@@ -846,10 +822,6 @@
      {
       "id": "unconscious",
       "label": "Без сознания, не дышит"
-     },
-     {
-      "id": "suicide",
-      "label": "Попытка суицида"
      },
      {
       "id": "birth",
@@ -913,14 +885,6 @@
      ]
     },
     "type": "medical.trauma"
-   },
-   {
-    "when": {
-     "what": [
-      "suicide"
-     ]
-    },
-    "type": "medical.suicide"
    }
   ],
   "defaultType": "medical.illness"
@@ -1238,25 +1202,33 @@
   "topTypeId": "person_danger",
   "questions": [
    {
-    "id": "where",
-    "text": "Где",
+    "id": "what",
+    "text": "Что случилось",
     "kind": "CHOICE",
     "options": [
      {
       "id": "water",
-      "label": "На воде, в воде"
+      "label": "Человек в воде, на льдине"
      },
      {
-      "id": "height",
-      "label": "На высоте"
+      "id": "suicide",
+      "label": "Попытка суицида"
+     },
+     {
+      "id": "missing",
+      "label": "Пропал, найден, похищен человек"
      },
      {
       "id": "locked",
-      "label": "Заблокирован в помещении"
+      "label": "Открыть дверь, поднять с пола"
      },
      {
-      "id": "street",
-      "label": "На улице"
+      "id": "trapped",
+      "label": "Зажало, придавило, застрял"
+     },
+     {
+      "id": "fall",
+      "label": "Падение"
      },
      {
       "id": "other",
@@ -1295,11 +1267,27 @@
   "rules": [
    {
     "when": {
-     "where": [
+     "what": [
       "water"
      ]
     },
     "type": "water.rescue"
+   },
+   {
+    "when": {
+     "what": [
+      "suicide"
+     ]
+    },
+    "type": "medical.suicide"
+   },
+   {
+    "when": {
+     "what": [
+      "missing"
+     ]
+    },
+    "type": "person.missing"
    }
   ],
   "defaultType": "person.danger"
@@ -1308,21 +1296,29 @@
   "topTypeId": "child_danger",
   "questions": [
    {
-    "id": "where",
-    "text": "Где",
+    "id": "what",
+    "text": "Что случилось",
     "kind": "CHOICE",
     "options": [
      {
-      "id": "street",
-      "label": "На улице"
-     },
-     {
-      "id": "home",
-      "label": "Дома"
-     },
-     {
       "id": "water",
-      "label": "На воде"
+      "label": "На воде, в воде"
+     },
+     {
+      "id": "lost",
+      "label": "Потерялся, пропал"
+     },
+     {
+      "id": "locked_car",
+      "label": "Закрыт в автомашине"
+     },
+     {
+      "id": "stuck",
+      "label": "Застрял (лифт, часть тела)"
+     },
+     {
+      "id": "violence",
+      "label": "Жестокое обращение, насилие"
      },
      {
       "id": "other",
@@ -1341,11 +1337,19 @@
   "rules": [
    {
     "when": {
-     "where": [
+     "what": [
       "water"
      ]
     },
     "type": "water.rescue"
+   },
+   {
+    "when": {
+     "what": [
+      "lost"
+     ]
+    },
+    "type": "person.missing"
    }
   ],
   "defaultType": "person.danger"
