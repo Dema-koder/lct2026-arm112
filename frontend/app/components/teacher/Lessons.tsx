@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type CardSource, type CriterionScore, type Group, type Intensity, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
 import { actionLabels, categoryLabels, criterionLabels, scenarioCategories, criteriaForMode, dateTime, displayCardNumber, formatIssueValue, intensityHints, intensityLabels, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
 import { ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
-import { BarChart, Donut, HorizontalBars, KpiGrid } from "../analytics/charts";
 import { ScenarioCard } from "./Scenarios";
 import { AssessmentView } from "../trainee/Results";
 
@@ -23,7 +22,6 @@ export function Lessons({ token }: { token: string }) {
   const [groupFilter, setGroupFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [tab, setTab] = useState<"list" | "stats">("list");
   const [selected, setSelected] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -76,10 +74,6 @@ export function Lessons({ token }: { token: string }) {
     <section className="panel-page">
       <div className="panel-head">
         <b>Занятия</b>
-        <div className="sub-nav" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === "list"} className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>Список</button>
-          <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "active" : ""} onClick={() => setTab("stats")}>Статистика</button>
-        </div>
         <span className="spacer" />
         <button className="primary-button" onClick={() => setCreating(true)}>Новое занятие</button>
       </div>
@@ -99,7 +93,6 @@ export function Lessons({ token }: { token: string }) {
         {filtersOn && <button type="button" className="ghost" onClick={() => { setQuery(""); setGroupFilter(""); setDateFrom(""); setDateTo(""); }}>сбросить</button>}
         <small className="muted">{filtered.length} из {lessons.length}</small>
       </div>
-      {tab === "stats" ? <LessonStats lessons={filtered} /> : (
       <table className="data-table">
         <thead>
           <tr><th>Создано</th><th>Название</th><th>Группа</th><th>Вид</th><th>Режим</th><th>Поток</th><th>Участников</th><th>Состояние</th></tr>
@@ -122,102 +115,9 @@ export function Lessons({ token }: { token: string }) {
           ))}
         </tbody>
       </table>
-      )}
       <ErrorBanner error={error} onClose={() => setError("")} />
       <Notice text={notice} />
     </section>
-  );
-}
-
-function countBy(lessons: Lesson[], key: (lesson: Lesson) => string) {
-  const map = new Map<string, number>();
-  for (const lesson of lessons) {
-    const id = key(lesson);
-    map.set(id, (map.get(id) ?? 0) + 1);
-  }
-  return map;
-}
-
-/** Мини-дашборд по текущей выборке занятий (учитывает фильтры списка). */
-function LessonStats({ lessons }: { lessons: Lesson[] }) {
-  const participants = lessons.reduce((sum, lesson) => sum + lesson.sessionCount, 0);
-  const active = lessons.filter((lesson) => lesson.state === "ACTIVE").length;
-  const completed = lessons.filter((lesson) => lesson.state === "COMPLETED").length;
-  const drafts = lessons.filter((lesson) => lesson.state === "DRAFT").length;
-  const groups = new Set(lessons.map((lesson) => lesson.groupId ?? "none")).size;
-
-  const stateMix = [
-    { key: "draft", value: drafts, color: "#8e9ca3", label: "Не начато" },
-    { key: "active", value: active, color: "#2f9a5a", label: "Идёт" },
-    { key: "done", value: completed, color: "#0784c6", label: "Завершено" },
-  ];
-
-  const byKind = (["TRAINING", "CHECK", "EXAM"] as LessonKind[]).map((kind) => ({
-    key: kind,
-    label: kindLabels[kind],
-    value: lessons.filter((lesson) => lesson.kind === kind).length,
-    color: kind === "EXAM" ? "#0c6fa4" : kind === "CHECK" ? "#5a6a72" : "#2f9a5a",
-  }));
-  const byMode = (["CARD_FILL", "CARD_ACTIONS"] as LessonMode[]).map((mode) => ({
-    key: mode,
-    label: modeLabels[mode],
-    value: lessons.filter((lesson) => lesson.mode === mode).length,
-    color: mode === "CARD_FILL" ? "#0784c6" : "#b06a2e",
-  }));
-  const byGroup = [...countBy(lessons, (lesson) => lesson.groupName ?? "Без группы").entries()]
-    .map(([label, value]) => ({ key: label, label, value, color: "#0784c6" }))
-    .sort((a, b) => b.value - a.value);
-
-  const byDay = useMemo(() => {
-    const counts = countBy(lessons, (lesson) => localDay(lesson.createdAt));
-    return [...counts.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-14)
-      .map(([day, value]) => ({
-        key: day,
-        label: day.slice(8),
-        value,
-        hint: day,
-        color: "#0784c6",
-      }));
-  }, [lessons]);
-  const dayMax = Math.max(1, ...byDay.map((item) => item.value));
-
-  if (lessons.length === 0) {
-    return <p className="muted">Нет занятий для статистики — измените фильтры или создайте занятие.</p>;
-  }
-
-  return (
-    <div className="analytics-page">
-      <KpiGrid items={[
-        { label: "Занятий", value: String(lessons.length), hint: "В текущей выборке" },
-        { label: "Участников", value: String(participants), hint: "Сумма мест по занятиям" },
-        { label: "Идут сейчас", value: String(active), tone: active > 0 ? "ok" : "neutral" },
-        { label: "Групп", value: String(groups), hint: `Завершено ${completed}` },
-      ]} />
-      <div className="analytics-grid">
-        <article className="analytics-card">
-          <header><b>По состоянию</b></header>
-          <Donut center={String(lessons.length)} segments={stateMix} size={280} />
-          <p className="chart-note">Доли по количеству занятий</p>
-        </article>
-        <article className="analytics-card">
-          <header><b>Создано по дням</b><small className="muted">до 14 последних</small></header>
-          <BarChart ariaLabel="Число занятий по дням создания" items={byDay} scale="count" max={dayMax} />
-          <p className="chart-note">Количество созданных занятий за день</p>
-        </article>
-        <article className="analytics-card">
-          <header><b>По группам</b></header>
-          <HorizontalBars items={byGroup} scale="count" unit="зан." />
-          <p className="chart-note">Сколько занятий на группу (полная полоса = максимум в списке)</p>
-        </article>
-        <article className="analytics-card">
-          <header><b>Вид и режим</b></header>
-          <HorizontalBars items={[...byKind, ...byMode]} scale="count" unit="зан." />
-          <p className="chart-note">Количество занятий. Сначала вид, ниже — режим карточки</p>
-        </article>
-      </div>
-    </div>
   );
 }
 
@@ -654,8 +554,16 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
   const aiScore = (code: string) => detail.assessment?.aiCriteria.find((c) => c.code === code)?.score ?? null;
   const setCriterion = (code: string, patch: Partial<CriterionDraft>) =>
     setCriteria({ ...criteria, [code]: { ...(criteria[code] ?? { score: "", comment: "" }), ...patch } });
+  // все критерии совпадают с ИИ — показываем опубликованный итог ИИ (без дрейфа округления)
+  const mirrorsAi = () => codes.every(({ code }) => {
+    const draft = criteria[code];
+    const ai = aiScore(code);
+    if (!draft || draft.score === "") return ai === null;
+    return Number(draft.score) === ai;
+  });
   // предпросмотр итога по весам: балл преподавателя там, где введён, иначе балл ИИ
   const previewTotal = () => {
+    if (mirrorsAi() && detail.assessment?.aiTotalScore != null) return detail.assessment.aiTotalScore;
     let sum = 0, weights = 0;
     for (const { code, weight } of codes) {
       const draft = criteria[code];
@@ -671,20 +579,31 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
     return v !== "" && (Number.isNaN(Number(v)) || Number(v) < 0 || Number(v) > 100);
   });
   const anyScore = codes.some(({ code }) => (criteria[code]?.score ?? "") !== "");
+  const agreeWithAi = () => {
+    const drafts: Record<string, CriterionDraft> = {};
+    for (const { code } of codes) {
+      const ai = aiScore(code);
+      drafts[code] = { score: ai === null ? "" : String(ai), comment: "-" };
+    }
+    setCriteria(drafts);
+    setComment("-");
+  };
+  const clearFields = () => {
+    const drafts: Record<string, CriterionDraft> = {};
+    for (const { code } of codes) {
+      drafts[code] = { score: "", comment: "" };
+    }
+    setCriteria(drafts);
+    setComment("");
+  };
   const assess = () => run(async () => {
     const payload: CriterionScore[] = codes
       .filter(({ code }) => criteria[code] && (criteria[code].score !== "" || criteria[code].comment.trim() !== ""))
       .map(({ code }) => ({ code, score: criteria[code].score === "" ? null : Number(criteria[code].score), comment: criteria[code].comment.trim() || null }));
     await api.teacher.assess(token, sessionId, anyScore ? null : detail.assessment?.totalScore ?? null, comment, payload);
-    setNotice("Оценка сохранена — итог пересчитан по критериям");
-    await load();
-  });
-  const confirmAi = () => run(async () => {
-    const payload: CriterionScore[] = codes
-      .map(({ code }) => ({ code, score: aiScore(code), comment: null }))
-      .filter((criterion): criterion is CriterionScore => criterion.score !== null);
-    await api.teacher.assess(token, sessionId, null, comment, payload);
-    setNotice("Оценка системы подтверждена преподавателем и учтена для коррекции ИИ");
+    setNotice(mirrorsAi()
+      ? "Оценка сохранена — согласие с ИИ учтено"
+      : "Оценка сохранена — итог пересчитан по критериям");
     await load();
   });
   const fmtAddress = (a: SessionDetail["drafts"][number]["address"]) => {
@@ -727,8 +646,9 @@ function SessionReview({ token, sessionId, onBack, lessonKind }: { token: string
             </tbody>
           </table>
           <div className="dialog-actions">
-            <button className="secondary" disabled={working || anyScore} onClick={confirmAi}>Подтвердить оценку ИИ</button>
-            <button className="primary" disabled={working || invalid} onClick={assess}>Сохранить оценку</button>
+            <button type="button" className="secondary" disabled={working} onClick={clearFields}>Очистить поля</button>
+            <button type="button" className="secondary" disabled={working} onClick={agreeWithAi}>Согласен с оценкой ИИ</button>
+            <button type="button" className="primary" disabled={working || invalid} onClick={assess}>Сохранить оценку</button>
           </div>
         </>
       ) : (

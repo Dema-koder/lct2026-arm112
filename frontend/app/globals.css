@@ -252,7 +252,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .dialog-label { display: block; margin-bottom: 7px; font-weight: bold; }
 .dialog-copy { margin-top: 0; color: #536169; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-.dialog-actions button { min-width: 110px; min-height: 38px; border: 0; }
+.dialog-actions button { min-width: 110px; min-height: 38px; padding: 0 14px; border: 0; }
 .dialog-actions .primary { color: white; background: var(--blue); }
 .dialog-actions .secondary { background: #d7dcde; }
 .dialog-actions .call-button { color: white; background: #159247; }
@@ -263,8 +263,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .target-list span, .target-list small { display: block; }
 .target-list small { margin-top: 3px; color: #6d797f; }
 .number-input { width: 100%; padding: 10px; font-size: 24px; letter-spacing: .18em; border: 1px solid #9ca8ad; }
-.score-circle { width: 128px; height: 128px; margin: 0 auto 18px; display: grid; place-items: center; align-content: center; color: white; background: var(--blue); border-radius: 50%; font-size: 42px; }
-.score-circle small { display: block; font-size: 11px; }
+.score-circle { width: 128px; height: 128px; margin: 0 auto 18px; display: grid; place-items: center; align-content: center; padding: 14px 18px; box-sizing: border-box; text-align: center; color: white; background: var(--blue); border-radius: 50%; font-size: 42px; line-height: 1; }
+.score-circle small { display: block; margin-top: 6px; padding: 0 6px; font-size: 10px; line-height: 1.2; max-width: 100%; }
 .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .score-grid span { display: flex; justify-content: space-between; padding: 10px; background: #dce1e3; }
 .assessment-issue { padding: 8px; color: #872d24; background: #f4dcd9; }

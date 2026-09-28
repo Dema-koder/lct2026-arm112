@@ -147,7 +147,10 @@ export function AssessmentView({ assessment, onClose, title, hideIssues, token }
         {onClose && <button onClick={onClose} aria-label="Закрыть">×</button>}
       </header>
       <div className="assessment-body">
-        <div className="score-circle">{Math.round(assessment.totalScore ?? 0)}<small>{assessment.source === "TEACHER" ? "оценка преподавателя" : "баллов"}</small></div>
+        <div className="score-circle">
+          {Math.round(assessment.totalScore ?? 0)}
+          <small>{assessment.source === "TEACHER" ? <>оценка<br />преподавателя</> : "баллов"}</small>
+        </div>
         <div className="score-grid">
           <span>Время <b>{score(assessment.timingScore)}</b></span>
           {fill ? (
