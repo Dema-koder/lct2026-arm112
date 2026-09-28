@@ -100,15 +100,39 @@ export function criteriaForMode(mode: string): Array<{ code: string; weight: num
     : [{ code: "timing", weight: 30 }, { code: "actions", weight: 40 }, { code: "communication", weight: 15 }, { code: "language", weight: 15 }];
 }
 
+/**
+ * Категория сценария — позиция списка «Что случилось?» ПОВ-112, выведенная из раздела ЕКП
+ * его главного типа (tools/fix_scenarios.py). Порядок — как в фильтрах: сначала позиции служб.
+ */
 export const categoryLabels: Record<string, string> = {
-  FIRE: "Пожары",
-  MEDICAL: "Медицина",
-  POLICE: "Полиция",
-  RESCUE: "Спасение",
-  GAS: "Газ",
-  UTILITY: "ЖКХ",
-  OTHER: "Прочее",
+  t101: "Пожар (101)",
+  t102: "Правонарушение (102)",
+  t103: "Медпомощь (103)",
+  t104: "Газ (104)",
+  dtp: "ДТП",
+  person_danger: "Человек в опасности",
+  child_danger: "Ребёнок в опасности",
+  death: "Смертельный исход",
+  accident_utility: "Аварии в городском хозяйстве",
+  collapse_threat: "Угроза обрушения",
+  collapse: "Обрушение",
+  explosion: "Взрыв",
+  terror_threat: "Угроза взрыва / теракта",
+  animals: "Животные",
+  nature: "Природная стихия",
+  water_accum: "Скопление воды",
+  accident_transport: "Аварии на транспорте",
+  hazmat_threat: "Угроза выброса опасных веществ",
+  other: "Прочие происшествия",
 };
+
+/** Позиции, по которым в классификаторе есть типы происшествий, — их показывают фильтры и генерация. */
+export const scenarioCategories = ["t101", "t102", "t103", "t104", "dtp", "person_danger", "death",
+  "accident_utility", "collapse_threat", "explosion", "terror_threat", "animals"];
+
+export function categoryLabel(code: string) {
+  return categoryLabels[code] ?? code;
+}
 
 export function dateTime(value: string | null | undefined) {
   if (!value) return "—";

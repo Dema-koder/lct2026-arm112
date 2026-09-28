@@ -375,6 +375,30 @@ export type Scenario = {
 
 export type ScenarioListItem = Pick<Scenario, "id" | "title" | "source" | "category" | "difficulty" | "callerText" | "rawAddress" | "expectedAddress" | "expectedIncidentTypes" | "expectedServices" | "referenceConfirmed" | "createdAt">;
 
+export type GenerationReport = {
+  generator: string;
+  requested: number;
+  produced: number;
+  accepted: number;
+  rejected: number;
+  rejectionReasons: Record<string, number>;
+  warnings: Record<string, number>;
+  savedIds: string[];
+};
+
+export type GenerationStatus = { generator: "llm" | "none" | "recombination" | string };
+
+export type GenerationJob = {
+  id: string;
+  state: "READY" | "RUNNING" | "DONE" | "FAILED";
+  category: string;
+  count: number;
+  error?: string | null;
+  createdAt: string;
+  finishedAt?: string | null;
+  report?: GenerationReport | null;
+};
+
 export type ScenarioUpsert = {
   id?: string | null;
   title: string;
@@ -543,6 +567,13 @@ export type ServiceEvent = {
   occurredAt: string;
 };
 export type AlertConfiguration = { configured: boolean; channel: "PHONE_CALL"; recipientCount: number };
+export type MockPhoneGatewaySettings = {
+  available: boolean;
+  scenario: "ACCEPTED" | "ANSWERED" | "NOT_ANSWERED" | "FAILED" | "UNAVAILABLE" | null;
+  delayMs: number | null;
+  allowedScenarios: Array<"ACCEPTED" | "ANSWERED" | "NOT_ANSWERED" | "FAILED" | "UNAVAILABLE">;
+  message: string | null;
+};
 export type AlertCallAttempt = {
   id: string;
   retryOfId: string | null;
@@ -560,6 +591,42 @@ export type AlertCallAttempt = {
   updatedAt: string;
 };
 export type BackupInfo = { fileName: string; sizeBytes: number; createdAt: string };
+export type CalibrationCriterion = {
+  code: string;
+  label: string;
+  slope: number;
+  intercept: number;
+  maeBefore: number;
+  maeAfter: number;
+  improvementPercent: number;
+  pairs: number;
+};
+export type CalibrationReport = {
+  mode: LessonMode;
+  assessments: number;
+  criteria: CalibrationCriterion[];
+  skipped: string[];
+};
+export type CalibrationModel = {
+  id: string;
+  mode: LessonMode;
+  version: number;
+  active: boolean;
+  assessments: number;
+  maeBefore: number | null;
+  maeAfter: number | null;
+  criteria: CalibrationCriterion[];
+  createdBy: string;
+  createdAt: string;
+  activatedAt: string | null;
+  deactivatedAt: string | null;
+};
+export type AdminCalibrationState = {
+  mode: LessonMode;
+  active: CalibrationModel | null;
+  candidate: CalibrationReport;
+  history: CalibrationModel[];
+};
 
 // ------------------------------------------------------------------ transport
 
@@ -688,8 +755,10 @@ export const api = {
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}`, { method: "PUT", body: json(body) }, token),
     confirmReference: (token: string, id: string) =>
       request<Scenario>(`/teacher/scenarios/${encodeURIComponent(id)}/confirm-reference`, { method: "POST" }, token),
-    generate: (token: string, category: string, count: number, difficulty: number) =>
-      request<Scenario[]>("/teacher/scenarios/generate", { method: "POST", body: json({ category, count, difficulty }) }, token),
+    generationStatus: (token: string) => request<GenerationStatus>("/teacher/scenarios/generation-status", {}, token),
+    startGeneration: (token: string, category: string, count: number, difficulty: number) =>
+      request<GenerationJob>("/teacher/scenarios/generation-jobs", { method: "POST", body: json({ category, count, difficulty }) }, token),
+    generationJob: (token: string, id: string) => request<GenerationJob>(`/teacher/scenarios/generation-jobs/${id}`, {}, token),
     groups: (token: string) => request<Group[]>("/teacher/groups", {}, token),
     lessons: (token: string, state?: string) => request<Lesson[]>(`/teacher/lessons${q({ state })}`, {}, token),
     lesson: (token: string, id: string) => request<Lesson>(`/teacher/lessons/${id}`, {}, token),
@@ -751,6 +820,11 @@ export const api = {
     serviceHistory: (token: string, serviceId?: string, limit = 50) =>
       request<ServiceEvent[]>(`/admin/system/services/history${q({ serviceId, limit })}`, {}, token),
     alertConfiguration: (token: string) => request<AlertConfiguration>("/admin/system/alerts", {}, token),
+    mockAlertSettings: (token: string) => request<MockPhoneGatewaySettings>("/admin/system/alerts/mock", {}, token),
+    updateMockAlertSettings: (token: string, scenario: string, delayMs: number) =>
+      request<MockPhoneGatewaySettings>("/admin/system/alerts/mock", {
+        method: "PUT", body: json({ scenario, delayMs }),
+      }, token),
     alertHistory: (token: string, limit = 50) =>
       request<AlertCallAttempt[]>(`/admin/system/alerts/history${q({ limit })}`, {}, token),
     retryAlert: (token: string, id: string) =>
@@ -765,5 +839,11 @@ export const api = {
     createBackup: (token: string) => request<BackupInfo>("/admin/backups", { method: "POST" }, token),
     restore: (token: string, fileName: string) =>
       request<void>(`/admin/backups/${encodeURIComponent(fileName)}/restore`, { method: "POST", body: json({ confirm: "RESTORE" }) }, token),
+    calibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>(`/admin/assessment-calibration${q({ mode })}`, {}, token),
+    activateCalibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>("/admin/assessment-calibration/activate", { method: "POST", body: json({ mode }) }, token),
+    deactivateCalibration: (token: string, mode: LessonMode) =>
+      request<AdminCalibrationState>("/admin/assessment-calibration/deactivate", { method: "POST", body: json({ mode }) }, token),
   },
 };

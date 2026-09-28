@@ -3,6 +3,7 @@ package ru.lct.arm112.generation;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import ru.lct.arm112.persistence.JobRepository;
 import ru.lct.arm112.persistence.JobRepository.JobRow;
 import ru.lct.arm112.service.generation.GenerationHandler;
@@ -13,6 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * модели заменит один компонент, а очередь, валидатор и сохранение останутся теми же.
  * Поэтому цифры, снятые здесь, будут сравнимы с цифрами после подключения модели.
  */
-@SpringBootTest
+@SpringBootTest(properties = "arm112.generation.recombination-fallback=true")
 class GenerationPipelineTest {
 
     @Autowired
@@ -35,10 +37,13 @@ class GenerationPipelineTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    JdbcTemplate jdbc;
+
     @Test
     void generatesThroughQueueAndFiltersByValidator() {
         String payload = objectMapper.writeValueAsString(
-                new GenerationHandler.Request("FIRE", 12, 5, null));
+                new GenerationHandler.Request("t101", 12, 5, null));
         UUID jobId = jobs.enqueue(GenerationHandler.TYPE, payload, null, 3);
 
         JobRow finished = runUntilFinished(jobId);
@@ -69,6 +74,9 @@ class GenerationPipelineTest {
         JobRow failed = runUntilFinished(jobId);
         assertThat(failed.state()).isEqualTo(JobRepository.FAILED);
         assertThat(failed.error()).as("причина неудачи не записана").isNotBlank();
+        // База у тестов общая, а упавшая задача переводит сервис очереди в DEGRADED
+        // (ServiceManagementService) — без уборки админские тесты зависели бы от порядка запуска.
+        jdbc.update("delete from job where id = ?", jobId);
     }
 
     /** Задача неизвестного вида не копится молча в очереди. */
@@ -82,7 +90,7 @@ class GenerationPipelineTest {
     @Test
     void reportCountsAreConsistent() {
         String payload = objectMapper.writeValueAsString(
-                new GenerationHandler.Request("MEDICAL", 6, 5, null));
+                new GenerationHandler.Request("t103", 6, 5, null));
         UUID jobId = jobs.enqueue(GenerationHandler.TYPE, payload, null, 3);
         JobRow finished = runUntilFinished(jobId);
         Report report = objectMapper.readValue(finished.result(), Report.class);
@@ -103,6 +111,11 @@ class GenerationPipelineTest {
             JobRow row = jobs.findById(jobId).orElseThrow();
             if (JobRepository.DONE.equals(row.state()) || JobRepository.FAILED.equals(row.state())) return row;
             worker.runOne();
+            // Планировщик приложения мог забрать именно эту задачу параллельно тесту.
+            // Даём ему закончить вместо того, чтобы 500 раз мгновенно прочитать RUNNING.
+            if (JobRepository.RUNNING.equals(jobs.findById(jobId).orElseThrow().state())) {
+                LockSupport.parkNanos(5_000_000);
+            }
         }
         return jobs.findById(jobId).orElseThrow();
     }

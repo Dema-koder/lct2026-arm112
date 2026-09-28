@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import ru.lct.arm112.api.ApiException;
 import ru.lct.arm112.api.ApiModels.FormalAddress;
-import ru.lct.arm112.api.ApiModels.GenerateRequest;
 import ru.lct.arm112.api.ApiModels.Scenario;
 import ru.lct.arm112.api.ApiModels.ScenarioCaller;
 import ru.lct.arm112.api.ApiModels.ScenarioListItem;
@@ -26,7 +25,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-/** Библиотека сценариев: сид из билетов, правки преподавателя, шаблонная генерация. */
+/** Библиотека сценариев: сид из билетов и банка, правки преподавателя. Генерация — в service.generation. */
 @Service
 public class ScenarioService {
     private static final Logger log = LoggerFactory.getLogger(ScenarioService.class);
@@ -51,46 +50,118 @@ public class ScenarioService {
 
     @PostConstruct
     void seed() {
-        if (repository.count() > 0) {
-            backfillTitles();
-            learnPlaces();
-            return;
+        boolean empty = repository.count() == 0;
+        int inserted = 0;
+        int refreshed = 0;
+        List<Scenario> seeds = new ArrayList<>(read("seed/scenarios.json"));
+        seeds.addAll(read("seed/scenarios-generated.json"));
+        for (Scenario seed : seeds) {
+            Scenario existing = empty ? null : repository.findById(seed.id()).orElse(null);
+            if (existing == null) {
+                repository.insert(seed);
+                inserted++;
+            } else if (refresh(existing, seed)) {
+                refreshed++;
+            }
         }
-        int total = load("seed/scenarios.json") + load("seed/scenarios-generated.json");
-        log.info("Загружено сценариев в библиотеку: {}", total);
+        if (inserted > 0) log.info("Добавлено сценариев из сидов: {}", inserted);
+        if (refreshed > 0) log.info("Обновлены эталоны неподтверждённых сценариев из сидов: {}", refreshed);
+        backfillTitles();
+        recategorize();
         learnPlaces();
     }
 
     /**
-     * Загрузка набора сценариев из ресурса.
+     * Категория сценария — позиция «Что случилось?» его главного (первого) типа по разделу ЕКП.
+     *
+     * <p>Её не выбирают, а выводят: иначе у «драки с травмами» категория зависела бы от того,
+     * какой тип записан первым, а у суицида — от того, как его когда-то назвали в коде.
+     * Без типа категория остаётся прежней.
+     */
+    public String categoryFor(List<String> types, String fallback) {
+        if (types == null || types.isEmpty()) return fallback;
+        ru.lct.arm112.service.ReferenceDataService.IncidentType type = references.incidentType(types.get(0));
+        return type == null ? fallback : type.category();
+    }
+
+    /**
+     * Пересчёт категорий всей библиотеки при старте. Категория выводится из типа, поэтому
+     * пересчитываются и подтверждённые сценарии: подтверждал преподаватель эталон, а не
+     * деление на категории. Так же старые коды (FIRE, POLICE…) уходят с уже засеянных стендов.
+     */
+    private void recategorize() {
+        int count = 0;
+        for (Scenario s : repository.find(null, null, null, 5000)) {
+            String category = categoryFor(s.expectedIncidentTypes(), s.category());
+            if (category.equals(s.category())) continue;
+            repository.update(new Scenario(s.id(), s.title(), s.source(), category, s.difficulty(),
+                    s.callerText(), s.caller(), s.rawAddress(), s.expectedAddress(),
+                    s.expectedIncidentTypes(), s.expectedServices(), s.addressClarified(),
+                    s.expectedDecision(), s.expectedDecisionReason(), s.outboundCallRequired(),
+                    s.referenceConfirmed(), s.referenceConfirmedAt(), s.createdBy(), s.createdAt()));
+            count++;
+        }
+        if (count > 0) log.info("Категория по разделу ЕКП пересчитана у {} сценариев", count);
+    }
+
+    /**
+     * Эталон из сидов поверх уже засеянного сценария.
+     *
+     * <p>Сиды уточняются (tools/fix_scenarios.py): у части билетов тип и адрес были разобраны
+     * неверно, и без обновления стенд, засеянный раньше, так и оценивал бы по старому эталону.
+     * Обновляется только то, что преподаватель не подтверждал: подтверждённый эталон — его
+     * решение. Название заменяется, только если оно было выставлено автоматически.
+     */
+    private boolean refresh(Scenario existing, Scenario seed) {
+        if (existing.referenceConfirmed()) return false;
+        boolean same = java.util.Objects.equals(existing.category(), seed.category())
+                && java.util.Objects.equals(existing.expectedAddress(), seed.expectedAddress())
+                && java.util.Objects.equals(existing.expectedIncidentTypes(), seed.expectedIncidentTypes())
+                && java.util.Objects.equals(existing.expectedServices(), seed.expectedServices())
+                && java.util.Objects.equals(existing.callerText(), seed.callerText())
+                && java.util.Objects.equals(existing.rawAddress(), seed.rawAddress());
+        if (same) return false;
+        String oldAuto = autoTitle(existing.expectedIncidentTypes(), existing.expectedAddress(), existing.callerText());
+        boolean autoTitled = existing.title() == null || existing.title().isBlank()
+                || existing.title().equals(oldAuto) || existing.title().equals("Сгенерировано: " + oldAuto);
+        String title = !autoTitled ? existing.title()
+                : ("GENERATED".equals(seed.source()) ? "Сгенерировано: " : "") + seed.title();
+        repository.update(new Scenario(existing.id(), title, existing.source(), seed.category(), seed.difficulty(),
+                seed.callerText(), seed.caller(), seed.rawAddress(), seed.expectedAddress(),
+                seed.expectedIncidentTypes(), seed.expectedServices(), seed.addressClarified(),
+                existing.expectedDecision(), existing.expectedDecisionReason(), existing.outboundCallRequired(),
+                false, null, existing.createdBy(), existing.createdAt()));
+        return true;
+    }
+
+    /**
+     * Чтение набора сценариев из ресурса.
      *
      * <p>Наборов два: билеты заказчика и банк, сгенерированный заранее вне контура.
      * Второй поставляется неподтверждённым — заказчик требовал, чтобы сгенерированное
      * всегда проходило через преподавателя (q-and-a.md §3). Отсутствие файла не ошибка:
      * банк необязателен, приложение работает и на одних билетах.
      */
-    private int load(String resource) {
+    private List<Scenario> read(String resource) {
         ClassPathResource file = new ClassPathResource(resource);
-        if (!file.exists()) return 0;
+        if (!file.exists()) return List.of();
         try (InputStream stream = file.getInputStream()) {
             JsonNode root = objectMapper.readTree(stream);
-            int count = 0;
+            List<Scenario> result = new ArrayList<>();
             for (JsonNode node : root) {
                 List<String> types = toList(node.get("expectedIncidentTypes"));
                 FormalAddress expected = objectMapper.treeToValue(node.get("expectedAddress"), FormalAddress.class);
                 String title = node.hasNonNull("title") ? node.get("title").asText()
                         : autoTitle(types, expected, node.get("callerText").asText());
-                Scenario scenario = new Scenario(node.get("id").asText(), title, node.get("source").asText(),
+                result.add(new Scenario(node.get("id").asText(), title, node.get("source").asText(),
                         node.get("category").asText(), node.get("difficulty").asInt(5),
                         node.get("callerText").asText(), objectMapper.treeToValue(node.get("caller"), ScenarioCaller.class),
                         node.get("rawAddress").asText(), expected,
                         types, toList(node.get("expectedServices")),
                         node.path("addressClarified").asBoolean(false), null, null, true,
-                        false, null, null, Instant.now());
-                repository.insert(scenario);
-                count++;
+                        false, null, null, Instant.now()));
             }
-            return count;
+            return result;
         } catch (IOException exception) {
             throw new IllegalStateException("Не удалось загрузить " + resource, exception);
         }
@@ -124,8 +195,11 @@ public class ScenarioService {
             names.add(a.locality());
         }
         language.learnPlaces(names);
-        // тот же список названий — справочник существующих улиц для сверки адреса
-        addresses.learn(names);
+        // справочник существующих улиц пополняется только улицами: город в поле «улица»
+        // («Балашиха») иначе сам себя подтверждал бы при проверке сгенерированного сценария
+        addresses.learn(repository.find(null, null, null, 5000).stream()
+                .map(Scenario::expectedAddress).filter(java.util.Objects::nonNull)
+                .map(FormalAddress::street).toList());
     }
 
     private static List<String> toList(JsonNode node) {
@@ -205,39 +279,11 @@ public class ScenarioService {
         return scenario;
     }
 
-    /**
-     * Шаблонная генерация без модели: ситуация одного билета категории + адрес другого.
-     * Эталон — от билета-источника ситуации, адрес — от билета-источника адреса; преподаватель подтверждает.
-     */
-    public List<Scenario> generate(GenerateRequest request, UUID actor) {
-        List<Scenario> pool = repository.find(request.category(), "TICKET", null, 500);
-        if (pool.size() < 2) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
-                    "Для категории недостаточно билетов-основ для генерации");
-        }
-        Random random = new Random();
-        List<Scenario> result = new ArrayList<>();
-        for (int i = 0; i < request.count(); i++) {
-            Scenario situation = pool.get(random.nextInt(pool.size()));
-            Scenario address = pool.get(random.nextInt(pool.size()));
-            String id = "gen-" + UUID.randomUUID().toString().substring(0, 8);
-            Scenario scenario = new Scenario(id,
-                    "Сгенерировано: " + autoTitle(situation.expectedIncidentTypes(), address.expectedAddress(), situation.callerText()),
-                    "GENERATED", request.category(), request.difficulty(),
-                    situation.callerText(), situation.caller(), address.rawAddress(), address.expectedAddress(),
-                    situation.expectedIncidentTypes(), situation.expectedServices(), address.addressClarified(),
-                    "ACCEPT", null, true, false, null, actor, Instant.now());
-            repository.insert(scenario);
-            result.add(require(id));
-        }
-        return result;
-    }
-
     private Scenario fromUpsert(String id, String source, ScenarioUpsert request, UUID actor, Instant createdAt) {
         List<String> types = request.expectedIncidentTypes() == null ? List.of() : request.expectedIncidentTypes();
         List<String> services = request.expectedServices() == null || request.expectedServices().isEmpty()
                 ? references.servicesFor(types) : request.expectedServices();
-        return new Scenario(id, request.title().trim(), source, request.category(), request.difficulty(), request.callerText(),
+        return new Scenario(id, request.title().trim(), source, categoryFor(types, request.category()), request.difficulty(), request.callerText(),
                 request.caller(), request.rawAddress(), request.expectedAddress(), types, services,
                 request.expectedAddress() != null, blank(request.expectedDecision()) ? null : request.expectedDecision(),
                 request.expectedDecisionReason(), request.outboundCallRequired(), false, null, actor, createdAt);

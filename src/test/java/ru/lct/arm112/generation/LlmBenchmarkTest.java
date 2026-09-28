@@ -81,7 +81,7 @@ class LlmBenchmarkTest {
 
         // --- 2. Годность: сколько кандидатов переживают проверку
         long startedAt = System.nanoTime();
-        List<ScenarioUpsert> candidates = generator.generate("FIRE", count, 5);
+        List<ScenarioUpsert> candidates = generator.generate("t101", count, 5);
         double batchSeconds = (System.nanoTime() - startedAt) / 1e9;
 
         Map<String, Integer> rejections = new LinkedHashMap<>();

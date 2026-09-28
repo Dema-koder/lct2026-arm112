@@ -140,6 +140,12 @@ class RolesAndAdminIntegrationTest extends ApiTestSupport {
 
         // группу нельзя перепривязать к пользователю без роли TEACHER
         String teacher = login("teacher", "teacher");
+        HttpResponse<String> calibration = get("/api/v1/admin/assessment-calibration?mode=CARD_FILL", admin);
+        assertThat(calibration.statusCode()).isEqualTo(200);
+        assertThat(json(calibration).get("candidate").get("mode").asText()).isEqualTo("CARD_FILL");
+        assertThat(get("/api/v1/admin/assessment-calibration?mode=CARD_FILL", teacher).statusCode()).isEqualTo(403);
+        assertThat(post("/api/v1/admin/assessment-calibration/activate",
+                "{\"mode\":\"CARD_FILL\"}", admin, null).statusCode()).isEqualTo(409);
         HttpResponse<String> group = post("/api/v1/admin/groups",
                 "{\"name\":\"Проверка ролей\",\"teacherId\":\"" + userId(teacher) + "\"}", admin, null);
         assertThat(group.statusCode()).as(group.body()).isEqualTo(201);

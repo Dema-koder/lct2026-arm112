@@ -2,7 +2,7 @@
   {
     "id": "gen-seed-01",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит квартира на 4 этаже, из окна валит дым, жильцы выбегают на лестницу, в квартире оставалась пожилая женщина",
     "caller": {
@@ -17,7 +17,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Берзарина",
+      "street": "улица Берзарина",
       "house": "21",
       "building": "1",
       "structure": null,
@@ -31,6 +31,7 @@
       "fire.apartment"
     ],
     "expectedServices": [
+      "101",
       "102",
       "103",
       "104",
@@ -50,7 +51,7 @@
   {
     "id": "gen-seed-02",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Горит одноэтажное строение во дворе школы, пламя на крыше, детей вывели, внутри никого",
     "caller": {
@@ -65,7 +66,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Вавилова",
+      "street": "улица Вавилова",
       "house": "14",
       "building": null,
       "structure": null,
@@ -79,6 +80,7 @@
       "fire.building"
     ],
     "expectedServices": [
+      "101",
       "102",
       "103",
       "104",
@@ -100,7 +102,7 @@
   {
     "id": "gen-seed-03",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "t101",
     "difficulty": 5,
     "callerText": "Сработала сигнализация в торговом центре, посетителей выводят, дыма и огня не видно",
     "caller": {
@@ -115,7 +117,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Кастанаевская",
+      "street": "Кастанаевская улица",
       "house": "18",
       "building": null,
       "structure": null,
@@ -129,6 +131,7 @@
       "fire.alarm"
     ],
     "expectedServices": [
+      "101",
       "102",
       "103",
       "CEMP",
@@ -146,7 +149,7 @@
   {
     "id": "gen-seed-04",
     "source": "GENERATED",
-    "category": "POLICE",
+    "category": "dtp",
     "difficulty": 5,
     "callerText": "Две машины столкнулись на перекрёстке, помяты крылья, водители не пострадали, спорят о виновнике, движение частично перекрыто",
     "caller": {
@@ -161,7 +164,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Кировоградская",
+      "street": "Кировоградская улица",
       "house": "15",
       "building": null,
       "structure": null,
@@ -185,7 +188,7 @@
   {
     "id": "gen-seed-05",
     "source": "GENERATED",
-    "category": "FIRE",
+    "category": "explosion",
     "difficulty": 5,
     "callerText": "Громкий хлопок в подвале жилого дома, из продухов идёт пыль, в подъезде выбило две двери, люди выбежали во двор",
     "caller": {
@@ -200,7 +203,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Вешняковская",
+      "street": "Вешняковская улица",
       "house": "9",
       "building": null,
       "structure": null,
@@ -236,7 +239,7 @@
   {
     "id": "gen-seed-06",
     "source": "GENERATED",
-    "category": "MEDICAL",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Мужчина стоит на парапете балкона 9 этажа, говорит, что спрыгнет, родственники за дверью, дверь заперта",
     "caller": {
@@ -251,7 +254,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Коломенская",
+      "street": "Коломенская набережная",
       "house": "18",
       "building": null,
       "structure": null,
@@ -276,14 +279,14 @@
   {
     "id": "gen-seed-07",
     "source": "GENERATED",
-    "category": "POLICE",
+    "category": "death",
     "difficulty": 5,
     "callerText": "В квартире нашли мужчину без признаков жизни, около 60 лет, дверь открыли соседи, запах в подъезде третий день",
     "caller": {
       "fullName": "Участковый Крылов Денис Сергеевич",
       "phone": "79161234507"
     },
-    "rawAddress": "Зверенецкая 4, второй подъезд",
+    "rawAddress": "Зверинецкая 4, второй подъезд",
     "expectedAddress": {
       "country": "Россия",
       "region": null,
@@ -291,7 +294,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Зверенецкая",
+      "street": "Зверинецкая улица",
       "house": "4",
       "building": null,
       "structure": null,
@@ -317,7 +320,7 @@
   {
     "id": "gen-seed-08",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Прорвало трубу в подвале, вода поднялась выше колена, заливает электрощитовую, в доме моргает свет",
     "caller": {
@@ -332,7 +335,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Домодедовская",
+      "street": "Домодедовская улица",
       "house": "22",
       "building": null,
       "structure": null,
@@ -362,7 +365,7 @@
   {
     "id": "gen-seed-09",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Застряли в лифте между 5 и 6 этажом, внутри двое взрослых и ребёнок, кнопка связи не работает, душно",
     "caller": {
@@ -377,7 +380,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Грина",
+      "street": "улица Грина",
       "house": "11",
       "building": null,
       "structure": null,
@@ -391,8 +394,8 @@
       "utility.elevator"
     ],
     "expectedServices": [
-      "GOR_HOZ",
       "MOSLIFT",
+      "GOR_HOZ",
       "MAYOR",
       "OIV",
       "OIV_TINAO"
@@ -402,7 +405,7 @@
   {
     "id": "gen-seed-10",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Открытый колодец на тротуаре у остановки, крышки нет, ограждения нет, вечером темно, рядом ходят дети",
     "caller": {
@@ -417,7 +420,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Красный Казанец",
+      "street": "улица Красный Казанец",
       "house": "19Б",
       "building": null,
       "structure": null,
@@ -448,7 +451,7 @@
   {
     "id": "gen-seed-11",
     "source": "GENERATED",
-    "category": "GAS",
+    "category": "t104",
     "difficulty": 5,
     "callerText": "Сильный запах газа на лестничной клетке, идёт от квартиры соседей, дверь не открывают, жильцы вышли на улицу",
     "caller": {
@@ -463,7 +466,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Кастанаевская",
+      "street": "Кастанаевская улица",
       "house": "18",
       "building": null,
       "structure": null,
@@ -477,9 +480,9 @@
       "gas.smell"
     ],
     "expectedServices": [
+      "104",
       "101",
       "103",
-      "104",
       "CEMP",
       "MAYOR",
       "OIV",
@@ -490,7 +493,7 @@
   {
     "id": "gen-seed-12",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Отключилось электричество во всём подъезде, лифт встал, в двух квартирах люди на аппаратах, у подъезда искрит кабель",
     "caller": {
@@ -505,7 +508,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Вешняковская",
+      "street": "Вешняковская улица",
       "house": "9",
       "building": null,
       "structure": null,
@@ -537,7 +540,7 @@
   {
     "id": "gen-seed-13",
     "source": "GENERATED",
-    "category": "UTILITY",
+    "category": "accident_utility",
     "difficulty": 5,
     "callerText": "Дерево упало на припаркованные машины и перегородило проезд, задело провода, провода провисли над тротуаром",
     "caller": {
@@ -552,7 +555,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Вавилова",
+      "street": "улица Вавилова",
       "house": "14",
       "building": null,
       "structure": null,
@@ -583,14 +586,14 @@
   {
     "id": "gen-seed-14",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "collapse_threat",
     "difficulty": 5,
     "callerText": "По стене дома пошла трещина от третьего до пятого этажа, сыплется кирпич, жильцы боятся заходить в подъезд",
     "caller": {
       "fullName": "Савельев Игорь Львович",
       "phone": "79161234514"
     },
-    "rawAddress": "Зверенецкая 4, торец дома",
+    "rawAddress": "Зверинецкая 4, торец дома",
     "expectedAddress": {
       "country": "Россия",
       "region": null,
@@ -598,7 +601,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Зверенецкая",
+      "street": "Зверинецкая улица",
       "house": "4",
       "building": null,
       "structure": null,
@@ -630,7 +633,7 @@
   {
     "id": "gen-seed-15",
     "source": "GENERATED",
-    "category": "RESCUE",
+    "category": "person_danger",
     "difficulty": 5,
     "callerText": "Двое подростков вышли на лёд пруда, лёд треснул, один провалился по пояс, второй пытается вытащить",
     "caller": {
@@ -645,7 +648,7 @@
       "object": null,
       "okrug": null,
       "district": null,
-      "street": "Знаменские Садки",
+      "street": "улица Знаменские Садки",
       "house": "8",
       "building": null,
       "structure": null,
@@ -664,6 +667,573 @@
       "103",
       "CEMP",
       "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-16",
+    "source": "GENERATED",
+    "category": "t104",
+    "difficulty": 4,
+    "callerText": "Запах газа в подъезде на первом этаже, у почтовых ящиков, соседи жалуются уже полчаса, газовую службу никто не вызывал",
+    "caller": {
+      "fullName": "Горбунова Елена Сергеевна",
+      "phone": "79161234516"
+    },
+    "rawAddress": "Профсоюзная 43 корпус 1, первый подъезд",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Профсоюзная улица",
+      "house": "43",
+      "building": "1",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "104",
+      "101",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-17",
+    "source": "GENERATED",
+    "category": "t104",
+    "difficulty": 5,
+    "callerText": "На кухне сильно пахнет газом, плита выключена, в квартире пожилая мать, окна открыли, свет не включали",
+    "caller": {
+      "fullName": "Лаптев Олег Викторович",
+      "phone": "79161234517"
+    },
+    "rawAddress": "Академика Янгеля 6, квартира 112",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "улица Академика Янгеля",
+      "house": "6",
+      "building": null,
+      "structure": null,
+      "apartment": "112",
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "104",
+      "101",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-18",
+    "source": "GENERATED",
+    "category": "t104",
+    "difficulty": 6,
+    "callerText": "Во дворе у газового шкафа шипит и сильно пахнет газом, дверца шкафа открыта, рядом детская площадка, дети играют",
+    "caller": {
+      "fullName": "Мухина Светлана Игоревна",
+      "phone": "79161234518"
+    },
+    "rawAddress": "Литовский бульвар 11 корпус 3, во дворе",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Литовский бульвар",
+      "house": "11",
+      "building": "3",
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "во дворе у газораспределительного шкафа"
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "104",
+      "101",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-19",
+    "source": "GENERATED",
+    "category": "t104",
+    "difficulty": 5,
+    "callerText": "В кафе на первом этаже жилого дома запах газа из подсобки, посетителей вывели на улицу, повар говорит, что треснул шланг плиты",
+    "caller": {
+      "fullName": "Абрамов Руслан Тимурович",
+      "phone": "79161234519"
+    },
+    "rawAddress": "Кутузовский проспект 24, кафе на первом этаже",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Кутузовский проспект",
+      "house": "24",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "кафе на первом этаже"
+    },
+    "expectedIncidentTypes": [
+      "gas.smell"
+    ],
+    "expectedServices": [
+      "104",
+      "101",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-20",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 4,
+    "callerText": "Сверху заливает квартиру, вода течёт по стене и через люстру, соседей сверху нет дома, дверь не открывают",
+    "caller": {
+      "fullName": "Зайцева Ольга Николаевна",
+      "phone": "79161234520"
+    },
+    "rawAddress": "Шипиловская 50 корпус 1, квартира 87",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Шипиловская улица",
+      "house": "50",
+      "building": "1",
+      "structure": null,
+      "apartment": "87",
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "utility.water"
+    ],
+    "expectedServices": [
+      "102",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOEK",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-21",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 5,
+    "callerText": "На проезжей части из-под асфальта бьёт вода, разлилась большая лужа, машины объезжают по встречной полосе",
+    "caller": {
+      "fullName": "Кириллов Павел Андреевич",
+      "phone": "79161234521"
+    },
+    "rawAddress": "Нахимовский проспект 36, на проезжей части",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Нахимовский проспект",
+      "house": "36",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "проезжая часть напротив дома"
+    },
+    "expectedIncidentTypes": [
+      "utility.water"
+    ],
+    "expectedServices": [
+      "102",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "MOEK",
+      "MAYOR",
+      "OATI",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-22",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 5,
+    "callerText": "В лифте застрял пожилой мужчина, кнопка связи с диспетчером не отвечает, говорит, что ему душно и тяжело дышать",
+    "caller": {
+      "fullName": "Орлова Наталья Юрьевна",
+      "phone": "79161234522"
+    },
+    "rawAddress": "Ярцевская 25, второй подъезд",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Ярцевская улица",
+      "house": "25",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "utility.elevator"
+    ],
+    "expectedServices": [
+      "MOSLIFT",
+      "GOR_HOZ",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-23",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 6,
+    "callerText": "Во всём доме нет света второй час, на седьмом этаже лежачий больной на кислородном аппарате, аппарат работает от батареи",
+    "caller": {
+      "fullName": "Беляев Сергей Михайлович",
+      "phone": "79161234523"
+    },
+    "rawAddress": "Бутлерова 12, седьмой этаж",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "улица Бутлерова",
+      "house": "12",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "utility.power"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "OEK",
+      "MAYOR",
+      "OATI",
+      "ROSGVARD",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-24",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 5,
+    "callerText": "После сильного ветра дерево упало на проезжую часть, перегородило обе полосы, зацепило провода, под деревом машин нет",
+    "caller": {
+      "fullName": "Прохорова Анна Владимировна",
+      "phone": "79161234524"
+    },
+    "rawAddress": "Мичуринский проспект 21, на дороге",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Мичуринский проспект",
+      "house": "21",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "проезжая часть у дома"
+    },
+    "expectedIncidentTypes": [
+      "tree.fallen"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "OEK",
+      "CODD",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-25",
+    "source": "GENERATED",
+    "category": "accident_utility",
+    "difficulty": 4,
+    "callerText": "Во дворе люк без крышки, рядом школа, ребёнок чуть не упал в колодец, огородить нечем",
+    "caller": {
+      "fullName": "Тихонов Артём Олегович",
+      "phone": "79161234525"
+    },
+    "rawAddress": "Бакинская 7, во дворе у школы",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Бакинская улица",
+      "house": "7",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "во дворе"
+    },
+    "expectedIncidentTypes": [
+      "manhole.open"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "104",
+      "GOR_HOZ",
+      "MOSVODOKANAL",
+      "MOEK",
+      "CODD",
+      "MAYOR",
+      "MOSVODOSTOK",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-26",
+    "source": "GENERATED",
+    "category": "person_danger",
+    "difficulty": 5,
+    "callerText": "Пожилая соседка упала дома и не может встать, дверь заперта изнутри, просит открыть дверь, ключей ни у кого нет",
+    "caller": {
+      "fullName": "Савельева Людмила Петровна",
+      "phone": "79161234526"
+    },
+    "rawAddress": "Новоясеневский проспект 13 корпус 2, квартира 54",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Новоясеневский проспект",
+      "house": "13",
+      "building": "2",
+      "structure": null,
+      "apartment": "54",
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": null
+    },
+    "expectedIncidentTypes": [
+      "person.danger"
+    ],
+    "expectedServices": [
+      "102",
+      "101",
+      "103",
+      "MOSBEZ",
+      "MAYOR",
+      "ROSGVARD"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-27",
+    "source": "GENERATED",
+    "category": "person_danger",
+    "difficulty": 6,
+    "callerText": "На пруду мужчина провалился под лёд у берега, держится за край, сам выбраться не может, мы боимся подходить",
+    "caller": {
+      "fullName": "Гусев Никита Романович",
+      "phone": "79161234527"
+    },
+    "rawAddress": "Борисовские Пруды 10, на пруду у берега",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "улица Борисовские Пруды",
+      "house": "10",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "пруд у берега напротив дома"
+    },
+    "expectedIncidentTypes": [
+      "water.rescue"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "CEMP",
+      "MAYOR",
+      "OIV",
+      "OIV_TINAO"
+    ],
+    "addressClarified": true
+  },
+  {
+    "id": "gen-seed-28",
+    "source": "GENERATED",
+    "category": "collapse_threat",
+    "difficulty": 5,
+    "callerText": "На фасаде отошла облицовочная плитка на уровне пятого этажа, куски падают на тротуар у входа в магазин",
+    "caller": {
+      "fullName": "Фомина Дарья Алексеевна",
+      "phone": "79161234528"
+    },
+    "rawAddress": "Смольная 51, вход в магазин",
+    "expectedAddress": {
+      "country": "Россия",
+      "region": null,
+      "locality": "Москва",
+      "object": null,
+      "okrug": null,
+      "district": null,
+      "street": "Смольная улица",
+      "house": "51",
+      "building": null,
+      "structure": null,
+      "apartment": null,
+      "entrance": null,
+      "floor": null,
+      "code": null,
+      "descriptive": "тротуар у входа в магазин"
+    },
+    "expectedIncidentTypes": [
+      "collapse.threat"
+    ],
+    "expectedServices": [
+      "101",
+      "102",
+      "103",
+      "104",
+      "CEMP",
+      "MOSGORTRANS",
+      "GOR_HOZ",
+      "CODD",
+      "MAYOR",
+      "ROSGVARD",
       "OIV",
       "OIV_TINAO"
     ],
