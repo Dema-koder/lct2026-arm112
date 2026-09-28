@@ -207,14 +207,19 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
         </article>
 
         <article className="analytics-card">
-          <header><b>По режимам и видам</b></header>
-          <HorizontalBars items={byMode} scale="score" />
-          {byKind.length > 0 && (
-            <>
-              <p className="chart-note">Средний балл по виду занятия (0–100)</p>
-              <HorizontalBars items={byKind} scale="score" />
-            </>
-          )}
+          <header><b>По режимам</b></header>
+          {byMode.length === 0
+            ? <p className="muted chart-empty">Нет оценённых занятий</p>
+            : <HorizontalBars items={byMode} scale="score" />}
+          <p className="chart-note">Средний балл по режимам занятий (0–100)</p>
+        </article>
+
+        <article className="analytics-card">
+          <header><b>По видам</b></header>
+          {byKind.length === 0
+            ? <p className="muted chart-empty">Нет оценённых занятий</p>
+            : <HorizontalBars items={byKind} scale="score" />}
+          <p className="chart-note">Средний балл по видам занятий (0–100)</p>
         </article>
 
         <article className="analytics-card">

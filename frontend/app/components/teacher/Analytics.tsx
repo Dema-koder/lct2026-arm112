@@ -324,28 +324,30 @@ export function TeacherAnalytics({ token }: { token: string }) {
           <p className="chart-note">Шкала 0–100 · красный — слабые, зелёный — сильные</p>
         </article>
 
-        <article className="analytics-card wide">
-          <header><b>Обучающиеся</b></header>
-          {traineeRanks.worst.length === 0 && traineeRanks.best.length === 0
-            ? <p className="muted chart-empty">Нет оценённых сессий</p>
-            : (
-              <div className="chart-split">
-                {traineeRanks.worst.length > 0 && (
-                  <div className="chart-split-block">
-                    <p className="chart-subhead">5 худших</p>
-                    <HorizontalBars items={traineeRanks.worst} scale="score" />
-                  </div>
-                )}
-                {traineeRanks.best.length > 0 && (
-                  <div className="chart-split-block">
-                    <p className="chart-subhead">5 лучших</p>
-                    <HorizontalBars items={traineeRanks.best} scale="score" />
-                  </div>
-                )}
-              </div>
-            )}
-          <p className="chart-note">Средний балл 0–100 · от 70 — лучшие, ниже 70 — худшие · до 5 в каждой группе</p>
-        </article>
+        {!focusTraineeId && (
+          <article className="analytics-card wide">
+            <header><b>Обучающиеся</b></header>
+            {traineeRanks.worst.length === 0 && traineeRanks.best.length === 0
+              ? <p className="muted chart-empty">Нет оценённых сессий</p>
+              : (
+                <div className="chart-split">
+                  {traineeRanks.worst.length > 0 && (
+                    <div className="chart-split-block">
+                      <p className="chart-subhead">5 худших</p>
+                      <HorizontalBars items={traineeRanks.worst} scale="score" />
+                    </div>
+                  )}
+                  {traineeRanks.best.length > 0 && (
+                    <div className="chart-split-block">
+                      <p className="chart-subhead">5 лучших</p>
+                      <HorizontalBars items={traineeRanks.best} scale="score" />
+                    </div>
+                  )}
+                </div>
+              )}
+            <p className="chart-note">Средний балл 0–100 · от 70 — лучшие, ниже 70 — худшие · до 5 в каждой группе</p>
+          </article>
+        )}
       </div>
 
       <article className="analytics-card wide">
