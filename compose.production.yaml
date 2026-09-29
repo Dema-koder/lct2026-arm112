@@ -27,7 +27,7 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
-    mem_limit: 192m
+    mem_limit: 512m
     pids_limit: 100
     logging: *default-logging
 
@@ -71,7 +71,7 @@ services:
       start_period: 30s
       retries: 12
     restart: unless-stopped
-    mem_limit: 384m
+    mem_limit: 1g
     pids_limit: 200
     logging: *default-logging
 
@@ -89,7 +89,7 @@ services:
       start_period: 15s
       retries: 10
     restart: unless-stopped
-    mem_limit: 192m
+    mem_limit: 512m
     pids_limit: 150
     logging: *default-logging
 
@@ -110,7 +110,7 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
-    mem_limit: 48m
+    mem_limit: 128m
     pids_limit: 50
     logging: *default-logging
 
