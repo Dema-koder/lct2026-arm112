@@ -44,6 +44,10 @@ services:
       ARM112_SEED_ADMIN_PASSWORD: ${ARM112_SEED_ADMIN_PASSWORD}
       ARM112_SEED_TEACHER_PASSWORD: ${ARM112_SEED_TEACHER_PASSWORD}
       ARM112_SEED_TRAINEE_PASSWORD: ${ARM112_SEED_TRAINEE_PASSWORD}
+      # Демо-аналитика на production по умолчанию выключена. Раньше переменная сюда
+      # не передавалась, и посев работал всегда: после восстановления копии он
+      # досоздавал свои занятия поверх восстановленных данных.
+      ARM112_SEED_ANALYTICS_DEMO_ENABLED: ${ARM112_SEED_ANALYTICS_DEMO_ENABLED:-false}
       ARM112_BACKUP_DIR: /data/backups
       ARM112_BACKUP_EXTERNAL_DIR: /offsite-backups
       ARM112_BACKUP_RETENTION_DAYS: ${ARM112_BACKUP_RETENTION_DAYS:-14}
