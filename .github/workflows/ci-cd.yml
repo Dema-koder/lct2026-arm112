@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: http://103.112.71.71
+      url: http://109.248.206.75/
     permissions:
       contents: read
       packages: read
@@ -131,24 +131,24 @@ jobs:
           install -d -m 700 ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/arm112_deploy
           chmod 600 ~/.ssh/arm112_deploy
-          printf '%s\n' '103.112.71.71 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO26PeMAmjLyU9lQWY36OxStOJ7W6etEawVXmddAKo4y' > ~/.ssh/known_hosts
+          printf '%s\n' '109.248.206.75 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEND8qT66KzPXIHZ3RoTWpXeczgBnhHxvdMWVnWASqHV' > ~/.ssh/known_hosts
       - name: Upload deployment configuration
         run: |
-          ssh -i ~/.ssh/arm112_deploy root@103.112.71.71 'install -d -m 750 /opt/arm112/deploy'
-          scp -i ~/.ssh/arm112_deploy compose.production.yaml root@103.112.71.71:/opt/arm112/compose.production.yaml
-          scp -i ~/.ssh/arm112_deploy deploy/nginx.conf root@103.112.71.71:/opt/arm112/deploy/nginx.conf
-          scp -i ~/.ssh/arm112_deploy deploy/deploy.sh root@103.112.71.71:/opt/arm112/deploy/deploy.sh
+          ssh -i ~/.ssh/arm112_deploy root@109.248.206.75 'install -d -m 750 /opt/arm112/deploy'
+          scp -i ~/.ssh/arm112_deploy compose.production.yaml root@109.248.206.75:/opt/arm112/compose.production.yaml
+          scp -i ~/.ssh/arm112_deploy deploy/nginx.conf root@109.248.206.75:/opt/arm112/deploy/nginx.conf
+          scp -i ~/.ssh/arm112_deploy deploy/deploy.sh root@109.248.206.75:/opt/arm112/deploy/deploy.sh
       - name: Pull and restart application
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
           RELEASE_SHA: ${{ github.sha }}
         run: |
-          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/arm112_deploy root@103.112.71.71 \
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/arm112_deploy root@109.248.206.75 \
             "docker login ghcr.io -u '$GHCR_USER' --password-stdin"
-          ssh -i ~/.ssh/arm112_deploy root@103.112.71.71 \
+          ssh -i ~/.ssh/arm112_deploy root@109.248.206.75 \
             "RELEASE_SHA='$RELEASE_SHA' bash /opt/arm112/deploy/deploy.sh"
-          ssh -i ~/.ssh/arm112_deploy root@103.112.71.71 'docker logout ghcr.io >/dev/null 2>&1 || true'
+          ssh -i ~/.ssh/arm112_deploy root@109.248.206.75 'docker logout ghcr.io >/dev/null 2>&1 || true'
       - name: Remove local SSH key
         if: always()
         run: rm -f ~/.ssh/arm112_deploy

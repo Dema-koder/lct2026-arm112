@@ -1,6 +1,6 @@
 # Автоматическая выкладка
 
-Production доступен по адресу `http://103.112.71.71`. Swagger UI и динамический OpenAPI в production отключены;
+Production доступен по адресу `http://109.248.206.75/`. Swagger UI и динамический OpenAPI в production отключены;
 зафиксированный контракт доступен в репозитории, а для ручной проверки используйте локальный Swagger.
 
 Workflow [`.github/workflows/ci-cd.yml`](../.github/workflows/ci-cd.yml) запускается:
@@ -69,9 +69,9 @@ ARM112_ALERT_PHONE_NUMBERS=+74950000000,+74950000001,+74950000002
 ## Проверка и диагностика
 
 ```bash
-curl http://103.112.71.71/health
-curl http://103.112.71.71/actuator/health
-ssh root@103.112.71.71
+curl http://109.248.206.75/health
+curl http://109.248.206.75/actuator/health
+ssh root@109.248.206.75
 cd /opt/arm112
 docker compose --env-file .env --env-file release.env -f compose.production.yaml ps
 docker compose --env-file .env --env-file release.env -f compose.production.yaml logs --tail=200

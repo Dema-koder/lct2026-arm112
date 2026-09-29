@@ -4,6 +4,9 @@
 
 Роли, права и решения по ним — в [`docs/ROLES.md`](docs/ROLES.md); техническая раскладка по файлам — в [`docs/ROLES_IMPLEMENTATION.md`](docs/ROLES_IMPLEMENTATION.md); пошаговая ручная проверка каждой роли — в [`docs/TESTING_ROLES.md`](docs/TESTING_ROLES.md); план тестирования с чек-листом (безопасность, копии, production) — в [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
+- [Рабочий демонстрационный стенд](http://109.248.206.75/)
+- [Презентация проекта](https://docs.google.com/presentation/d/12DTQeY3U1mjBMd9Im13qLc3g0uIaIF6HGtwsk5hSYvc/edit?usp=sharing)
+
 ## Стек
 
 - Java 21;
