@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.14
+  version: 0.3.16
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -124,10 +124,11 @@ paths:
     get:
       tags: [Trainee]
       operationId: assessmentDebrief
-      summary: Персональный разбор занятия
+      summary: Разбор занятия от языковой модели
       description: >
-        Считается в фоновой очереди, поэтому может быть ещё не готов — тогда state PENDING.
-        Поле source говорит, писала текст модель (LLM) или правила (RULES).
+        Отдельно от рекомендаций по правилам, которые приходят в самой оценке (Assessment.recommendations —
+        одна на код замечания). Считается в фоновой очереди: пока не готов — PENDING; READY — текст модели;
+        UNAVAILABLE — модели не было или её текст не прошёл проверку языка, в text пояснение.
       parameters:
         - name: assessmentId
           in: path
@@ -915,7 +916,7 @@ paths:
       operationId: calibrationReport
       summary: Расхождение оценки ИИ с оценкой преподавателя
       description: >
-        Предложение по калибровке, а не применённое изменение: решение за преподавателем.
+        Диагностическое предложение по калибровке. Включение версий доступно администратору.
         Критерии, где калибровать нечего, попадают в skipped с объяснением.
       parameters:
         - name: mode
@@ -1160,6 +1161,59 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Group'}
         '422': {$ref: '#/components/responses/ErrorResponse'}
+  /admin/assessment-calibration:
+    get:
+      tags: [Admin]
+      operationId: getAssessmentCalibration
+      summary: Текущая версия и новый расчёт коррекции оценок ИИ
+      description: Исходные и уже выставленные оценки не изменяются; активная версия действует только на будущие оценки ИИ.
+      parameters:
+        - name: mode
+          in: query
+          schema: {type: string, enum: [CARD_FILL, CARD_ACTIONS], default: CARD_FILL}
+      responses:
+        '200':
+          description: Состояние коррекции
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
+  /admin/assessment-calibration/activate:
+    post:
+      tags: [Admin]
+      operationId: activateAssessmentCalibration
+      summary: Рассчитать и включить новую версию коррекции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CalibrationCommand'}
+      responses:
+        '200':
+          description: Новая версия включена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
+        '409':
+          description: Недостаточно данных или расчёт не улучшает качество
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+  /admin/assessment-calibration/deactivate:
+    post:
+      tags: [Admin]
+      operationId: deactivateAssessmentCalibration
+      summary: Отключить активную коррекцию для будущих оценок
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CalibrationCommand'}
+      responses:
+        '200':
+          description: Коррекция отключена, история версий сохранена
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminCalibrationState'}
   /admin/settings:
     get:
       tags: [Admin]
@@ -2563,15 +2617,50 @@ components:
           type: array
           description: критерии без калибровки с объяснением причины
           items: {type: string}
+    CalibrationModel:
+      type: object
+      additionalProperties: false
+      required: [id, mode, version, active, assessments, maeBefore, maeAfter, criteria, createdBy, createdAt, activatedAt, deactivatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
+        version: {type: integer}
+        active: {type: boolean}
+        assessments: {type: integer}
+        maeBefore: {type: [number, 'null']}
+        maeAfter: {type: [number, 'null']}
+        criteria: {type: array, items: {$ref: '#/components/schemas/CriterionCalibration'}}
+        createdBy: {type: string, format: uuid}
+        createdAt: {type: string, format: date-time}
+        activatedAt: {type: [string, 'null'], format: date-time}
+        deactivatedAt: {type: [string, 'null'], format: date-time}
+    AdminCalibrationState:
+      type: object
+      additionalProperties: false
+      required: [mode, active, candidate, history]
+      properties:
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
+        active:
+          oneOf:
+            - {$ref: '#/components/schemas/CalibrationModel'}
+            - {type: 'null'}
+        candidate: {$ref: '#/components/schemas/CalibrationReport'}
+        history: {type: array, items: {$ref: '#/components/schemas/CalibrationModel'}}
+    CalibrationCommand:
+      type: object
+      additionalProperties: false
+      required: [mode]
+      properties:
+        mode: {type: string, enum: [CARD_FILL, CARD_ACTIONS]}
     Debrief:
       type: object
       additionalProperties: false
       required: [assessmentId, state]
       properties:
         assessmentId: {type: string, format: uuid}
-        state: {type: string, enum: [READY, PENDING]}
+        state: {type: string, enum: [READY, PENDING, UNAVAILABLE]}
         text: {type: string, nullable: true}
-        source: {type: string, nullable: true}
+        source: {type: string, nullable: true, description: "LLM, UNAVAILABLE, REJECTED; RULES — у разборов до 0.3.16"}
         createdAt: {type: string, format: date-time, nullable: true}
     LessonReport:
       type: object

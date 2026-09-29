@@ -76,7 +76,12 @@ class DashboardEndpointsTest extends ApiTestSupport {
         // --- 5. разбор для обучающегося
         String assessmentId = assessmentOf(trainees.get(0)[0]);
         JsonNode debrief = json(get("/api/v1/assessments/" + assessmentId + "/debrief", trainees.get(0)[0]));
-        assertThat(debrief.get("state").asText()).isIn("READY", "PENDING");
+        // без модели разбор не подменяется текстом по правилам: UNAVAILABLE с пояснением,
+        // а рекомендации по правилам уже лежат в самой оценке
+        assertThat(debrief.get("state").asText()).isIn("READY", "PENDING", "UNAVAILABLE");
+        if (debrief.get("state").asText().equals("UNAVAILABLE")) {
+            assertThat(debrief.get("text").asText()).as("пояснение, почему разбора нет").isNotBlank();
+        }
 
         System.out.printf(Locale.ROOT,
                 "%n=== Экранные эндпоинты ===%nобзор занятия: %d обучающихся, медиана %.1f, "

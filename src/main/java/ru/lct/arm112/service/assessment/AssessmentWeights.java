@@ -57,10 +57,38 @@ public final class AssessmentWeights {
     }
 
     /**
+     * Преподаватель поставил по всем критериям режима ровно те же баллы, что ИИ.
+     * Тогда итог нужно брать из {@link Assessment#totalScore()}, а не пересчитывать
+     * по уже округлённым критериям — иначе появляется расхождение из‑за порядка округления.
+     */
+    public static boolean mirrorsAi(Assessment ai, List<CriterionScore> teacher) {
+        Map<String, Double> overrides = new LinkedHashMap<>();
+        for (CriterionScore c : teacher) {
+            if (c.score() != null) overrides.put(c.code(), c.score());
+        }
+        if (overrides.isEmpty()) return false;
+        for (Criterion c : forMode(ai.mode())) {
+            Double aiScore = scoreOf(ai, c.code());
+            if (!overrides.containsKey(c.code())) {
+                if (aiScore != null) return false;
+                continue;
+            }
+            Double teacherScore = overrides.get(c.code());
+            if (aiScore == null || teacherScore == null) return false;
+            if (Double.compare(aiScore, teacherScore) != 0) return false;
+        }
+        return true;
+    }
+
+    /**
      * Итог по весам: балл преподавателя по критерию, если он задан, иначе балл ИИ.
      * Критерии без балла ни у ИИ, ни у преподавателя в расчёт не входят (веса нормируются).
+     * Если все баллы совпадают с ИИ — возвращается опубликованный итог ИИ (без дрейфа округления).
      */
     public static double total(Assessment ai, List<CriterionScore> teacher) {
+        if (mirrorsAi(ai, teacher) && ai.totalScore() != null) {
+            return ai.totalScore();
+        }
         Map<String, Double> overrides = new LinkedHashMap<>();
         for (CriterionScore c : teacher) {
             if (c.score() != null) overrides.put(c.code(), c.score());

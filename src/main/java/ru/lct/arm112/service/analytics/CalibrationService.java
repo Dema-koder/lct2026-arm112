@@ -2,10 +2,21 @@ package ru.lct.arm112.service.analytics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.lct.arm112.api.ApiException;
+import ru.lct.arm112.api.ApiModels.AdminCalibrationState;
+import ru.lct.arm112.api.ApiModels.Assessment;
+import ru.lct.arm112.api.ApiModels.CalibrationModel;
+import ru.lct.arm112.api.ApiModels.CalibrationReport;
 import ru.lct.arm112.api.ApiModels.CriterionScore;
 import ru.lct.arm112.persistence.AssessmentRepository;
 import ru.lct.arm112.persistence.AssessmentRepository.AssessmentRow;
+import ru.lct.arm112.persistence.CalibrationRepository;
+import ru.lct.arm112.persistence.CalibrationRepository.ModelRow;
+import ru.lct.arm112.persistence.CalibrationRepository.Parameter;
+import ru.lct.arm112.service.assessment.AssessmentResult;
 import ru.lct.arm112.service.assessment.AssessmentWeights;
 import ru.lct.arm112.service.assessment.AssessmentWeights.Criterion;
 
@@ -31,10 +42,10 @@ import java.util.Map;
  * <ul>
  *   <li>калибровать критерий, по которому меньше {@link #MIN_PAIRS} пар — на трёх правках
  *       коэффициенты означают шум, а не мнение преподавателя;</li>
- *   <li>калибровать, когда преподаватель не менял балл ни разу: нулевой разброс по оси X
+ *   <li>калибровать, когда исходный балл ИИ не менялся: нулевой разброс по оси X
  *       не даёт наклона;</li>
  *   <li>применять калибровку молча — она возвращается как предложение, а решение
- *       остаётся за преподавателем.</li>
+ *       о включении версии остаётся за администратором.</li>
  * </ul>
  */
 @Service
@@ -56,9 +67,11 @@ public class CalibrationService {
     private static final double MIN_SLOPE = 0.2, MAX_SLOPE = 3.0;
 
     private final AssessmentRepository assessments;
+    private final CalibrationRepository models;
 
-    public CalibrationService(AssessmentRepository assessments) {
+    public CalibrationService(AssessmentRepository assessments, CalibrationRepository models) {
         this.assessments = assessments;
+        this.models = models;
     }
 
     /**
@@ -81,17 +94,22 @@ public class CalibrationService {
                               List<String> skipped) {}
 
     public Calibration calibrate(String mode) {
+        requireMode(mode);
         List<AssessmentRow> rows = assessments.findTeacherAssessed(mode);
         Map<String, List<double[]>> pairs = new LinkedHashMap<>();
+        int usableAssessments = 0;
         for (AssessmentRow row : rows) {
             if (row.teacherCriteria() == null) continue;
+            boolean usable = false;
             for (CriterionScore teacher : row.teacherCriteria()) {
                 if (teacher.score() == null) continue;
                 Double ai = AssessmentWeights.scoreOf(row.ai(), teacher.code());
                 if (ai == null) continue;
                 pairs.computeIfAbsent(teacher.code(), k -> new ArrayList<>())
                         .add(new double[]{ai, teacher.score()});
+                usable = true;
             }
+            if (usable) usableAssessments++;
         }
 
         List<CriterionCalibration> result = new ArrayList<>();
@@ -121,9 +139,112 @@ public class CalibrationService {
         }
 
         log.info("Калибровка {}: оценок {}, критериев откалибровано {}, пропущено {}",
-                mode, rows.size(), result.size(), skipped.size());
-        return new Calibration(mode, result, rows.size(), skipped);
+                mode, usableAssessments, result.size(), skipped.size());
+        return new Calibration(mode, result, usableAssessments, skipped);
     }
+
+    /** Состояние для администратора: активная версия, новый расчёт и история решений. */
+    public AdminCalibrationState state(String mode) {
+        requireMode(mode);
+        Calibration candidate = calibrate(mode);
+        return new AdminCalibrationState(mode, models.active(mode).map(this::apiModel).orElse(null),
+                report(candidate), models.history(mode).stream().map(this::apiModel).toList());
+    }
+
+    /** Создаёт новую версию только при доказанном улучшении на отложенной выборке. */
+    @Transactional
+    public synchronized AdminCalibrationState activate(String mode, java.util.UUID actorId) {
+        requireMode(mode);
+        Calibration candidate = calibrate(mode);
+        if (candidate.criteria().isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT, "CALIBRATION_NOT_READY",
+                    "Недостаточно подтверждённых преподавателями оценок для безопасной коррекции");
+        }
+        List<Parameter> parameters = candidate.criteria().stream().map(c -> new Parameter(
+                c.code(), c.label(), c.slope(), c.intercept(), c.maeBefore(), c.maeAfter(),
+                c.improvement(), c.pairs())).toList();
+        double before = weighted(candidate.criteria(), true);
+        double after = weighted(candidate.criteria(), false);
+        models.activate(mode, parameters, candidate.assessments(), before, after, actorId);
+        log.info("Администратор {} включил коррекцию {} по {} оценкам", actorId, mode, candidate.assessments());
+        return state(mode);
+    }
+
+    @Transactional
+    public AdminCalibrationState deactivate(String mode, java.util.UUID actorId) {
+        requireMode(mode);
+        models.deactivate(mode);
+        log.info("Администратор {} отключил коррекцию {}", actorId, mode);
+        return state(mode);
+    }
+
+    /** Результат применения версии; raw остаётся неизменным для будущего обучения и аудита. */
+    public record AppliedAssessment(AssessmentResult result, Assessment raw, java.util.UUID modelId,
+                                    Integer modelVersion) {}
+
+    public AppliedAssessment applyActive(AssessmentResult rawResult) {
+        Assessment raw = rawResult.assessment();
+        ModelRow active = models.active(raw.mode()).orElse(null);
+        if (active == null) return new AppliedAssessment(rawResult, raw, null, null);
+
+        Map<String, Parameter> parameters = new LinkedHashMap<>();
+        active.parameters().forEach(p -> parameters.put(p.code(), p));
+        Double timing = corrected(raw, "timing", parameters);
+        Double actions = corrected(raw, "actions", parameters);
+        Double communication = corrected(raw, "communication", parameters);
+        Double language = corrected(raw, "language", parameters);
+        Double address = corrected(raw, "address", parameters);
+        Double classification = corrected(raw, "classification", parameters);
+        Double services = corrected(raw, "services", parameters);
+        Assessment provisional = new Assessment(raw.id(), raw.sessionId(), raw.state(), raw.mode(), raw.totalScore(),
+                timing, actions, communication, language, address, classification, services,
+                raw.syntaxErrors(), raw.issues(), raw.recommendations(), raw.source(), raw.aiTotalScore(),
+                null, null, null, List.of(), List.of());
+        double total = AssessmentWeights.total(provisional, List.of());
+        Assessment calibrated = new Assessment(raw.id(), raw.sessionId(), raw.state(), raw.mode(), total,
+                timing, actions, communication, language, address, classification, services,
+                raw.syntaxErrors(), raw.issues(), raw.recommendations(), raw.source(), total,
+                null, null, null, List.of(), List.of());
+        return new AppliedAssessment(new AssessmentResult(calibrated, rawResult.cards()), raw,
+                active.id(), active.version());
+    }
+
+    private static Double corrected(Assessment assessment, String code, Map<String, Parameter> parameters) {
+        Double score = AssessmentWeights.scoreOf(assessment, code);
+        Parameter parameter = parameters.get(code);
+        if (score == null || parameter == null) return score;
+        return round(apply(score, parameter.slope(), parameter.intercept()));
+    }
+
+    private static double weighted(List<CriterionCalibration> criteria, boolean before) {
+        int pairs = criteria.stream().mapToInt(CriterionCalibration::pairs).sum();
+        if (pairs == 0) return 0;
+        double sum = criteria.stream().mapToDouble(c -> (before ? c.maeBefore() : c.maeAfter()) * c.pairs()).sum();
+        return round(sum / pairs);
+    }
+
+    private CalibrationReport report(Calibration value) {
+        return new CalibrationReport(value.mode(), value.assessments(), value.criteria().stream()
+                .map(c -> new ru.lct.arm112.api.ApiModels.CriterionCalibration(c.code(), c.label(), c.slope(),
+                        c.intercept(), c.maeBefore(), c.maeAfter(), c.improvement(), c.pairs()))
+                .toList(), value.skipped());
+    }
+
+    private CalibrationModel apiModel(ModelRow row) {
+        return new CalibrationModel(row.id(), row.mode(), row.version(), row.active(), row.assessments(),
+                row.maeBefore(), row.maeAfter(), row.parameters().stream()
+                .map(p -> new ru.lct.arm112.api.ApiModels.CriterionCalibration(p.code(), p.label(), p.slope(),
+                        p.intercept(), p.maeBefore(), p.maeAfter(), p.improvementPercent(), p.pairs()))
+                .toList(), row.createdBy(), row.createdAt(), row.activatedAt(), row.deactivatedAt());
+    }
+
+    private static void requireMode(String mode) {
+        if (!"CARD_FILL".equals(mode) && !"CARD_ACTIONS".equals(mode)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "Режим должен быть CARD_FILL или CARD_ACTIONS");
+        }
+    }
+
 
     /**
      * МНК по паре «балл ИИ — балл преподавателя» с отложенной проверкой.

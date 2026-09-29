@@ -153,14 +153,10 @@ public class CardFillAssessor {
                     "Вызов потерян: заявитель не дозвонился", null, null, null));
         }
         timing = TextUtil.clamp(timing - 10 * missedCalls - 30 * lostCalls);
-        if (missedCalls + lostCalls > 0) recommendations.add("Отвечайте на вызов сразу — заявитель ждёт не дольше 30 секунд.");
         double total = (address * W_ADDRESS + type * W_TYPE + services * W_SERVICES + timing * W_TIME + lang * W_LANGUAGE) / 100.0;
 
-        if (address < 100) recommendations.add("Сверяйте улицу и дом с уточнённым адресом: ориентир заявителя нужно привести к формализованному адресу.");
-        if (type < 100) recommendations.add("Используйте поиск по типу происшествия и синонимы — тип определяет состав служб.");
-        if (services < 100) recommendations.add("Не удаляйте автоматически подобранные службы: список формируется по классификатору.");
-        if (timing < 100) recommendations.add("Укладывайтесь в 3 минуты на карточку: сначала адрес и тип, подробности — в описание.");
-        if (syntaxErrors > 0) recommendations.add("Проверяйте набор: опечатка в названии улицы отправит службы не по тому адресу.");
+        // одна рекомендация на код замечания — воспроизводимо и считается по коду (RecommendationRules)
+        recommendations.addAll(RecommendationRules.build(issues, code -> references.service(code).label()));
 
         Assessment assessment = new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_FILL",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round((type + services) / 2), null,

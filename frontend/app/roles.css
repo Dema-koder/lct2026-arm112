@@ -194,6 +194,23 @@ label.inline { display: flex; align-items: center; gap: 6px; font-size: 11px; co
 .service-tile.own { box-shadow: inset 0 0 0 2px #ffd166; }
 .service-tile.own .tile-body b::after { content: " · ваша"; font-weight: normal; font-size: 10px; color: #ffd166; }
 
+/* Администратор: управляемая коррекция оценок ИИ. */
+.calibration-page { padding-bottom: 24px; }
+.calibration-page .panel-head select { min-width: 280px; }
+.calibration-explainer { margin: 10px; padding: 14px 16px; border-left: 4px solid #2e86ab; background: #eef7fb; }
+.calibration-explainer p { margin: 5px 0 0; color: #4a5960; }
+.calibration-status { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 1px; margin: 10px; border-left: 4px solid #9aa5aa; background: #d8dddf; }
+.calibration-status.active { border-left-color: #2f9a5a; }
+.calibration-status > div { display: flex; flex-direction: column; gap: 6px; min-height: 55px; padding: 12px; background: white; }
+.calibration-status span { color: #68767d; font-size: 12px; }
+.calibration-table code { white-space: nowrap; }
+.calibration-table .positive { color: #247d49; font-weight: bold; }
+.calibration-empty { margin: 0 10px; padding: 24px; text-align: center; color: #68767d; background: white; border: 1px solid #d7dcde; }
+.calibration-skipped, .calibration-history { margin: 10px; padding: 10px 12px; background: white; border: 1px solid #d7dcde; }
+.calibration-skipped li { margin: 5px 0; color: #58666d; }
+.calibration-actions { margin: 10px; }
+@media (max-width: 900px) { .calibration-status { grid-template-columns: repeat(2, 1fr); } }
+
 /* =====================================================================
    Экран оператора 112 — режим заполнения карточки (card-01.png … card-09.png).
    Оранжевый — акцент этого экрана: панель служб и «сохранить».
@@ -359,6 +376,12 @@ body { zoom: var(--ui-scale); }
 .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-empty { margin: 18px 0; text-align: center; }
 .chart-note { margin: 8px 0 0; font-size: 11px; color: #6d797f; }
+.chart-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.chart-split-block { min-width: 0; }
+.chart-subhead { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: #3c4a51; }
+@media (max-width: 900px) {
+  .chart-split { grid-template-columns: 1fr; }
+}
 .hbar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .hbar-list li {
   display: grid;
@@ -461,3 +484,11 @@ body { zoom: var(--ui-scale); }
 .data-table tr.just-generated:hover td { background: #ffe9cc; }
 .fresh-filter span { color: #b0561f; }
 .badge-new.old { background: #8e9ca3; }
+
+/* Рекомендации по правилам и отдельный разбор от языковой модели */
+.recommendations-title { margin: 14px 0 0; font-weight: 600; }
+.recommendations-title small { font-weight: 400; }
+.llm-debrief { margin-top: 14px; padding: 10px 14px; border-left: 4px solid #6a5acd; background: #f4f2fc; }
+.llm-debrief.unavailable { border-left-color: #b1babf; background: #f3f5f6; }
+.llm-debrief-title { margin: 0 0 6px; font-weight: 600; }
+.llm-debrief-text { margin: 0 0 6px; white-space: pre-wrap; line-height: 1.45; }

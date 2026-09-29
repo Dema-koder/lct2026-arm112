@@ -244,10 +244,12 @@ public final class ApiModels {
                                     List<@Valid CriterionScore> criteria) {}
 
     /**
-     * Персональный разбор занятия.
+     * Персональный разбор занятия от языковой модели — отдельно от рекомендаций по правилам,
+     * которые приходят в самой оценке.
      *
-     * @param state  READY — готов; PENDING — считается в фоне
-     * @param source LLM или RULES: обучающийся вправе знать, кто писал текст
+     * @param state  READY — текст модели; PENDING — считается в фоне; UNAVAILABLE — модели не было
+     *               или её текст не прошёл проверку, в text — пояснение для человека
+     * @param source LLM, UNAVAILABLE, REJECTED (или RULES у разборов до 28.09)
      */
     public record Debrief(UUID assessmentId, String state, String text, String source,
                           Instant createdAt) {}
@@ -371,6 +373,15 @@ public final class ApiModels {
      */
     public record CalibrationReport(String mode, int assessments,
                                     List<CriterionCalibration> criteria, List<String> skipped) {}
+
+    /** Сохранённая версия коррекции. Старые оценки при её включении не пересчитываются. */
+    public record CalibrationModel(UUID id, String mode, int version, boolean active, int assessments,
+                                   Double maeBefore, Double maeAfter,
+                                   List<CriterionCalibration> criteria, UUID createdBy,
+                                   Instant createdAt, Instant activatedAt, Instant deactivatedAt) {}
+    public record AdminCalibrationState(String mode, CalibrationModel active,
+                                        CalibrationReport candidate, List<CalibrationModel> history) {}
+    public record CalibrationCommand(@NotBlank String mode) {}
 
     public record SessionDetail(SessionSummary session, User trainee, List<IncidentCard> cards,
                                 List<CardDraft> drafts, Assessment assessment) {}

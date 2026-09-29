@@ -173,10 +173,8 @@ public class CardActionsAssessor {
         timing /= n; actions /= n; comm /= n; lang /= n;
         double total = (timing * W_TIME + actions * W_ACTIONS + comm * W_COMM + lang * W_LANG) / 100.0;
 
-        if (timing < 100) recommendations.add("Открывайте карточку сразу при появлении в журнале: норматив 30 секунд считается с момента поступления.");
-        if (actions < 100) recommendations.add("Проверяйте компетенцию службы по классификатору перед отказом; ошибочный отказ исправляется статусом «Принята».");
-        if (comm < 100) recommendations.add("Комментарий к статусу должен содержать основание и результат: кому передано, что сделано.");
-        if (syntaxErrors > 0) recommendations.add("Следите за грамотностью комментариев — их читает следующий диспетчер.");
+        // одна рекомендация на код замечания — воспроизводимо и считается по коду (RecommendationRules)
+        recommendations.addAll(RecommendationRules.build(issues, code -> code));
 
         Assessment assessment = new Assessment(UUID.randomUUID(), sessionId, "COMPLETED", "CARD_ACTIONS",
                 TextUtil.round(total), TextUtil.round(timing), TextUtil.round(actions), TextUtil.round(comm),

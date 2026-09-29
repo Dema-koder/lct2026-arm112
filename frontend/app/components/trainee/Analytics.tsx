@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api, type Assessment, type Rating, type ResultItem } from "../../../lib/api";
-import { getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
+import { getMessage, dateOnly, kindLabels, modeLabels, score } from "../../../lib/format";
 import { avg, BarChart, Donut, HorizontalBars, KpiGrid, Sparkline } from "../analytics/charts";
 
 /**
  * Личная аналитика обучающегося: динамика баллов, слабые критерии,
  * типичные ошибки и рекомендации — только свои данные.
+ * Разбор от языковой модели сюда не выводится: только то, что считается правилами по кодам замечаний.
  */
 export function TraineeAnalytics({ token, refreshKey }: { token: string; refreshKey: number }) {
   const [items, setItems] = useState<ResultItem[]>([]);
@@ -42,11 +43,16 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
 
   const visible = useMemo(() => items.filter((i) => i.visible && i.finalTotal !== null), [items]);
   const pending = items.filter((i) => !i.visible).length;
-  const history = useMemo(
-    () => [...visible].reverse().map((i) => ({ ...i, total: i.finalTotal! })),
-    [visible],
-  );
-  const spark = history.map((h) => h.total);
+  // динамика оценок — только занятия за последний месяц, по дате завершения
+  const historyMonth = useMemo(() => {
+    const from = new Date();
+    from.setMonth(from.getMonth() - 1);
+    return [...visible]
+      .filter((i) => i.completedAt && new Date(i.completedAt) >= from)
+      .sort((a, b) => new Date(a.completedAt!).getTime() - new Date(b.completedAt!).getTime())
+      .map((i) => ({ ...i, total: i.finalTotal! }));
+  }, [visible]);
+  const spark = historyMonth.map((h) => h.total);
   const mean = avg(visible.map((v) => v.finalTotal));
   const last = visible[0]?.finalTotal ?? null;
   const prev = visible[1]?.finalTotal ?? null;
@@ -128,12 +134,39 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
     return { counts, frequent };
   }, [assessments]);
 
-  const recommendations = useMemo(() => {
-    const map: Record<string, number> = {};
+  // Что повторяется — по кодам замечаний, а не по тексту рекомендаций: текст можно
+  // переформулировать, код — нет. Неоповещённая служба считается отдельно по каждой службе.
+  const recurring = useMemo(() => {
+    const map = new Map<string, { message: string; critical: boolean; lessons: number }>();
     for (const a of assessments) {
-      for (const r of a.recommendations) map[r] = (map[r] ?? 0) + 1;
+      const seen = new Set<string>();
+      for (const issue of a.issues) {
+        if (issue.severity === "INFO") continue;
+        const key = issue.code === "SERVICE_MISSING" ? `${issue.code}:${String(issue.expected)}` : issue.code;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const cur = map.get(key) ?? { message: issue.message, critical: issue.severity === "CRITICAL", lessons: 0 };
+        cur.lessons += 1;
+        map.set(key, cur);
+      }
     }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return [...map.entries()].sort((x, y) => y[1].lessons - x[1].lessons || Number(y[1].critical) - Number(x[1].critical)).slice(0, 6);
+  }, [assessments]);
+
+  // Текст рекомендации задан правилом на код замечания, меняется только хвост «(карточек: N)» —
+  // без него одинаковые рекомендации складываются по занятиям.
+  const recommendations = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const a of assessments) {
+      const seen = new Set<string>();
+      for (const r of a.recommendations) {
+        const text = r.replace(/\s*\(карточек: \d+\)$/, "");
+        if (seen.has(text)) continue;
+        seen.add(text);
+        map.set(text, (map.get(text) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()].sort((x, y) => y[1] - x[1]).slice(0, 6);
   }, [assessments]);
 
   if (loading) return <div className="boot-screen">Сбор аналитики…</div>;
@@ -177,29 +210,44 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
             <b>Динамика оценок</b>
             <Sparkline values={spark} width={140} height={32} />
           </header>
-          <BarChart
-            ariaLabel="Итоги по занятиям"
-            scale="score"
-            items={history.slice(-12).map((h, i) => ({
-              key: h.sessionId,
-              label: String(i + 1),
-              value: h.total,
-              color: h.source === "TEACHER" ? "#0784c6" : "#5a6a72",
-              hint: `${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]} · ${Math.round(h.total)} из 100`,
-            }))}
-          />
-          <p className="chart-note">Шкала 0–100. Синий — оценка преподавателя, серый — оценка системы</p>
+          {historyMonth.length === 0
+            ? <p className="muted chart-empty">За последний месяц оценок пока нет</p>
+            : (
+              <BarChart
+                ariaLabel="Итоги по занятиям за последний месяц"
+                scale="score"
+                items={historyMonth.map((h) => {
+                  const when = h.completedAt ? new Date(h.completedAt) : null;
+                  const axis = when
+                    ? new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(when)
+                    : "—";
+                  return {
+                    key: h.sessionId,
+                    label: axis,
+                    value: h.total,
+                    color: h.source === "TEACHER" ? "#0784c6" : "#5a6a72",
+                    hint: `${dateOnly(h.completedAt)} · ${h.lessonTitle} · ${modeLabels[h.mode]} · ${kindLabels[h.lessonKind]} · ${Math.round(h.total)} из 100`,
+                  };
+                })}
+              />
+            )}
+          <p className="chart-note">За последний месяц · шкала 0–100. Синий — преподаватель, серый — система</p>
         </article>
 
         <article className="analytics-card">
-          <header><b>По режимам и видам</b></header>
-          <HorizontalBars items={byMode} scale="score" />
-          {byKind.length > 0 && (
-            <>
-              <p className="chart-note">Средний балл по виду занятия (0–100)</p>
-              <HorizontalBars items={byKind} scale="score" />
-            </>
-          )}
+          <header><b>По режимам</b></header>
+          {byMode.length === 0
+            ? <p className="muted chart-empty">Нет оценённых занятий</p>
+            : <HorizontalBars items={byMode} scale="score" />}
+          <p className="chart-note">Средний балл по режимам занятий (0–100)</p>
+        </article>
+
+        <article className="analytics-card">
+          <header><b>По видам</b></header>
+          {byKind.length === 0
+            ? <p className="muted chart-empty">Нет оценённых занятий</p>
+            : <HorizontalBars items={byKind} scale="score" />}
+          <p className="chart-note">Средний балл по видам занятий (0–100)</p>
         </article>
 
         <article className="analytics-card">
@@ -230,12 +278,24 @@ export function TraineeAnalytics({ token, refreshKey }: { token: string; refresh
         </article>
       </div>
 
+      {recurring.length > 0 && (
+        <article className="analytics-card wide">
+          <header><b>Что повторяется</b><small className="muted">по видам ошибок, в скольких занятиях из {assessments.length}</small></header>
+          <ul className="recommendations">
+            {recurring.map(([key, item]) => (
+              <li key={key}>{item.message}{item.critical && <span className="issue-tag">критично</span>}
+                <small className="muted"> · в {item.lessons} из {assessments.length}</small></li>
+            ))}
+          </ul>
+        </article>
+      )}
+
       {recommendations.length > 0 && (
         <article className="analytics-card wide">
-          <header><b>Рекомендации системы</b></header>
+          <header><b>Рекомендации</b><small className="muted">по правилам, по видам ошибок, в скольких занятиях из {assessments.length}</small></header>
           <ul className="recommendations">
-            {recommendations.map(([text, count]) => (
-              <li key={text}>{text}{count > 1 ? <small className="muted"> · ×{count}</small> : null}</li>
+            {recommendations.map(([text, lessons]) => (
+              <li key={text}>{text}<small className="muted"> · в {lessons} из {assessments.length}</small></li>
             ))}
           </ul>
         </article>
