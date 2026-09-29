@@ -145,7 +145,7 @@ export function LlmDebrief({ token, assessmentId }: { token: string; assessmentI
       {debrief.state === "READY" && (
         <>
           <p className="llm-debrief-text">{debrief.text}</p>
-          <small className="muted">Написано моделью по вашим ошибкам. Если что-то расходится с рекомендациями выше — ориентируйтесь на них и на преподавателя.</small>
+          {debrief.source !== "NO_ISSUES" && <small className="muted">Написано моделью по вашим ошибкам. Если что-то расходится с рекомендациями выше — ориентируйтесь на них и на преподавателя.</small>}
         </>
       )}
       {debrief.state === "UNAVAILABLE" && <p className="muted">{debrief.text ?? "Разбор от модели не составлен."}</p>}

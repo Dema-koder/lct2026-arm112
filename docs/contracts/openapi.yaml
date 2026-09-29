@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: ARM-112 Training Service API
-  version: 0.3.16
+  version: 0.3.17
   description: |
     Контракт учебного сервиса подготовки операторов ДДС: три роли (администратор, преподаватель,
     обучающийся), два режима занятий (заполнение карточки оператора 112 и действия с карточкой ДДС),
@@ -2660,7 +2660,7 @@ components:
         assessmentId: {type: string, format: uuid}
         state: {type: string, enum: [READY, PENDING, UNAVAILABLE]}
         text: {type: string, nullable: true}
-        source: {type: string, nullable: true, description: "LLM, UNAVAILABLE, REJECTED; RULES — у разборов до 0.3.16"}
+        source: {type: string, nullable: true, description: "LLM, NO_ISSUES (ошибок нет, state READY), UNAVAILABLE, REJECTED; RULES — у разборов до 0.3.16"}
         createdAt: {type: string, format: date-time, nullable: true}
     LessonReport:
       type: object

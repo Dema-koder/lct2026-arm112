@@ -48,6 +48,7 @@ public class DebriefHandler implements JobHandler {
     static final String SOURCE_LLM = "LLM";
     static final String SOURCE_UNAVAILABLE = "UNAVAILABLE";
     static final String SOURCE_REJECTED = "REJECTED";
+    static final String SOURCE_NO_ISSUES = "NO_ISSUES";
 
     private final AssessmentRepository assessments;
     private final DebriefRepository debriefs;
@@ -82,9 +83,14 @@ public class DebriefHandler implements JobHandler {
         Assessment ai = row.ai();
 
         String structured = describe(ai);
-        String text = writer.write(facts(ai), structured);
+        List<String> facts = facts(ai);
+        String text = facts.isEmpty() ? null : writer.write(facts, structured);
         String source = SOURCE_LLM;
-        if (text == null) {
+        if (facts.isEmpty()) {
+            // без ошибок разбирать нечего; раньше это выглядело как «модель не подключена»
+            text = "Ошибок в занятии нет — отдельный разбор не нужен.";
+            source = SOURCE_NO_ISSUES;
+        } else if (text == null) {
             text = "Языковая модель не подключена — разбор не составлен.";
             source = SOURCE_UNAVAILABLE;
         } else {
