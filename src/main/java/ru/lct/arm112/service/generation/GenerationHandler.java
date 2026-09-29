@@ -68,31 +68,39 @@ public class GenerationHandler implements JobHandler {
 
     /** Генерация с проверкой; из очереди и из синхронного вызова идёт одна и та же. */
     public Report run(Request request) {
-        List<ScenarioUpsert> candidates = generator.generate(request.category(), request.count(),
-                request.difficulty());
-
         Map<String, Integer> rejections = new LinkedHashMap<>();
         Map<String, Integer> warnings = new LinkedHashMap<>();
         List<String> saved = new ArrayList<>();
-
-        for (ScenarioUpsert candidate : candidates) {
-            Verdict verdict = validator.validate(candidate);
-            verdict.warnings().forEach(v -> warnings.merge(v.code(), 1, Integer::sum));
-            if (!verdict.valid()) {
-                for (Violation violation : verdict.fatal()) {
-                    rejections.merge(violation.code(), 1, Integer::sum);
+        int produced = 0;
+        // Добор до заказанного: валидатор отсеивает часть кандидатов, и без добора
+        // «заказал 3 — получил 2». Попыток не больше двух на заказанный сценарий,
+        // чтобы при системно негодном выводе модели задача не крутилась бесконечно.
+        int budget = request.count() * 2;
+        while (saved.size() < request.count() && produced < budget) {
+            int need = Math.min(request.count() - saved.size(), budget - produced);
+            List<ScenarioUpsert> candidates = generator.generate(request.category(), need, request.difficulty());
+            if (candidates.isEmpty()) break;
+            produced += candidates.size();
+            for (ScenarioUpsert candidate : candidates) {
+                Verdict verdict = validator.validate(candidate);
+                verdict.warnings().forEach(v -> warnings.merge(v.code(), 1, Integer::sum));
+                if (!verdict.valid()) {
+                    for (Violation violation : verdict.fatal()) {
+                        rejections.merge(violation.code(), 1, Integer::sum);
+                    }
+                    continue;
                 }
-                continue;
+                Scenario created = scenarios.create(candidate, request.actor());
+                saved.add(created.id());
+                if (saved.size() >= request.count()) break;
             }
-            Scenario created = scenarios.create(candidate, request.actor());
-            saved.add(created.id());
         }
 
-        Report report = new Report(generator.name(), request.count(), candidates.size(),
-                saved.size(), candidates.size() - saved.size(), rejections, warnings, saved);
+        Report report = new Report(generator.name(), request.count(), produced,
+                saved.size(), produced - saved.size(), rejections, warnings, saved);
         log.info("Генерация «{}»: запрошено {}, выдано {}, принято {}, отсеяно {} — причины {}",
-                request.category(), request.count(), candidates.size(), saved.size(),
-                candidates.size() - saved.size(), rejections);
+                request.category(), request.count(), produced, saved.size(),
+                produced - saved.size(), rejections);
         return report;
     }
 }

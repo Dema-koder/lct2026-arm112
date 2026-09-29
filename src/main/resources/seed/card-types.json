@@ -1,257 +1,257 @@
 [
- {
-  "id": "t101",
-  "label": "101",
-  "frequent": true
- },
- {
-  "id": "t102",
-  "label": "102",
-  "frequent": true
- },
- {
-  "id": "t103",
-  "label": "103",
-  "frequent": true
- },
- {
-  "id": "t104",
-  "label": "104",
-  "frequent": true
- },
- {
-  "id": "accident_utility",
-  "label": "Аварии и происшествия в городском хозяйстве",
-  "frequent": false
- },
- {
-  "id": "accident_transport",
-  "label": "Аварии и происшествия на транспортных объектах",
-  "frequent": false
- },
- {
-  "id": "accident_hydro",
-  "label": "Аварии на гидротехнических сооружениях",
-  "frequent": false
- },
- {
-  "id": "accident_hazard",
-  "label": "Аварии на опасных и производственных объектах",
-  "frequent": false
- },
- {
-  "id": "gratitude",
-  "label": "Благодарность службам",
-  "frequent": false
- },
- {
-  "id": "uav",
-  "label": "БПЛА",
-  "frequent": false
- },
- {
-  "id": "explosion",
-  "label": "Взрыв",
-  "frequent": false
- },
- {
-  "id": "internal_call",
-  "label": "Внутренний звонок (звонок от работников)",
-  "frequent": false
- },
- {
-  "id": "foreign",
-  "label": "Вызов на иностранном языке",
-  "frequent": true
- },
- {
-  "id": "repeat_call",
-  "label": "Дополнительный звонок от заявителя",
-  "frequent": false
- },
- {
-  "id": "road_obstacle",
-  "label": "Дорожные помехи",
-  "frequent": false
- },
- {
-  "id": "dtp",
-  "label": "ДТП",
-  "frequent": true
- },
- {
-  "id": "complaint",
-  "label": "Жалоба на действие или бездействие служб",
-  "frequent": false
- },
- {
-  "id": "animals",
-  "label": "Животные",
-  "frequent": false
- },
- {
-  "id": "consult",
-  "label": "Консультация",
-  "frequent": true
- },
- {
-  "id": "non_target",
-  "label": "Нецелевой вызов",
-  "frequent": false
- },
- {
-  "id": "collapse",
-  "label": "Обрушение",
-  "frequent": false
- },
- {
-  "id": "feedback",
-  "label": "Отзыв о работе 112 Москва",
-  "frequent": false
- },
- {
-  "id": "cancel",
-  "label": "Отмена вызова",
-  "frequent": true
- },
- {
-  "id": "wrong_number",
-  "label": "Ошибочно набран номер",
-  "frequent": true
- },
- {
-  "id": "shift_handover",
-  "label": "Передача дежурства",
-  "frequent": true
- },
- {
-  "id": "help_services",
-  "label": "Помощь службам",
-  "frequent": false
- },
- {
-  "id": "nature",
-  "label": "Природная стихия",
-  "frequent": false
- },
- {
-  "id": "other",
-  "label": "Прочие происшествия",
-  "frequent": false
- },
- {
-  "id": "radiation",
-  "label": "Радиация",
-  "frequent": false
- },
- {
-  "id": "thermometer",
-  "label": "Разбитый градусник",
-  "frequent": false
- },
- {
-  "id": "child_danger",
-  "label": "Ребенок в опасности",
-  "frequent": false
- },
- {
-  "id": "gathering",
-  "label": "Сбор",
-  "frequent": false
- },
- {
-  "id": "water_accum",
-  "label": "Скопление воды",
-  "frequent": false
- },
- {
-  "id": "death",
-  "label": "Смертельный исход",
-  "frequent": false
- },
- {
-  "id": "social_help",
-  "label": "Социальная помощь",
-  "frequent": false
- },
- {
-  "id": "info_101",
-  "label": "Справка 101",
-  "frequent": true
- },
- {
-  "id": "info_102",
-  "label": "Справка 102",
-  "frequent": false
- },
- {
-  "id": "info_103",
-  "label": "Справка 103",
-  "frequent": false
- },
- {
-  "id": "info_104",
-  "label": "Справка 104",
-  "frequent": false
- },
- {
-  "id": "info_gibdd",
-  "label": "Справка ГИБДД",
-  "frequent": false
- },
- {
-  "id": "info_gorhoz",
-  "label": "Справка Городское хозяйство",
-  "frequent": false
- },
- {
-  "id": "info_mchs",
-  "label": "Справка МЧС",
-  "frequent": false
- },
- {
-  "id": "test_call",
-  "label": "Тестовый вызов",
-  "frequent": true
- },
- {
-  "id": "tech_failure",
-  "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
-  "frequent": false
- },
- {
-  "id": "training",
-  "label": "Тренировка",
-  "frequent": false
- },
- {
-  "id": "emergency_notice",
-  "label": "Уведомление о ЧС",
-  "frequent": false
- },
- {
-  "id": "terror_threat",
-  "label": "Угроза взрыва/террористического акта",
-  "frequent": false
- },
- {
-  "id": "hazmat_threat",
-  "label": "Угроза выброса опасных веществ и радиации",
-  "frequent": false
- },
- {
-  "id": "collapse_threat",
-  "label": "Угроза обрушения",
-  "frequent": false
- },
- {
-  "id": "person_danger",
-  "label": "Человек в опасности",
-  "frequent": true
- },
- {
-  "id": "eco",
-  "label": "Экологическое происшествие",
-  "frequent": false
- }
+  {
+    "id": "t101",
+    "label": "101 — Пожар",
+    "frequent": true
+  },
+  {
+    "id": "t102",
+    "label": "102 — Правонарушение, полиция",
+    "frequent": true
+  },
+  {
+    "id": "t103",
+    "label": "103 — Медицинская помощь",
+    "frequent": true
+  },
+  {
+    "id": "t104",
+    "label": "104 — Газ",
+    "frequent": true
+  },
+  {
+    "id": "accident_utility",
+    "label": "Аварии и происшествия в городском хозяйстве",
+    "frequent": false
+  },
+  {
+    "id": "accident_transport",
+    "label": "Аварии и происшествия на транспортных объектах",
+    "frequent": false
+  },
+  {
+    "id": "accident_hydro",
+    "label": "Аварии на гидротехнических сооружениях",
+    "frequent": false
+  },
+  {
+    "id": "accident_hazard",
+    "label": "Аварии на опасных и производственных объектах",
+    "frequent": false
+  },
+  {
+    "id": "gratitude",
+    "label": "Благодарность службам",
+    "frequent": false
+  },
+  {
+    "id": "uav",
+    "label": "БПЛА",
+    "frequent": false
+  },
+  {
+    "id": "explosion",
+    "label": "Взрыв",
+    "frequent": false
+  },
+  {
+    "id": "internal_call",
+    "label": "Внутренний звонок (звонок от работников)",
+    "frequent": false
+  },
+  {
+    "id": "foreign",
+    "label": "Вызов на иностранном языке",
+    "frequent": true
+  },
+  {
+    "id": "repeat_call",
+    "label": "Дополнительный звонок от заявителя",
+    "frequent": false
+  },
+  {
+    "id": "road_obstacle",
+    "label": "Дорожные помехи",
+    "frequent": false
+  },
+  {
+    "id": "dtp",
+    "label": "ДТП",
+    "frequent": true
+  },
+  {
+    "id": "complaint",
+    "label": "Жалоба на действие или бездействие служб",
+    "frequent": false
+  },
+  {
+    "id": "animals",
+    "label": "Животные",
+    "frequent": false
+  },
+  {
+    "id": "consult",
+    "label": "Консультация",
+    "frequent": true
+  },
+  {
+    "id": "non_target",
+    "label": "Нецелевой вызов",
+    "frequent": false
+  },
+  {
+    "id": "collapse",
+    "label": "Обрушение",
+    "frequent": false
+  },
+  {
+    "id": "feedback",
+    "label": "Отзыв о работе 112 Москва",
+    "frequent": false
+  },
+  {
+    "id": "cancel",
+    "label": "Отмена вызова",
+    "frequent": true
+  },
+  {
+    "id": "wrong_number",
+    "label": "Ошибочно набран номер",
+    "frequent": true
+  },
+  {
+    "id": "shift_handover",
+    "label": "Передача дежурства",
+    "frequent": true
+  },
+  {
+    "id": "help_services",
+    "label": "Помощь службам",
+    "frequent": false
+  },
+  {
+    "id": "nature",
+    "label": "Природная стихия",
+    "frequent": false
+  },
+  {
+    "id": "other",
+    "label": "Прочие происшествия",
+    "frequent": false
+  },
+  {
+    "id": "radiation",
+    "label": "Радиация",
+    "frequent": false
+  },
+  {
+    "id": "thermometer",
+    "label": "Разбитый градусник",
+    "frequent": false
+  },
+  {
+    "id": "child_danger",
+    "label": "Ребенок в опасности",
+    "frequent": false
+  },
+  {
+    "id": "gathering",
+    "label": "Сбор",
+    "frequent": false
+  },
+  {
+    "id": "water_accum",
+    "label": "Скопление воды",
+    "frequent": false
+  },
+  {
+    "id": "death",
+    "label": "Смертельный исход",
+    "frequent": false
+  },
+  {
+    "id": "social_help",
+    "label": "Социальная помощь",
+    "frequent": false
+  },
+  {
+    "id": "info_101",
+    "label": "Справка 101",
+    "frequent": true
+  },
+  {
+    "id": "info_102",
+    "label": "Справка 102",
+    "frequent": false
+  },
+  {
+    "id": "info_103",
+    "label": "Справка 103",
+    "frequent": false
+  },
+  {
+    "id": "info_104",
+    "label": "Справка 104",
+    "frequent": false
+  },
+  {
+    "id": "info_gibdd",
+    "label": "Справка ГИБДД",
+    "frequent": false
+  },
+  {
+    "id": "info_gorhoz",
+    "label": "Справка Городское хозяйство",
+    "frequent": false
+  },
+  {
+    "id": "info_mchs",
+    "label": "Справка МЧС",
+    "frequent": false
+  },
+  {
+    "id": "test_call",
+    "label": "Тестовый вызов",
+    "frequent": true
+  },
+  {
+    "id": "tech_failure",
+    "label": "Технический сбой (сбой в работе с оборудованием 112 Москва)",
+    "frequent": false
+  },
+  {
+    "id": "training",
+    "label": "Тренировка",
+    "frequent": false
+  },
+  {
+    "id": "emergency_notice",
+    "label": "Уведомление о ЧС",
+    "frequent": false
+  },
+  {
+    "id": "terror_threat",
+    "label": "Угроза взрыва/террористического акта",
+    "frequent": false
+  },
+  {
+    "id": "hazmat_threat",
+    "label": "Угроза выброса опасных веществ и радиации",
+    "frequent": false
+  },
+  {
+    "id": "collapse_threat",
+    "label": "Угроза обрушения",
+    "frequent": false
+  },
+  {
+    "id": "person_danger",
+    "label": "Человек в опасности",
+    "frequent": true
+  },
+  {
+    "id": "eco",
+    "label": "Экологическое происшествие",
+    "frequent": false
+  }
 ]

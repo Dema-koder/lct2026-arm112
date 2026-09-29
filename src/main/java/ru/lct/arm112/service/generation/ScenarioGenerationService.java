@@ -34,10 +34,13 @@ public class ScenarioGenerationService {
     private final ScenarioService scenarios;
     private final ObjectMapper objectMapper;
     private final ScenarioGenerator generator;
+    private final ru.lct.arm112.service.ReferenceDataService references;
 
     public ScenarioGenerationService(JobRepository jobs, GenerationHandler handler, ScenarioService scenarios,
-                                     ObjectMapper objectMapper, ScenarioGenerator generator) {
+                                     ObjectMapper objectMapper, ScenarioGenerator generator,
+                                     ru.lct.arm112.service.ReferenceDataService references) {
         this.generator = generator;
+        this.references = references;
         this.jobs = jobs;
         this.handler = handler;
         this.scenarios = scenarios;
@@ -50,6 +53,7 @@ public class ScenarioGenerationService {
     }
 
     public GenerationJob enqueue(GenerateRequest request, UUID actor) {
+        requireKnownCategory(request.category());
         GenerationHandler.Request payload = new GenerationHandler.Request(
                 request.category(), request.count(), request.difficulty(), actor);
         UUID id = jobs.enqueue(GenerationHandler.TYPE, objectMapper.writeValueAsString(payload), actor, ATTEMPTS);
@@ -74,8 +78,22 @@ public class ScenarioGenerationService {
      * этот вызов раньше записывал в библиотеку без проверки, сюда больше не попадает.
      */
     public List<Scenario> generateNow(GenerateRequest request, UUID actor) {
+        requireKnownCategory(request.category());
         GenerationHandler.Report report = handler.run(new GenerationHandler.Request(
                 request.category(), request.count(), request.difficulty(), actor));
         return report.savedIds().stream().map(scenarios::require).toList();
+    }
+
+    /**
+     * Категория — позиция «Что случилось?», по которой есть типы в классификаторе.
+     * Вкладка, открытая до перехода на разделы ЕКП, присылала FIRE: задача молча
+     * завершалась с нулём сценариев, и было непонятно почему.
+     */
+    private void requireKnownCategory(String category) {
+        boolean known = references.incidentTypes().stream().anyMatch(t -> t.category().equals(category));
+        if (!known) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR",
+                    "Неизвестная категория «" + category + "»: обновите страницу");
+        }
     }
 }

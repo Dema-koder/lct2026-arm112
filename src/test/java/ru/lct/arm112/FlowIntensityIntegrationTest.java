@@ -78,13 +78,15 @@ class FlowIntensityIntegrationTest extends ApiTestSupport {
 
         JsonNode types = json(get("/api/v1/references/card-types", token));
         assertThat(types.size()).isEqualTo(51);
-        assertThat(types.toString()).contains("\"101\"", "ДТП", "Угроза взрыва/террористического акта");
+        assertThat(types.toString()).contains("101 — Пожар", "ДТП", "Угроза взрыва/террористического акта");
+        // позиция службы ищется и по смыслу: раньше «пожар» ничего не находил, подпись была «101»
+        assertThat(json(get("/api/v1/references/card-types?query=пожар", token)).toString()).contains("t101");
         JsonNode found = json(get("/api/v1/references/card-types?query=взрыв", token));
         assertThat(found.size()).isEqualTo(2);
         assertThat(found.toString()).contains("Взрыв", "Угроза взрыва/террористического акта");
 
         JsonNode tree = json(get("/api/v1/references/survey-trees/t101", token));
-        assertThat(tree.get("label").asText()).isEqualTo("101");
+        assertThat(tree.get("label").asText()).isEqualTo("101 — Пожар");
         assertThat(tree.get("questions").toString()).contains("Признак пожара (улица)", "Мачта освещения", "Проведена ли газификация");
         assertThat(get("/api/v1/references/survey-trees/t999", token).statusCode()).isEqualTo(404);
 
