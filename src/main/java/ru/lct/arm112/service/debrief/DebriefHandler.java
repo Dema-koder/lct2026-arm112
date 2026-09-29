@@ -82,7 +82,7 @@ public class DebriefHandler implements JobHandler {
         Assessment ai = row.ai();
 
         String structured = describe(ai);
-        String text = writer.write(structured, points(ai));
+        String text = writer.write(facts(ai), structured);
         String source = SOURCE_LLM;
         if (text == null) {
             text = "Языковая модель не подключена — разбор не составлен.";
@@ -166,8 +166,55 @@ public class DebriefHandler implements JobHandler {
         return objectMapper.writeValueAsString(summary);
     }
 
-    /** Сколько пунктов разбора: по числу рекомендаций по правилам, то есть видов ошибок. */
-    private static int points(Assessment ai) {
-        return ai.recommendations() == null ? 1 : Math.max(1, ai.recommendations().size());
+    /**
+     * Факты для пунктов разбора — по одному на вид ошибки, критичные первыми, не больше трёх.
+     *
+     * <p>Формулирует их код, а не модель: «вы записали «X», правильно — «Y»» нельзя
+     * перепутать местами, если писала его не модель.
+     */
+    public List<String> facts(Assessment ai) {
+        List<AssessmentIssue> all = ai.issues() == null ? List.of() : ai.issues();
+        List<AssessmentIssue> ordered = new ArrayList<>(all);
+        ordered.sort(java.util.Comparator.comparingInt(i -> switch (i.severity() == null ? "" : i.severity()) {
+            case "CRITICAL" -> 0;
+            case "WARNING" -> 1;
+            default -> 2;
+        }));
+        List<String> facts = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (AssessmentIssue issue : ordered) {
+            if (facts.size() >= 3) break;
+            if (!seen.add(issue.code())) continue;
+            if ("SERVICE_MISSING".equals(issue.code())) {
+                List<String> names = all.stream().filter(i -> "SERVICE_MISSING".equals(i.code()))
+                        .map(i -> i.expected() instanceof String c ? references.service(c).label() : null)
+                        .filter(java.util.Objects::nonNull).distinct().toList();
+                String listed = String.join(", ", names.subList(0, Math.min(5, names.size())))
+                        + (names.size() > 5 ? " и другие" : "");
+                facts.add("Не оповещены службы: " + listed + ".");
+            } else if ("LANGUAGE".equals(issue.code())) {
+                facts.add("Проверка текста: " + trimDot(issue.message()) + ".");
+            } else {
+                StringBuilder fact = new StringBuilder(trimDot(issue.message()));
+                String actual = value(issue.actual());
+                String expected = value(issue.expected());
+                if (actual != null) fact.append(": вы записали «").append(actual).append("»");
+                if (expected != null) fact.append(actual != null ? ", правильно — «" : ": правильно — «").append(expected).append("»");
+                facts.add(fact.append('.').toString());
+            }
+        }
+        return facts;
+    }
+
+    private static String value(Object value) {
+        if (value == null) return null;
+        String text = value instanceof java.util.Collection<?> c
+                ? String.join(", ", c.stream().map(String::valueOf).toList()) : String.valueOf(value);
+        return text.isBlank() ? null : text;
+    }
+
+    private static String trimDot(String text) {
+        String t = text == null ? "" : text.trim();
+        return t.endsWith(".") ? t.substring(0, t.length() - 1) : t;
     }
 }

@@ -26,6 +26,28 @@ class DebriefTest {
     @Autowired
     DebriefRepository debriefs;
 
+    @Autowired
+    ru.lct.arm112.service.debrief.DebriefHandler handler;
+
+    /**
+     * Факт формулирует код, а не модель: «вы записали» — ответ обучающегося, «правильно» — эталон.
+     * Модель путала их местами: «вы указали проезд Шокальского вместо указанной улицы».
+     */
+    @Test
+    void factsKeepExpectedAndActualApart() {
+        var issues = java.util.List.of(
+                new ru.lct.arm112.api.ApiModels.AssessmentIssue("ADDRESS_HOUSE_MISMATCH", "WARNING",
+                        "Номер дома не совпадает с уточнённым адресом", null, "67", "вс"),
+                new ru.lct.arm112.api.ApiModels.AssessmentIssue("ADDRESS_STREET_WRONG", "CRITICAL",
+                        "Улица не совпадает с уточнённым адресом", null, "проезд Шокальского", "всвс"));
+        var ai = new ru.lct.arm112.api.ApiModels.Assessment(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(),
+                "COMPLETED", "CARD_FILL", 40.0, 100.0, null, null, 100.0, 20.0, 100.0, 100.0, 0,
+                issues, java.util.List.of(), "AI", 40.0, null, null, null, java.util.List.of(), java.util.List.of());
+        assertThat(handler.facts(ai)).containsExactly(
+                "Улица не совпадает с уточнённым адресом: вы записали «всвс», правильно — «проезд Шокальского».",
+                "Номер дома не совпадает с уточнённым адресом: вы записали «вс», правильно — «67».");
+    }
+
     @Test
     void normalRussianTextPasses() {
         RussianTextGuard.Check check = guard.check(

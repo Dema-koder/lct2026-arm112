@@ -30,21 +30,30 @@ public class DebriefWriter {
     private static final Logger log = LoggerFactory.getLogger(DebriefWriter.class);
 
     /**
-     * Форма разбора задана грамматикой, а не просьбой в промпте: ровно столько пунктов,
-     * сколько видов ошибок (до трёх), в каждом два предложения — что не так и к чему это ведёт.
-     * Только кириллица, цифры и пунктуация.
+     * Форма разбора задана грамматикой: пункт на каждый факт, первое предложение пункта —
+     * сам факт, вписанный в грамматику дословно, второе пишет модель.
      *
-     * <p>Грамматика строк без ограничения числа рвала текст посреди слова и позволяла модели
-     * «добивать» объём повторами; грамматика с необязательным вторым предложением давала
-     * голые заголовки («Не указан номер дома.») — пересказ рекомендаций по правилам.
+     * <p>Когда факты подавались полями «как_надо» / «как_сделано», модель путала их местами
+     * («вы указали проезд Шокальского вместо указанной улицы» — а Шокальского и был эталон).
+     * Теперь сформулировать факт неверно нельзя: его текст модели не принадлежит.
+     * Предложение модели — до 260 символов: на 180 оно обрывалось («за с?»).
      */
-    static String shape(int points) {
-        return """
-                root ::= point{%d}
-                point ::= [1-3] ". " sentence " " sentence "\n"
-                sentence ::= schar{10,180} [.!?]
-                schar ::= [а-яА-ЯёЁ0-9 ,:;()«»/-]
-                """.formatted(points);
+    static String shape(List<String> facts) {
+        StringBuilder g = new StringBuilder("root ::=");
+        for (int i = 0; i < facts.size(); i++) g.append(" p").append(i + 1);
+        g.append('\n');
+        for (int i = 0; i < facts.size(); i++) {
+            g.append('p').append(i + 1).append(" ::= \"").append(i + 1).append(". ")
+                    .append(literal(facts.get(i))).append(" \" sentence \"\\n\"\n");
+        }
+        g.append("sentence ::= schar{15,260} [.!?]\n");
+        g.append("schar ::= [а-яА-ЯёЁ0-9 ,:;()«»/-]\n");
+        return g.toString();
+    }
+
+    /** Строка для литерала GBNF: без переводов строки, с экранированными кавычками. */
+    private static String literal(String text) {
+        return text.replace("\n", " ").replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private final String baseUrl;
@@ -68,42 +77,37 @@ public class DebriefWriter {
         }
     }
 
-    /** @return текст разбора либо null, если модель недоступна или не ответила */
-    public String write(String structuredIssues) {
-        return write(structuredIssues, 3);
-    }
-
     /**
-     * @param points сколько пунктов есть о чём написать: лимит токенов от него зависит.
-     *               При двух ошибках и запасе в 450 токенов модель «добивала объём» повторами
-     *               и служебными репликами вроде «последний пункт был сокращён».
+     * @param facts          первые предложения пунктов — факты по ошибкам, собранные кодом
+     * @param structuredIssues контекст: потери по критериям и рекомендации по правилам
+     * @return текст разбора либо null, если модель недоступна или не ответила
      */
-    public String write(String structuredIssues, int points) {
-        if (!available()) return null;
-        int n = Math.max(1, Math.min(3, points));
+    public String write(List<String> facts, String structuredIssues) {
+        if (!available() || facts.isEmpty()) return null;
+        StringBuilder listed = new StringBuilder();
+        for (int i = 0; i < facts.size(); i++) listed.append(i + 1).append(". ").append(facts.get(i)).append('\n');
         String prompt = """
-                Ты наставник оператора службы 112. Ниже структура замечаний по занятию обучающегося
-                и рекомендации, которые он уже получил.
-                Напиши разбор: ровно %d пункт(а) — по одному на каждую ошибку, начиная с самой важной.
-                В каждом пункте два предложения. Первое — что именно сделано не так, с данными
-                из замечаний: какая улица, какой тип, какие службы. Второе — к чему это приведёт
-                в реальной работе службы и как это отработать. Рекомендации не пересказывай дословно.
+                Ты наставник оператора службы 112. Ниже пункты разбора занятия обучающегося.
+                Первое предложение каждого пункта уже написано по данным оценки и не меняется.
+                Для каждого пункта допиши одно предложение: к чему эта ошибка приведёт в реальной
+                работе службы и как её отработать. Факт не повторяй и не переформулируй.
 
-                Пиши только по этим данным, ничего не добавляй от себя. Не придумывай названия улиц,
-                номера домов, слова с ошибками и другие примеры, которых нет в данных: если конкретики
-                нет, пиши без примера.
+                Не придумывай названия улиц, номера домов, слова и другие данные, которых нет ниже.
                 Обращайся к обучающемуся на «вы». По-русски.
 
+                Пункты:
                 %s
-                """.formatted(n, structuredIssues);
+                Контекст оценки:
+                %s
+                """.formatted(listed, structuredIssues);
         try {
             String body = objectMapper.writeValueAsString(Map.of(
                     "messages", List.of(Map.of("role", "user", "content", prompt)),
                     "temperature", 0.4,
                     // без штрафа модель зацикливалась на «повторите проверку…»
                     "repeat_penalty", 1.15,
-                    "max_tokens", 60 + 170 * n,
-                    "grammar", shape(n)));
+                    "max_tokens", 80 + 160 * facts.size(),
+                    "grammar", shape(facts)));
             HttpResponse<String> response = client.send(
                     HttpRequest.newBuilder(URI.create(baseUrl + "/v1/chat/completions"))
                             .timeout(Duration.ofMinutes(10))
