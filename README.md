@@ -66,6 +66,8 @@ docker compose up --build
 
 Подробные варианты запуска, локальная разработка и диагностика описаны в [`docs/POSTGRES_DOCKER.md`](docs/POSTGRES_DOCKER.md).
 
+Языковая модель (генерация сценариев и персональный разбор занятия) необязательна и в обычный запуск не входит: веса около 4,7 ГБ скачиваются отдельно, система запускается с `compose.llm.yaml`. Пошагово — в [`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md), раздел 10.5.
+
 Интерактивная документация Swagger UI:
 
 ```text

@@ -45,8 +45,9 @@ arm112:
     trainee-password: ${ARM112_SEED_TRAINEE_PASSWORD:trainee}
     analytics-demo-enabled: ${ARM112_SEED_ANALYTICS_DEMO_ENABLED:true}
   llm:
-    # Пусто — генерация работает на перестановке билетов. Сайдкар подключается
-    # через compose.llm.yaml, см. docs/assessment/LLM_EXPERIMENT.md
+    # Пусто — модель отключена: генерации нет (перестановка билетов — только
+    # под флагом generation.recombination-fallback), разбор помечается UNAVAILABLE.
+    # Сайдкар подключается через compose.llm.yaml, см. docs/PROJECT_DOCUMENTATION.md, раздел 10.5
     url: ${ARM112_LLM_URL:}
   jobs:
     poll-ms: ${ARM112_JOBS_POLL_MS:1000}
