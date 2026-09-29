@@ -41,6 +41,18 @@ class LanguageCheckerTest {
         assertThat(result.findings()).isEmpty();
     }
 
+    /**
+     * Фамилия, переписанная из вводной, — не опечатка. Раньше словарь предлагал
+     * «Легкодушев — возможно, Легкодухов», а «ул. Беломорская дом 10» считал ошибкой согласования.
+     */
+    @Test
+    void namesAndTelegraphicAddressAreNotErrors() {
+        LanguageChecker.Result result = checker.check(
+                "Легкодушев Дмитрий Константинович, головокружение, теряет сознание. "
+                        + "Адрес: ул. Беломорская дом 10 корп. 2, вызывает отец Тутуянов.");
+        assertThat(result.findings()).isEmpty();
+    }
+
     /** Ключевой случай: похожее написание известной улицы ловится, хотя словарю слово незнакомо. */
     @Test
     void findsTypoInKnownStreet() {

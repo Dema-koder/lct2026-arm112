@@ -129,6 +129,44 @@ public class LanguageChecker {
         }
     }
 
+    /** ФИО подряд: две-три заглавные словоформы — «Легкодушев Дмитрий Константинович». */
+    private static final Pattern FULL_NAME = Pattern.compile("[А-ЯЁ][а-яё-]{2,}(?:\\s+[А-ЯЁ][а-яё-]{2,}){1,2}");
+
+    /**
+     * Фамилии и имена из сценариев: заявителей и тех, о ком они сообщают. Словарь
+     * их не знает и предлагал «Легкодушев — возможно, Легкодухов»: обучающийся
+     * получал штраф за верно переписанную фамилию.
+     */
+    public void learnNames(Collection<String> texts) {
+        for (String text : texts) {
+            if (text == null) continue;
+            Matcher m = FULL_NAME.matcher(text);
+            while (m.find()) {
+                for (String token : m.group().split("\\s+")) {
+                    allowList.add(token.toLowerCase(Locale.ROOT).replace('ё', 'е'));
+                }
+            }
+        }
+    }
+
+    /**
+     * Похоже на имя собственное: слово с заглавной внутри предложения или часть ФИО.
+     * Орфографический словарь такие слова не знает, а ошибкой они почти никогда не являются.
+     */
+    private static boolean properName(String text, int from, int to) {
+        String word = text.substring(from, to);
+        if (word.isEmpty() || !Character.isUpperCase(word.charAt(0))) return false;
+        if (word.length() > 1 && word.substring(1).chars().anyMatch(Character::isUpperCase)) return false;
+        int i = from - 1;
+        while (i >= 0 && Character.isWhitespace(text.charAt(i))) i--;
+        boolean sentenceStart = i < 0 || ".!?\n".indexOf(text.charAt(i)) >= 0;
+        if (!sentenceStart) return true;
+        // в начале предложения заглавная обязательна; именем считаем, только если дальше идёт ещё одно
+        int j = to;
+        while (j < text.length() && Character.isWhitespace(text.charAt(j))) j++;
+        return j < text.length() && Character.isUpperCase(text.charAt(j));
+    }
+
     /** Исходное написание токена в названии: ищем его в имени без учёта регистра. */
     private static String original(String name, String normalizedToken) {
         for (String part : name.split("[\s,.]+")) {
@@ -218,6 +256,11 @@ public class LanguageChecker {
                 String word = text.substring(match.getFromPos(), match.getToPos());
                 if (allowList.contains(word.toLowerCase(Locale.ROOT).replace('ё', 'е'))) continue;
                 if (covered.contains(word)) continue;
+                boolean spelling = "TYPOS".equals(match.getRule().getCategory().getId().toString());
+                if (spelling && properName(text, match.getFromPos(), match.getToPos())) continue;
+                // «Беломорская дом 10» — телеграфная запись адреса, а не ошибка согласования:
+                // находка, задевающая известное название, не считается
+                if (!spelling && touchesKnownWord(word)) continue;
                 String replacement = match.getSuggestedReplacements().isEmpty() ? null
                         : match.getSuggestedReplacements().get(0);
                 findings.add(replacement == null
@@ -235,6 +278,13 @@ public class LanguageChecker {
         } finally {
             if (languageTool != null) pool.offer(languageTool);
         }
+    }
+
+    private boolean touchesKnownWord(String fragment) {
+        for (String token : fragment.toLowerCase(Locale.ROOT).replace('ё', 'е').split("[^а-яa-z0-9-]+")) {
+            if (token.length() >= 4 && allowList.contains(token)) return true;
+        }
+        return false;
     }
 
     /** Сообщения библиотеки бывают в абзац; обучающемуся нужна первая фраза. */

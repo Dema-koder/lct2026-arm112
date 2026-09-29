@@ -89,7 +89,9 @@ public class DebriefWriter {
                 из замечаний: какая улица, какой тип, какие службы. Второе — к чему это приведёт
                 в реальной работе службы и как это отработать. Рекомендации не пересказывай дословно.
 
-                Пиши только по этим данным, ничего не добавляй от себя.
+                Пиши только по этим данным, ничего не добавляй от себя. Не придумывай названия улиц,
+                номера домов, слова с ошибками и другие примеры, которых нет в данных: если конкретики
+                нет, пиши без примера.
                 Обращайся к обучающемуся на «вы». По-русски.
 
                 %s
@@ -114,7 +116,9 @@ public class DebriefWriter {
             }
             JsonNode json = objectMapper.readTree(response.body());
             String text = json.path("choices").path(0).path("message").path("content").asText("").trim();
-            return text.isBlank() ? null : completeSentences(withoutRepeats(text));
+            if (text.isBlank()) return null;
+            // пустой результат после отсева — не «модель недоступна», а текст, который нельзя показать
+            return grounded(completeSentences(withoutRepeats(text)), prompt);
         } catch (Exception exception) {
             log.warn("Разбор от модели не получен: {}", exception.getMessage());
             return null;
@@ -151,5 +155,36 @@ public class DebriefWriter {
             if (!listMarker) return text.substring(0, i + 1).trim();
         }
         return text;
+    }
+
+    private static final java.util.regex.Pattern NUMBER = java.util.regex.Pattern.compile("\\d+[а-яА-Я]?");
+    private static final java.util.regex.Pattern QUOTED = java.util.regex.Pattern.compile("«([^»]{2,})»");
+    private static final java.util.regex.Pattern POINT_NUMBER = java.util.regex.Pattern.compile("^\\s*\\d+\\.\\s*");
+
+    /**
+     * Пункты с выдуманными фактами выбрасываются: число или «цитата», которых нет ни в данных,
+     * ни в самом запросе. Так в разбор не попадают «улица Ленина, 20» и «кватрира», когда
+     * в карточке ничего подобного не было. Оставшиеся пункты перенумеровываются.
+     */
+    public static String grounded(String text, String source) {
+        String haystack = source.toLowerCase(java.util.Locale.ROOT).replace('ё', 'е');
+        List<String> kept = new java.util.ArrayList<>();
+        for (String line : text.split("\n")) {
+            String body = POINT_NUMBER.matcher(line).replaceFirst("").trim();
+            if (body.isEmpty()) continue;
+            boolean invented = false;
+            java.util.regex.Matcher n = NUMBER.matcher(body);
+            while (!invented && n.find()) {
+                invented = !haystack.contains(n.group().toLowerCase(java.util.Locale.ROOT));
+            }
+            java.util.regex.Matcher q = QUOTED.matcher(body);
+            while (!invented && q.find()) {
+                invented = !haystack.contains(q.group(1).toLowerCase(java.util.Locale.ROOT).replace('ё', 'е'));
+            }
+            if (!invented) kept.add(body);
+        }
+        StringBuilder out = new StringBuilder();
+        for (int k = 0; k < kept.size(); k++) out.append(k + 1).append(". ").append(kept.get(k)).append('\n');
+        return out.toString().trim();
     }
 }

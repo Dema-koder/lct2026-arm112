@@ -128,8 +128,16 @@ public class DebriefHandler implements JobHandler {
         List<Map<String, Object>> issues = new ArrayList<>();
         java.util.Set<String> seenCodes = new java.util.LinkedHashSet<>();
         java.util.Set<Object> missingServices = new java.util.LinkedHashSet<>();
+        // Замечания уровня INFO тоже подаются: о деталях адреса и находках проверки текста
+        // обучающийся получает рекомендации, и без фактов модель их выдумывала
+        // («корпус Б», «кватрира», «улица Ленина, 20» — ничего этого в карточке не было).
+        List<String> textFindings = new ArrayList<>();
         for (AssessmentIssue issue : ai.issues() == null ? List.<AssessmentIssue>of() : ai.issues()) {
-            if ("INFO".equals(issue.severity())) continue;
+            if ("LANGUAGE".equals(issue.code())) {
+                if (textFindings.size() < 3) textFindings.add(issue.message());
+                continue;
+            }
+            if ("INFO".equals(issue.severity()) && !"ADDRESS_DETAIL_MISMATCH".equals(issue.code())) continue;
             if ("SERVICE_MISSING".equals(issue.code())) {
                 // название без точек: «Мос.Без.» грамматика разбора обрывала на «Мос.»
                 if (issue.expected() instanceof String code) {
@@ -146,6 +154,7 @@ public class DebriefHandler implements JobHandler {
             if (issues.size() >= 5) break;
         }
         summary.put("замечания", issues);
+        if (!textFindings.isEmpty()) summary.put("находки_проверки_текста", textFindings);
         if (!missingServices.isEmpty()) summary.put("не_оповещены_службы", List.copyOf(missingServices));
         // рекомендации по правилам обучающийся уже видит: модель их объясняет, а не пересказывает
         // без хвоста «(карточек: N)» — иначе модель повторяет его отдельным предложением

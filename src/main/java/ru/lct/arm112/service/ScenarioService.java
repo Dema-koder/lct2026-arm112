@@ -195,6 +195,13 @@ public class ScenarioService {
             names.add(a.locality());
         }
         language.learnPlaces(names);
+        // ФИО заявителей и пострадавших — чтобы верно переписанная фамилия не считалась опечаткой
+        List<String> people = new ArrayList<>();
+        for (Scenario scenario : repository.find(null, null, null, 5000)) {
+            if (scenario.caller() != null) people.add(scenario.caller().fullName());
+            people.add(scenario.callerText());
+        }
+        language.learnNames(people);
         // справочник существующих улиц пополняется только улицами: город в поле «улица»
         // («Балашиха») иначе сам себя подтверждал бы при проверке сгенерированного сценария
         addresses.learn(repository.find(null, null, null, 5000).stream()
