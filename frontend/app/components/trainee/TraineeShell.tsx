@@ -19,6 +19,13 @@ export function TraineeShell({ token, user, onLogout }: { token: string; user: U
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"work" | "results" | "analytics">("work");
   const [version, setVersion] = useState(0);
+  const session = context?.activeSession ?? null;
+
+  // Рабочая карточка может быть выше экрана. При завершении занятия или смене вкладки
+  // браузер не должен оставлять обучающегося в прежней нижней позиции страницы.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [view, session?.id]);
 
   const loadContext = useCallback(async () => {
     try {
@@ -46,7 +53,6 @@ export function TraineeShell({ token, user, onLogout }: { token: string; user: U
 
   if (loading) return <div className="boot-screen">Загрузка рабочего места…</div>;
 
-  const session = context?.activeSession ?? null;
   const label = `${user.displayName} · АРМ ${context?.workstation.number ?? user.workstationNumber ?? "—"}`;
   const nav = (
     <>

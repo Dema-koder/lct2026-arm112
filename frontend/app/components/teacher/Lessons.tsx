@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type CardSource, type CriterionScore, type Group, type Intensity, type Lesson, type LessonKind, type LessonMode, type LessonMonitor, type LessonReport, type ScenarioListItem, type SessionDetail } from "../../../lib/api";
 import { actionLabels, categoryLabels, criterionLabels, scenarioCategories, criteriaForMode, dateTime, displayCardNumber, formatIssueValue, intensityHints, intensityLabels, kindLabels, lessonStateLabels, mmss, modeLabels, score, sessionStateLabels, sourceLabels, statusLabels } from "../../../lib/format";
-import { ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
+import { CsvExportButton, ErrorBanner, Notice, useAction, useClock, useIncidentTypeLabels, useNotice, useSocket } from "../common";
 import { ScenarioCard } from "./Scenarios";
 import { AssessmentView } from "../trainee/Results";
 
@@ -75,6 +75,11 @@ export function Lessons({ token }: { token: string }) {
       <div className="panel-head">
         <b>Занятия</b>
         <span className="spacer" />
+        <CsvExportButton fileName="занятия.csv"
+          headers={["Создано", "Название", "Группа", "Вид", "Режим", "Служба", "Поток", "Участников", "Состояние"]}
+          rows={filtered.map((l) => [dateTime(l.createdAt), l.title, l.groupName ?? "", kindLabels[l.kind] ?? l.kind,
+            modeLabels[l.mode] ?? l.mode, l.mode === "CARD_ACTIONS" ? l.serviceCode ?? "" : "", intensityLabels[l.intensity] ?? l.intensity,
+            l.sessionCount, lessonStateLabels[l.state] ?? l.state])} />
         <button className="primary-button" onClick={() => setCreating(true)}>Новое занятие</button>
       </div>
       <div className="panel-head lesson-filters">
@@ -345,6 +350,13 @@ function LessonView({ token, lessonId, onBack }: { token: string; lessonId: stri
           <button className="primary-button" disabled={working || !allAssessed} title={allAssessed ? undefined : "Сначала оцените всех участников"} onClick={publish}>Опубликовать результаты</button>
         )}
         {lesson.resultsPublishedAt && <small className="muted">опубликовано {dateTime(lesson.resultsPublishedAt)}</small>}
+        {!(report && report.rows.some((r) => r.finalTotal !== null)) && (
+          <CsvExportButton fileName={`монитор-${lesson.title}.csv`}
+            headers={["АРМ", "Обучающийся", "Состояние", "Текущий статус", "Завершено карточек", "Всего карточек", "Время", "Итог"]}
+            rows={monitor.sessions.map((s) => [s.workstationNumber ?? "", s.traineeName, sessionStateLabels[s.state] ?? s.state,
+              s.currentStatus ? statusLabels[s.currentStatus] ?? s.currentStatus : "", s.completedCards, s.totalCards,
+              s.startedAt && s.state === "ACTIVE" ? mmss(Math.max(0, Math.floor((now - new Date(s.startedAt).getTime()) / 1000))) : dateTime(s.completedAt), score(s.finalTotal)])} />
+        )}
       </div>
 
       {!(report && report.rows.some((r) => r.finalTotal !== null)) && (

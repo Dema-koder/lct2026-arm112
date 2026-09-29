@@ -32,6 +32,10 @@
 .danger-button { height: 30px; padding: 0 14px; color: white; border: 0; background: #a93f31; }
 .ghost { height: 28px; padding: 0 8px; color: var(--blue-dark); border: 0; background: transparent; text-decoration: underline; }
 .ghost.danger { color: #8f2f22; }
+.csv-button { height: 28px; padding: 0 10px; color: #23434f; border: 1px solid #9aa6ac; background: white; white-space: nowrap; }
+.csv-button:hover:not(:disabled) { color: white; border-color: var(--blue); background: var(--blue); }
+.csv-button:disabled { color: #9aa5aa; background: #edf0f1; cursor: default; }
+.table-actions { display: flex; justify-content: flex-end; margin: 8px 0; }
 .rating-chip { padding: 4px 10px; background: #dce1e3; }
 .rating-chip strong { font-size: 15px; }
 

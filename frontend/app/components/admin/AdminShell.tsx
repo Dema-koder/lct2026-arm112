@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type AdminCalibrationState, type AlertCallAttempt, type AlertConfiguration, type AuditEntry, type BackupInfo, type Group, type LessonMode, type ManagedService, type MockPhoneGatewaySettings, type Role, type ServiceEvent, type SystemHealth, type User, type UserAdminView } from "../../../lib/api";
 import { bytes, dateTime, roleLabels } from "../../../lib/format";
-import { ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
+import { CsvExportButton, ErrorBanner, Modal, Notice, TopStrip, useAction, useNotice } from "../common";
 
 type View = "users" | "groups" | "services" | "calibration" | "settings" | "audit" | "system";
 
@@ -71,8 +71,8 @@ function AssessmentCalibration({ token }: { token: string }) {
         </select>
         <button className="secondary" disabled={working} onClick={load}>Обновить расчёт</button>
       </div>
-      {error && <ErrorBanner message={error} />}
-      {notice && <Notice message={notice} />}
+      <ErrorBanner error={error} onClose={() => setError("")} />
+      <Notice text={notice} />
       <div className="calibration-explainer">
         <b>Как это работает</b>
         <p>Правильной считается оценка преподавателя. Система сравнивает её с исходным баллом ИИ и предлагает поправки отдельно по каждому критерию.</p>
@@ -84,7 +84,13 @@ function AssessmentCalibration({ token }: { token: string }) {
         <div><span>Средняя ошибка</span><b>{state?.active?.maeBefore == null ? "—" : `${state.active.maeBefore.toFixed(1)} → ${state.active.maeAfter?.toFixed(1)}`}</b></div>
         <div><span>Включена</span><b>{state?.active?.activatedAt ? dateTime(state.active.activatedAt) : "—"}</b></div>
       </div>
-      <div className="panel-head"><b>Новый расчёт</b><small className="muted">учтено оценок: {candidate?.assessments ?? 0}</small></div>
+      <div className="panel-head">
+        <b>Новый расчёт</b><small className="muted">учтено оценок: {candidate?.assessments ?? 0}</small><span className="spacer" />
+        <CsvExportButton fileName={`коррекция-оценки-${mode}.csv`}
+          headers={["Критерий", "Сравнений", "Ошибка до", "Ошибка после", "Улучшение, %", "Коэффициент", "Смещение"]}
+          rows={(candidate?.criteria ?? []).map((criterion) => [criterion.label, criterion.pairs, criterion.maeBefore.toFixed(1),
+            criterion.maeAfter.toFixed(1), criterion.improvementPercent.toFixed(1), criterion.slope.toFixed(3), criterion.intercept.toFixed(2)])} />
+      </div>
       {candidate?.criteria.length ? (
         <table className="data-table calibration-table">
           <thead><tr><th>Критерий</th><th>Сравнений</th><th>Ошибка до</th><th>Ошибка после</th><th>Улучшение</th><th>Поправка</th></tr></thead>
@@ -109,6 +115,10 @@ function AssessmentCalibration({ token }: { token: string }) {
         <button className="primary" disabled={working || !candidate?.criteria.length} onClick={() => setConfirmation("activate")}>Обучить и включить новую версию</button>
       </div>
       {!!state?.history.length && <details className="calibration-history"><summary>История версий ({state.history.length})</summary>
+        <div className="table-actions"><CsvExportButton fileName={`история-коррекции-${mode}.csv`}
+          headers={["Версия", "Состояние", "Оценок", "Ошибка до", "Ошибка после", "Создана"]}
+          rows={state.history.map((item) => [item.version, item.active ? "активна" : "выключена", item.assessments,
+            item.maeBefore?.toFixed(1) ?? "", item.maeAfter?.toFixed(1) ?? "", dateTime(item.createdAt)])} /></div>
         <table className="data-table"><thead><tr><th>Версия</th><th>Состояние</th><th>Оценок</th><th>Ошибка</th><th>Создана</th></tr></thead>
           <tbody>{state.history.map((item) => <tr key={item.id}><td>v{item.version}</td><td>{item.active ? "активна" : "выключена"}</td><td>{item.assessments}</td><td>{item.maeBefore?.toFixed(1)} → {item.maeAfter?.toFixed(1)}</td><td>{dateTime(item.createdAt)}</td></tr>)}</tbody>
         </table></details>}
@@ -296,6 +306,12 @@ function Services({ token }: { token: string }) {
         <div className="panel-head">
           <b>История аварийных звонков</b>
           <small className="muted">номер показывается частично; ответ обновляет внутренний телефонный шлюз</small>
+          <span className="spacer" />
+          <CsvExportButton fileName="история-аварийных-звонков.csv"
+            headers={["Время", "Получатель", "Причина", "Сообщение", "Сервис", "Попытка", "Порядок получателя", "Статус", "Ответ", "Ошибка"]}
+            rows={calls.map((call) => [dateTime(call.requestedAt), call.recipient, CALL_TRIGGER_LABELS[call.triggerType] ?? call.triggerType,
+              call.message, items.find((item) => item.id === call.serviceId)?.label ?? call.serviceId ?? "", call.attemptNumber,
+              call.recipientOrder, CALL_STATUS_LABELS[call.status], call.answered == null ? "нет данных" : call.answered ? "да" : "нет", call.errorMessage ?? ""])} />
         </div>
         {calls.length === 0 ? <p className="empty-state">Звонков пока не было</p> : (
           <div className="table-scroll"><table className="data-table">
@@ -322,7 +338,14 @@ function Services({ token }: { token: string }) {
         )}
       </section>
       <section className="service-history">
-        <div className="panel-head"><b>История сервисов</b><small className="muted">действия администраторов и автоматические изменения состояния</small></div>
+        <div className="panel-head">
+          <b>История сервисов</b><small className="muted">действия администраторов и автоматические изменения состояния</small><span className="spacer" />
+          <CsvExportButton fileName="история-сервисов.csv"
+            headers={["Время", "Сервис", "Тип события", "Действие", "Предыдущее состояние", "Текущее состояние", "Результат", "Инициатор", "Оповещение", "Сообщение"]}
+            rows={history.map((event) => [dateTime(event.occurredAt), items.find((item) => item.id === event.serviceId)?.label ?? event.serviceId,
+              event.eventType, event.action ? SERVICE_ACTION_LABELS[event.action] : "", event.previousState ?? "", event.currentState,
+              event.outcome, event.actorLogin ?? "система", event.notified ? "звонок запущен" : "", event.message ?? ""])} />
+        </div>
         {history.length === 0 ? <p className="empty-state">Событий пока нет</p> : (
           <table className="data-table">
             <thead><tr><th>Время</th><th>Сервис</th><th>Событие</th><th>Состояние</th><th>Инициатор</th><th>Оповещение</th></tr></thead>
@@ -412,7 +435,13 @@ function Users({ token, self }: { token: string; self: User }) {
 
   return (
     <section className="panel-page">
-      <div className="panel-head"><b>Пользователи</b></div>
+      <div className="panel-head">
+        <b>Пользователи</b><span className="spacer" />
+        <CsvExportButton fileName="пользователи.csv"
+          headers={["Логин", "ФИО", "Роль", "АРМ", "Группа", "Создан", "Активен"]}
+          rows={items.map((u) => [u.login, u.displayName, roleLabels[u.role] ?? u.role, u.workstationNumber ?? "",
+            groups.find((g) => g.id === u.groupId)?.name ?? "", dateTime(u.createdAt), u.active ? "да" : "нет"])} />
+      </div>
       <div className="form-grid five">
         <label><span>Логин</span><input value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} /></label>
         <label><span>Пароль</span><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
@@ -538,7 +567,13 @@ function Groups({ token }: { token: string }) {
 
   return (
     <section className="panel-page">
-      <div className="panel-head"><b>Группы</b></div>
+      <div className="panel-head">
+        <b>Группы</b><span className="spacer" />
+        <CsvExportButton fileName="группы.csv"
+          headers={["Группа", "Преподаватель", "Количество обучающихся", "Обучающиеся"]}
+          rows={groups.map((g) => [g.name, teachers.find((t) => t.id === g.teacherId)?.displayName ?? g.teacherName ?? "",
+            g.members.length, g.members.map((m) => `${m.displayName} (АРМ ${m.workstationNumber ?? "—"})`).join(", ")])} />
+      </div>
       <div className="form-grid group-create-form">
         <label><span>Название</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label><span>Преподаватель</span>
@@ -695,6 +730,11 @@ function Audit({ token }: { token: string }) {
         <label className="audit-filter audit-action-filter"><span>Действие или адрес API</span>
           <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Например: /cards, /users или /settings" />
         </label>
+        <span className="spacer" />
+        <CsvExportButton fileName="журнал-действий.csv"
+          headers={["Когда", "Кто", "Роль", "Действие", "Тип ресурса", "ID ресурса", "Статус", "IP", "Request ID", "Данные"]}
+          rows={items.map((e) => [dateTime(e.occurredAt), e.actorLogin ?? "", e.actorRole ? roleLabels[e.actorRole] ?? e.actorRole : "",
+            e.action, e.resourceType ?? "", e.resourceId ?? "", e.httpStatus ?? "", e.clientIp ?? "", e.requestId ?? "", e.payload ?? ""])} />
       </div>
       <table className="data-table audit">
         <thead><tr><th>Когда</th><th>Кто</th><th>Роль</th><th>Действие</th><th>Статус</th><th>IP</th><th>Данные</th></tr></thead>
@@ -754,7 +794,12 @@ function System({ token }: { token: string }) {
           <span>Время сервера <b>{dateTime(health.serverTime)}</b></span>
         </div>
       )}
-      <div className="panel-head"><b>Резервные копии</b><small className="muted">ежедневно в 02:00 автоматически</small><span className="spacer" /><button className="primary-button" disabled={working} onClick={backup}>Сделать копию сейчас</button></div>
+      <div className="panel-head">
+        <b>Резервные копии</b><small className="muted">ежедневно в 02:00 автоматически</small><span className="spacer" />
+        <CsvExportButton fileName="резервные-копии.csv" headers={["Файл", "Размер, байт", "Создана"]}
+          rows={backups.map((b) => [b.fileName, b.sizeBytes, dateTime(b.createdAt)])} />
+        <button className="primary-button" disabled={working} onClick={backup}>Сделать копию сейчас</button>
+      </div>
       <table className="data-table">
         <thead><tr><th>Файл</th><th>Размер</th><th>Создана</th><th /></tr></thead>
         <tbody>

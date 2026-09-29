@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type Group, type Lesson, type LessonReport, type ReportRow } from "../../../lib/api";
 import { getMessage, kindLabels, lessonStateLabels, modeLabels, score } from "../../../lib/format";
 import { avg, Donut, HorizontalBars, KpiGrid } from "../analytics/charts";
+import { CsvExportButton } from "../common";
 
 type LessonBundle = { lesson: Lesson; report: LessonReport | null };
 type AnalyticRow = ReportRow & {
@@ -110,19 +111,6 @@ export function TeacherAnalytics({ token }: { token: string }) {
     }
     return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "ru"));
   }, [allRows, focusGroupId, focusLessonId]);
-
-  // если выбранный урок/студент больше не входит в суженный список — сбрасываем
-  useEffect(() => {
-    if (focusLessonId && !lessonOptions.some((b) => b.lesson.id === focusLessonId)) {
-      setFocusLessonId("");
-    }
-  }, [focusLessonId, lessonOptions]);
-
-  useEffect(() => {
-    if (focusTraineeId && !traineeOptions.some(([id]) => id === focusTraineeId)) {
-      setFocusTraineeId("");
-    }
-  }, [focusTraineeId, traineeOptions]);
 
   const matchLesson = useCallback((lesson: Lesson) => {
     if (focusGroupId === "none" && lesson.groupId) return false;
@@ -244,13 +232,13 @@ export function TeacherAnalytics({ token }: { token: string }) {
         <button className="ghost" onClick={() => void load()}>обновить</button>
       </div>
       <div className="panel-head lesson-filters">
-        <select value={focusLessonId} onChange={(e) => setFocusLessonId(e.target.value)} aria-label="Фильтр по занятию">
+        <select value={focusLessonId} onChange={(e) => { setFocusLessonId(e.target.value); setFocusTraineeId(""); }} aria-label="Фильтр по занятию">
           <option value="">все занятия</option>
           {lessonOptions.map((b) => (
             <option key={b.lesson.id} value={b.lesson.id}>{b.lesson.title}</option>
           ))}
         </select>
-        <select value={focusGroupId} onChange={(e) => setFocusGroupId(e.target.value)} aria-label="Фильтр по группе">
+        <select value={focusGroupId} onChange={(e) => { setFocusGroupId(e.target.value); setFocusLessonId(""); setFocusTraineeId(""); }} aria-label="Фильтр по группе">
           <option value="">все группы</option>
           {groupOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           {hasUngrouped && <option value="none">без группы</option>}
@@ -351,7 +339,13 @@ export function TeacherAnalytics({ token }: { token: string }) {
       </div>
 
       <article className="analytics-card wide">
-        <header><b>Сводка по сессиям</b><small className="muted">{focusRows.length} из {graded.length}</small></header>
+        <header>
+          <b>Сводка по сессиям</b><small className="muted">{focusRows.length} из {graded.length}</small><span className="spacer" />
+          <CsvExportButton fileName="аналитика-сессий.csv"
+            headers={["Занятие", "Обучающийся", "АРМ", "Вид", "Режим", "Группа", "Время", "Синтаксические ошибки", "Оценка ИИ", "Оценка преподавателя", "Итог"]}
+            rows={focusRows.map((r) => [r.lessonTitle, r.traineeName, r.workstationNumber ?? "", kindLabels[r.kind] ?? r.kind,
+              modeLabels[r.mode] ?? r.mode, r.groupName ?? "", score(r.timingScore), r.syntaxErrors ?? "", score(r.aiTotal), score(r.teacherTotal), score(r.finalTotal)])} />
+        </header>
         <table className="data-table">
           <thead>
             <tr>

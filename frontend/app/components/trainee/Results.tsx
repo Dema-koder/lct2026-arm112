@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, type Assessment, type Debrief, type Material, type Rating, type ResultItem } from "../../../lib/api";
 import { bytes, criterionLabels, dateTime, formatIssueValue, getMessage, kindLabels, modeLabels, score } from "../../../lib/format";
+import { CsvExportButton } from "../common";
 
 /** Мои результаты: список занятий по правилу видимости, детали оценки, рейтинг, материалы группы. */
 export function Results({ token, refreshKey }: { token: string; refreshKey: number }) {
@@ -45,6 +46,20 @@ export function Results({ token, refreshKey }: { token: string; refreshKey: numb
             {" "}· занятий {rating.completedSessions ?? 0}
           </span>
         )}
+        <span className="spacer" />
+        <CsvExportButton
+          fileName="мои-результаты.csv"
+          headers={["Занятие", "Вид", "Режим", "Завершено", "Итог", "Оценил", "Состояние"]}
+          rows={items.map((item) => [
+            item.lessonTitle,
+            kindLabels[item.lessonKind] ?? item.lessonKind,
+            modeLabels[item.mode] ?? item.mode,
+            dateTime(item.completedAt),
+            item.visible ? score(item.finalTotal) : "",
+            item.source === "TEACHER" ? "преподаватель" : item.source === "AI" ? "система" : "",
+            item.visible ? "опубликовано" : "на проверке у преподавателя",
+          ])}
+        />
       </div>
       {error && <p className="inline-error">{error}</p>}
       <table className="data-table">

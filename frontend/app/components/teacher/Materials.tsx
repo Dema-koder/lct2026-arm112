@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Group, type Material } from "../../../lib/api";
 import { bytes, dateTime } from "../../../lib/format";
-import { ErrorBanner, Notice, useAction, useNotice } from "../common";
+import { CsvExportButton, ErrorBanner, Notice, useAction, useNotice } from "../common";
 
 /** Методические материалы: загрузка файла и назначение группам. */
 export function Materials({ token }: { token: string }) {
@@ -37,7 +37,12 @@ export function Materials({ token }: { token: string }) {
 
   return (
     <section className="panel-page">
-      <div className="panel-head"><b>Методические материалы</b></div>
+      <div className="panel-head">
+        <b>Методические материалы</b><span className="spacer" />
+        <CsvExportButton fileName="методические-материалы.csv"
+          headers={["Название", "Файл", "Размер, байт", "Загружен", "Группы"]}
+          rows={items.map((m) => [m.title, m.fileName, m.sizeBytes, dateTime(m.uploadedAt), m.groupIds.map((id) => groups.find((g) => g.id === id)?.name ?? id).join(", ")])} />
+      </div>
       <div className="form-grid">
         <label><span>Файл (DOCX, PDF, XLSX)</span><input type="file" ref={file} /></label>
         <label><span>Название</span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="как имя файла, если пусто" /></label>

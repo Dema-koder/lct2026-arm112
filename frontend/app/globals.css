@@ -243,11 +243,11 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .error-banner { position: fixed; z-index: 40; top: 44px; left: 50%; width: min(620px, 80vw); transform: translateX(-50%); padding: 12px 44px 12px 14px; color: white; background: #9d372c; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
 .error-banner button { position: absolute; top: 4px; right: 8px; color: white; border: 0; background: transparent; font-size: 24px; }
 .notice-toast { position: fixed; z-index: 40; top: 44px; right: 12px; padding: 11px 16px; color: white; background: #167aa7; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
-.modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; background: rgba(28,35,39,.58); }
-.modal { width: min(520px, 88vw); color: #172026; background: #eef0f1; box-shadow: 0 16px 40px rgba(0,0,0,.35); border: 1px solid #87949a; }
+.modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; overflow: hidden; background: rgba(28,35,39,.58); }
+.modal { width: min(520px, 88vw); max-height: calc(100dvh - 40px); display: flex; flex-direction: column; color: #172026; background: #eef0f1; box-shadow: 0 16px 40px rgba(0,0,0,.35); border: 1px solid #87949a; }
 .modal > header { height: 42px; display: flex; align-items: center; justify-content: space-between; padding-left: 14px; color: white; background: #344249; }
 .modal > header button { width: 42px; height: 42px; color: white; border: 0; background: transparent; font-size: 22px; }
-.modal-body { padding: 18px; }
+.modal-body { min-height: 0; padding: 18px; overflow-y: auto; overscroll-behavior: contain; }
 .modal textarea { width: 100%; min-height: 110px; resize: vertical; padding: 10px; border: 1px solid #9aa6ac; background: white; outline-color: var(--blue); }
 .dialog-label { display: block; margin-bottom: 7px; font-weight: bold; }
 .dialog-copy { margin-top: 0; color: #536169; }

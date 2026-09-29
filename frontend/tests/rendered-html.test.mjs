@@ -28,7 +28,7 @@ test("renders the application shell", async () => {
 });
 
 test("keeps the UI aligned with backend contract v0.3", async () => {
-  const [api, dds, fill, teacher, admin, page, journal] = await Promise.all([
+  const [api, dds, fill, teacher, admin, page, journal, common, results, scenarios, materials, analytics] = await Promise.all([
     src("../lib/api.ts"),
     src("../app/components/dds/DdsWorkspace.tsx"),
     src("../app/components/fill/FillWorkspace.tsx"),
@@ -36,6 +36,11 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
     src("../app/components/admin/AdminShell.tsx"),
     src("../app/page.tsx"),
     src("../app/components/journal/IncidentJournal.tsx"),
+    src("../app/components/common.tsx"),
+    src("../app/components/trainee/Results.tsx"),
+    src("../app/components/teacher/Scenarios.tsx"),
+    src("../app/components/teacher/Materials.tsx"),
+    src("../app/components/teacher/Analytics.tsx"),
   ]);
 
   assert.match(api, /CONTRACT_VERSION = "0\.3"/);
@@ -89,7 +94,7 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(admin, /Управление сервисами/);
   assert.match(admin, /Коррекция оценки ИИ/);
   assert.match(admin, /Обучить и включить новую версию/);
-  assert.match(teacher, /Подтвердить оценку ИИ/);
+  assert.match(teacher, /Согласен с оценкой ИИ/);
   assert.match(api, /\/admin\/assessment-calibration/);
   assert.match(api, /\/admin\/system\/services/);
   assert.match(admin, /Поиск по ФИО, логину или номеру АРМ/);
@@ -102,4 +107,12 @@ test("keeps the UI aligned with backend contract v0.3", async () => {
   assert.match(admin, /Последняя успешная/);
   assert.match(api, /\/admin\/system\/alerts\/history/);
   assert.match(api, /\/admin\/system\/services\/diagnostics/);
+
+  // длинные результаты остаются внутри модального окна, а крупные реестры выгружаются в безопасный CSV
+  assert.match(common, /document\.body\.style\.overflow = "hidden"/);
+  assert.match(common, /export function CsvExportButton/);
+  assert.match(common, /\^\[=\+\\-@\\t\\r\]/);
+  for (const source of [journal, results, teacher, scenarios, materials, analytics, admin]) {
+    assert.match(source, /CsvExportButton/);
+  }
 });

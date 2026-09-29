@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { api, type GenerationJob, type GenerationReport, type IncidentTypeItem, type Scenario, type ScenarioListItem } from "../../../lib/api";
 import { categoryLabel, categoryLabels, dateTime, scenarioCategories, sourceLabels } from "../../../lib/format";
-import { ErrorBanner, Modal, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
+import { CsvExportButton, ErrorBanner, Modal, Notice, useAction, useIncidentTypeLabels, useNotice } from "../common";
 
 /** Развёрнутая карточка сценария: вводная целиком, адреса, эталон с подсветкой правильных ответов. */
 export function ScenarioCard({ scenario, typeLabel }: { scenario: ScenarioListItem; typeLabel: (id: string) => string }) {
@@ -249,6 +249,13 @@ export function Scenarios({ token }: { token: string }) {
           </label>
         )}
         <span className="spacer" />
+        <CsvExportButton fileName="сценарии.csv"
+          headers={["Название", "Категория", "Типы происшествия", "Источник", "Сложность", "Вводная", "Адрес", "Службы", "Эталон подтверждён", "ID"]}
+          rows={visible.map((s) => [
+            s.title, categoryLabel(s.category), s.expectedIncidentTypes.map(typeLabel).join(", "),
+            sourceLabels[s.source] ?? s.source, s.difficulty, s.callerText, s.rawAddress ?? "",
+            s.expectedServices.join(", "), s.referenceConfirmed ? "да" : "нет", s.id,
+          ])} />
         <button className="primary-button" disabled={working} onClick={() => setDialog(true)}>✦ Сгенерировать…</button>
       </div>
       <table className="data-table">

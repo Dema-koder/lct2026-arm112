@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { countdown, dateTime, statusLabels, timeOnly } from "../../../lib/format";
+import { CsvExportButton } from "../common";
 
 /** Строка журнала происшествий — общая для экрана ДДС (карточки) и оператора 112 (сохранённые и фоновые карточки). */
 export type JournalRowView = {
@@ -94,6 +95,10 @@ export function IncidentJournal({ rows, search, setSearch, onOpen, now, workstat
           <b>Список происшествий⌃</b>
           <span>
             {extra}
+            <CsvExportButton fileName="журнал-происшествий.csv"
+              headers={["АРМ", "Номер", "Дата и время", "Тип происшествия", "Адрес", "Статус", "Описание", "Отправитель", "Просрочено"]}
+              rows={rows.map((item) => [item.workstationNumber, item.number, dateTime(item.receivedAt), item.incidentTypeLabel,
+                item.addressLabel, item.statusLabel, item.description, item.senderLabel, item.overdue ? "да" : "нет"])} />
             ● уведомления　 <select aria-label="Фильтр"><option>выберите что показать</option></select>
           </span>
         </div>

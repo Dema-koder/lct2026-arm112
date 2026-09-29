@@ -67,14 +67,61 @@ export function Login({ onLogin, notice }: { onLogin: (token: string) => void; n
 }
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  const body = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    body.current?.scrollTo({ top: 0 });
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onCloseRef.current(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+      window.scrollTo(scrollX, scrollY);
+    };
+  }, []);
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <header><b>{title}</b><button onClick={onClose} aria-label="Закрыть">×</button></header>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body" ref={body}>{children}</div>
       </section>
     </div>
   );
+}
+
+type CsvValue = string | number | boolean | null | undefined;
+
+/**
+ * Выгрузка уже показанной пользователю таблицы. CSV открывается в русском Excel:
+ * UTF-8 BOM, разделитель «;», CRLF и защита пользовательских значений от формул.
+ */
+export function CsvExportButton({ fileName, headers, rows, disabled }: {
+  fileName: string;
+  headers: string[];
+  rows: CsvValue[][];
+  disabled?: boolean;
+}) {
+  const download = () => {
+    const escape = (value: CsvValue) => {
+      let text = value === null || value === undefined ? "" : String(value);
+      if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+      return `"${text.replaceAll('"', '""')}"`;
+    };
+    const csv = [headers, ...rows].map((row) => row.map(escape).join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    const safeName = fileName.replace(/[\\/:*?"<>|]+/g, "-");
+    link.download = safeName.endsWith(".csv") ? safeName : `${safeName}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  return <button type="button" className="csv-button" disabled={disabled || rows.length === 0} onClick={download}>⇩ CSV</button>;
 }
 
 /** Верхняя полоса «ГБУ Система 112» + масштаб + имя пользователя; одинаковая на всех экранах. */
