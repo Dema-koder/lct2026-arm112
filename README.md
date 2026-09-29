@@ -200,3 +200,8 @@ API-контракт и правила независимой разработк
 Настройка и команды frontend описаны отдельно в [`frontend/README.md`](frontend/README.md).
 
 Production-выкладка на сервер при каждом push/merge в `main` описана в [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+Сопроводительная документация по требованиям ТЗ — архитектура, методы обработки данных, сборка,
+установка, эксплуатация, ограничения и библиотеки — находится в
+[`docs/PROJECT_DOCUMENTATION.md`](docs/PROJECT_DOCUMENTATION.md). Версии для передачи комиссии
+публикуются в `docs/deliverables/` в форматах DOCX и PDF.
